@@ -1,56 +1,48 @@
 import java.util.*;
 import java.lang.Exception;
+import java.lang.reflect.Array;
 
-class Deck{
-	private LinkedList<Card> cards;
+class Deck<T extends Card>{
+	protected LinkedList<T> cards;
 	private Random ran;
+	public boolean faceup=false;
 	
 	//paths for images
 	public String backImage;
 	public static String standardBack="PlayingCards/PNG-cards-1.3/back.jpg";
+	public static String dominionBack="DominionCards/back.png";
+	public static String blankBack="DominionCards/empty.png";
 
 	//constructors and stuff
 	public Deck(){ 
 		ran=new Random();
-		cards=new LinkedList<Card>(); 
+		cards=new LinkedList<T>(); 
 	}
 	public Deck(String type){
 		this();
 
 		if(type=="standard"){
-			ArrayList<String> suits=new ArrayList<String>();
-			suits.add("S"); suits.add("C"); suits.add("H"); suits.add("D");
-			ArrayList<String> numbers=new ArrayList<String>();
-			numbers.add("A"); numbers.add("J"); numbers.add("Q"); numbers.add("K");
-			for(int i=2;i<11;i++) numbers.add(Integer.toString(i));
-		
-			for(int s=0;s<suits.size();s++){
-				for(int n=0;n<numbers.size();n++){
-					cards.add(new StandardCard(numbers.get(n),suits.get(s)));
-				}
-			}
-			shuffle();
-      backImage=standardBack;
+
 		}else
 			System.out.println("invalid deck type specified");
 		
 		
 	}
-	public Deck(Collection<Card> newcards){
+	public Deck(Collection<T> newcards){
 		this();
-		cards=new LinkedList<Card>(newcards);
+		cards=new LinkedList<T>(newcards);
 	}
-	public Deck(Collection<Card> newcards,String deckBackPath){
+	public Deck(Collection<T> newcards,String deckBackPath){
 		this(newcards);
 		backImage=deckBackPath;
 	}	
 	
-	public Deck copy(){
-		return new Deck(cards, backImage);
+	public Deck<T> copy(){
+		return new Deck<T>(cards, backImage);
 	}
 	
 	public void shuffle(){
-		LinkedList<Card> newcards=new LinkedList<Card>();
+		LinkedList<T> newcards=new LinkedList<T>();
 			
 		while(cards.size()>0){
 			newcards.add(randomCard());
@@ -63,33 +55,45 @@ class Deck{
 			System.out.println(cards.remove().getName());
 	
 	}
-	public ArrayList<Card> deal(int n){
-		ArrayList<Card> out=new ArrayList<Card>();
+	
+	//get cards from deck
+	public ArrayList<T> deal(int n){
+		ArrayList<T> out=new ArrayList<T>();
 		for(int i=0;i<n;i++){
 			if(cards.size()<1) System.out.println("deal ran out of cards!");
 			out.add(cards.removeFirst());
 		}
 		return out;
 	}
-	public Card topCard(){ 
+	public T topCard(){ 
 		if(isEmpty()) System.out.println("topCard out of cards!");
 		return cards.removeFirst(); 
 	}
-	public Card randomCard(){
+	public T randomCard(){
 		if(isEmpty()) System.out.println("randomCard out of cards!");
 		
-		Iterator<Card> it=cards.iterator();
+		Iterator<T> it=cards.iterator();
 		int n=ran.nextInt(cards.size());
-		Card out=it.next();
+		T out=it.next();
 		for(int i=0;i<n;i++){
 			out=it.next();
 		}
 		it.remove();
 		return out;
 	}
-	public void put(Card c){ cards.addFirst(c);	}
-	public void put(ArrayList<Card> c){ 
-		for(int i=0;i<c.size();i++) cards.addFirst(c.get(i));
+	public T peekTop(){
+	  return cards.peek();
+	}
+	public ArrayList<T> toArrayList(){
+	  return new ArrayList<T>(cards);
+	}
+	
+	//put cards on deck
+	public void put(T c){ cards.addFirst(c);	}
+	public void put(Collection<T> c){ 
+    Iterator<T> it=c.iterator();
+    while(it.hasNext()) cards.addFirst( it.next());
+//		for(int i=0;i<c.size();i++) cards.addFirst(c.get(i));
 	}	
 	public boolean isEmpty(){ return cards.isEmpty(); }
 	public int size(){ return cards.size(); }
@@ -104,6 +108,29 @@ class Deck{
     }
   }
   public Data makeData(){
-    return new Data(cards.size(), backImage);
+    String image;
+    if(size()==0) image=blankBack;
+    else if(faceup) image=cards.get(0).getImage();
+    else image=backImage;
+    return new Data(cards.size(), image);
+  }
+  
+  public static Deck<StandardCard> makeStandardDeck(){
+    ArrayList<StandardCard> newcards=new ArrayList<>();
+    
+		ArrayList<String> suits=new ArrayList<String>();
+		suits.add("S"); suits.add("C"); suits.add("H"); suits.add("D");
+		ArrayList<String> numbers=new ArrayList<String>();
+		numbers.add("A"); numbers.add("J"); numbers.add("Q"); numbers.add("K");
+		for(int i=2;i<11;i++) numbers.add(Integer.toString(i));
+	
+		for(int s=0;s<suits.size();s++){
+			for(int n=0;n<numbers.size();n++){
+				newcards.add(new StandardCard(numbers.get(n),suits.get(s)));
+			}
+		}
+		Deck<StandardCard> out=new Deck<>(newcards,standardBack);
+		out.shuffle();
+		return out;
   }
 }

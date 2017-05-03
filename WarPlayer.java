@@ -3,11 +3,9 @@ import java.util.*;
 class WarPlayer{
 
 	public Deck deck, disc;
-	public boolean playing;
 	public String name;
 	
 	public WarPlayer(String newname){
-		playing=true;
 		disc=new Deck();
 		disc.backImage=Deck.standardBack;
 		name=newname;
@@ -21,7 +19,6 @@ class WarPlayer{
 			disc.clear();
 			return (StandardCard) deck.topCard();
 		}else{
-			playing=false;
 			throw new OutOfCardsException(name);
 		}
 		
