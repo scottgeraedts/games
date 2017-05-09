@@ -116,11 +116,6 @@ public class DominionServer{
       it.next().showScores(scores);
     }
   }
-  public void displayPlayer(int playerNum, DominionPlayer.Data player){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().displayPlayer(playerNum,player);
-    }
-  }
   public void optionPane(int playerNum, Dominion.OptionData o){
     connections.get(player[playerNum]).optionPane(o);
   }

@@ -15,8 +15,6 @@ public class Dominion{
   private boolean gameOver;
   private String phase;
 
-  private int initialPlayer;
-
   private int gainLimit;
   private int minGain=0;
 
@@ -71,7 +69,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("secretchamber"));
+//      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("secretchamber"));
     }
     nPlayers=names.size();
 
@@ -137,7 +135,7 @@ public class Dominion{
         //generic selection behavour
         if(phase=="discard" || phase.equals("trash") || phase=="topdeck" || phase=="select"){
           selectedCards.add(card);
-          server.displayPlayer(activePlayer,players.get(activePlayer).makeData());
+          displayPlayer(activePlayer);
         }
           
       }else if(input.charAt(0)=='G'){
@@ -392,8 +390,8 @@ public class Dominion{
     maxSelection=max;
     changePhase(p);
     work(activePlayer);
-    displayPlayer(activePlayer);
-    if(p.equals("trash")) displayTrash();
+//    displayPlayer(activePlayer);
+//    if(p.equals("trash")) displayTrash();
   }
 //  //***SETTING PRIVATE VARIABLES***///
 
@@ -415,7 +413,9 @@ public class Dominion{
   
   //some simple wrappers for server functions 
   public void displayPlayer(int i){
-    server.displayPlayer(i,players.get(i).makeData());
+    for( DominionServer.HumanPlayer connection : server.connections){
+      connection.displayPlayer(i,players.get(i).makeData());
+    }
   }
   public void updateSharedFields(){
     server.updateSharedFields(actions,money,buys);
@@ -570,12 +570,14 @@ public class Dominion{
               doWork("discard",3,3,i);
               selectedCards.clear();
               changePhase(attackPhase);
+              displayPlayer(i);
             }
           }else if(r.equals("secretchamber")){
             victim.drawToHand(2);
-            victim.doWork("topdeck",2,2,i);
+            doWork("topdeck",2,2,i);
             selectedCards.clear();
-            changePhase(attackPhase);            
+            changePhase(attackPhase);
+            displayPlayer(i);            
           }
         }
         if(moat){
@@ -772,7 +774,7 @@ public class Dominion{
       if(count==1){
         //we found the only victory card, skip selection step
         players.get(activePlayer).disc.put(hand.remove(firstVictory));
-        server.displayPlayer(activePlayer,players.get(activePlayer).makeData());
+        displayPlayer(activePlayer);
       }else if(count>0){
         server.setMask(activePlayer, mask);
         displayPlayer(activePlayer);
@@ -793,12 +795,9 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("discard");
-      minSelection=0;
-      maxSelection=1000;
-      Dominion.this.work(activePlayer);
+      doWork("discard",0,1000,activePlayer);
       players.get(activePlayer).drawToHand(selectedCards.size());
-      server.displayPlayer(activePlayer,players.get(activePlayer).makeData());
+      displayPlayer(activePlayer);
     }
   }
   private class Chancellor extends DominionCard{
@@ -817,7 +816,6 @@ public class Dominion{
       DominionPlayer player=players.get(activePlayer);
       if(input.equals(options[0])){
         player.disc.put(player.deck.deal(player.deck.size()));
-        server.displayPlayer(activePlayer, player.makeData());
       }
     }    
   }
@@ -829,12 +827,9 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("trash");
-      minSelection=0;
-      maxSelection=4;
-      Dominion.this.work(activePlayer);
+      doWork("trash",0,4,activePlayer);
       displayTrash();
-      server.displayPlayer(activePlayer,players.get(activePlayer).makeData());
+      displayPlayer(activePlayer);
     }
   }
   private class Councilroom extends DominionCard{
@@ -849,7 +844,7 @@ public class Dominion{
     public void work(int activePlayer){
       for(int i=activePlayer+1;i<activePlayer+players.size();i++){
         players.get( i%players.size() ).drawToHand(1);
-        server.displayPlayer(i%players.size(), players.get(i%players.size()).makeData());
+        displayPlayer(i%players.size());
       }
     }
   }
@@ -895,12 +890,8 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("gain");
-      initialPlayer=activePlayer;
-      minSelection=0;
-      maxSelection=1;
       gainLimit=5;
-      Dominion.this.work(activePlayer);
+      doWork("gain",0,1,activePlayer);
       trash.put(matcards.remove(matcards.size()-1));
       displayTrash();
     }
@@ -929,7 +920,7 @@ public class Dominion{
           break;
         }
         if(card.isAction){
-          server.displayPlayer(activePlayer,player.makeData());
+          displayPlayer(activePlayer);
           server.optionPane(activePlayer,o);
           out=server.getUserInput(activePlayer);
           if(out.equals(options[0])) player.hand.add(card);
@@ -940,7 +931,7 @@ public class Dominion{
         o.remove(card.getImage()); 
       }
       player.disc.put(aside);
-      server.displayPlayer(activePlayer,player.makeData());
+      displayPlayer(activePlayer);
     }
   }  
   private class Merchant extends DominionCard{
@@ -983,12 +974,8 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=1;
-      maxSelection=1;
-      changePhase("trash");
-
       server.setMask(activePlayer,makeMask(players.get(activePlayer).hand));
-      Dominion.this.work(activePlayer);
+      doWork("trash",0,1,activePlayer);
       displayTrash();
       int cost=selectedCards.get(0).cost;
       changePhase("selectDeck");
@@ -1022,11 +1009,8 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=0;
-      maxSelection=1;
-      changePhase("trash");
       server.setMask(activePlayer,makeMask(players.get(activePlayer).hand));
-      Dominion.this.work(activePlayer);
+      doWork("trash",0,1,activePlayer);
       if(selectedCards.size()>0){
         money+=3;
         server.updateSharedFields(Dominion.this.actions,money,Dominion.this.buys);
@@ -1048,10 +1032,7 @@ public class Dominion{
     @Override
     public void subWork(int activePlayer){
       if(emptyPiles>0){
-        changePhase("discard");
-        minSelection=emptyPiles;
-        maxSelection=Math.max(1,minSelection);
-        Dominion.this.work(activePlayer);
+        doWork("discard",emptyPiles,Math.max(1,minSelection),activePlayer);
       }
     }
   }
@@ -1063,17 +1044,11 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=1;
-      maxSelection=1;
-      changePhase("trash");
-      Dominion.this.work(activePlayer);
+      doWork("trash",1,1,activePlayer);
       displayTrash();
 
-      changePhase("gain");
       gainLimit=cost2(selectedCards.get(0))+2;
-      minSelection=0;
-      Dominion.this.work(activePlayer);
-      
+      doWork("gain",0,1,activePlayer);      
     }    
   }
   private class Sentry extends DominionCard{
@@ -1230,12 +1205,8 @@ public class Dominion{
         return;
       }
       
-      changePhase("select");
       server.setMask(activePlayer,makeMask(hand));
-      minSelection=1;
-      maxSelection=1;
-
-      Dominion.this.work(activePlayer);
+      doWork("select",1,1,activePlayer);
       DominionCard card=selectedCards.get(0);
 
       selectedCards.clear();
@@ -1303,12 +1274,8 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("gain");
       gainLimit=4;
-      maxSelection=1;
-      minSelection=0;
-      Dominion.this.work(activePlayer);
-      
+      doWork("gain",0,1,activePlayer);      
     }
   }
   private class Gardens extends DominionCard{
@@ -1333,10 +1300,7 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("topdeck");
-      minSelection=1;
-      maxSelection=1;
-      Dominion.this.work(activePlayer);
+      doWork("topdeck",1,1,activePlayer);
       displayPlayer(activePlayer);
     }
   }
@@ -1448,10 +1412,7 @@ public class Dominion{
     }
     @Override
     public void cleanup(int activePlayer){
-      changePhase("trash");
-      minSelection=1;
-      maxSelection=1;
-      Dominion.this.work(activePlayer); 
+      doWork("trash",1,1,activePlayer);
       displayTrash();   
     }
     @Override
@@ -1465,10 +1426,7 @@ public class Dominion{
     }
     //passes a cardfrom player i to player i+1
     public void passCard(int fromPlayer, int toPlayer){
-      changePhase("select");
-      minSelection=1;
-      maxSelection=1;
-      Dominion.this.work(fromPlayer);
+      doWork("select",1,1,fromPlayer);
       players.get(toPlayer).hand.add(selectedCards.get(0));
       displayPlayer(fromPlayer);
       displayPlayer(toPlayer);
@@ -1589,11 +1547,9 @@ public class Dominion{
     @Override 
     public void subWork(int activePlayer){
       DominionPlayer player=players.get(activePlayer);
-      changePhase("discard");
-      minSelection=0;
-      maxSelection=1;
       server.setMask(activePlayer,makeMask(player.hand));
-      Dominion.this.work(activePlayer);
+      doWork("discard",0,1,activePlayer);
+      
       if(selectedCards.size()>0){
         money+=4;
       }else{
@@ -1658,11 +1614,8 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=0;
-      maxSelection=1;
-      changePhase("gain");
       gainLimit=4;
-      Dominion.this.work(activePlayer);
+      doWork("gain",0,1,activePlayer);
       DominionCard card=selectedCards.get(0);
       
       if(card.isAction) Dominion.this.actions++;
@@ -1687,10 +1640,7 @@ public class Dominion{
       String [] options={"Discard 2 cards", "Done"};
       String input=optionPane(activePlayer,new OptionData(options));
       if(input.equals(options[0])){
-        minSelection=2;
-        maxSelection=2;
-        changePhase("discard");
-        Dominion.this.work(activePlayer);
+        doWork("discard",2,2,activePlayer);
         money+=2;
         updateSharedFields();
       }
@@ -1725,10 +1675,7 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=1;
-      maxSelection=1;
-      changePhase("select");
-      Dominion.this.work(activePlayer);
+      doWork("select",1,1,activePlayer);
       putAnywhere(activePlayer,selectedCards.get(0));
     }
   }
@@ -1739,10 +1686,7 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=1;
-      maxSelection=1;
-      changePhase("select");
-      Dominion.this.work(activePlayer);
+      doWork("select",1,1,activePlayer);
       DominionCard card=selectedCards.get(0);
       players.get(activePlayer).hand.add(card);
       displayPlayer(activePlayer);
@@ -1861,10 +1805,7 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      minSelection=1;
-      maxSelection=1;
-      changePhase("trash");
-      Dominion.this.work(activePlayer);
+      doWork("trash",1,1,activePlayer);
       displayTrash();
 
       changePhase("gain");
@@ -1898,9 +1839,7 @@ public class Dominion{
     @Override
     public void subStep(int victim, int attacker){
       if(optionPane(victim,o).equals(options[0])){
-        minSelection=2;
-        maxSelection=2;
-        Dominion.this.work(victim);
+        doWork("discard",2,2,victim);
       }else{
         gainCard("curse",victim,"hand");
       }
@@ -1917,10 +1856,7 @@ public class Dominion{
     @Override
     public void subWork(int activePlayer){
       if(optionPane(activePlayer,o).equals(options[0])){
-        minSelection=2;
-        maxSelection=2;
-        changePhase("trash");
-        Dominion.this.work(activePlayer);
+        doWork("trash",2,2,activePlayer);
         gainCard("silver",activePlayer,"hand");
       }
     }
@@ -1934,10 +1870,7 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("trash");
-      minSelection=1;
-      maxSelection=1;
-      Dominion.this.work(activePlayer);
+      doWork("trash",1,1,activePlayer);
       displayPlayer(activePlayer);
       displayTrash();
       minGain=cost2(selectedCards.get(0))+1;
@@ -1975,6 +1908,7 @@ public class Dominion{
       doWork("discard",0,100,activePlayer);
       money+=selectedCards.size();
       updateSharedFields();
+      displayPlayer(activePlayer);
     }
   }
 }
