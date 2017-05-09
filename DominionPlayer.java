@@ -4,7 +4,6 @@ public class DominionPlayer{
   public LinkedList<DominionCard> hand=new LinkedList<DominionCard>();
 	public Deck<DominionCard> deck, disc;
 	private String name;
-	public int money;
 	
   public DominionPlayer(String newname){
 		disc=new Deck<DominionCard>();
@@ -19,7 +18,6 @@ public class DominionPlayer{
     deck.shuffle();    
     drawToHand(5);
     
-    money=0;
   }
 
   public void endTurn(){
@@ -53,16 +51,6 @@ public class DominionPlayer{
     }
   }
 
-  public static class Data{
-    public Deck.Data deck, disc;
-    public Data(Deck.Data a, Deck.Data b){
-      deck=a;
-      disc=b;
-    }
-  }
-  public Data makeData(){
-    return new Data(deck.makeData(), disc.makeData());
-  }
   public int victoryPoints(){
     deck.put(disc.toArrayList());
     deck.put(hand);
@@ -75,4 +63,43 @@ public class DominionPlayer{
     return out;
   }
   public String getName(){ return name;}
+  
+  //Data stuff
+  public static class Data{
+    public ArrayList<DominionCard> hand=new ArrayList<>();
+    public Deck.Data deck, disc;
+    public String name;
+    public Data(){}
+    public Data (String in){
+      String [] parts=in.split("@");
+      int handSize=Integer.parseInt(parts[0]);
+      hand=new ArrayList<>(handSize);
+      for(int i=0;i<handSize;i++){
+        hand.add(new DominionCard(parts[i+1],0));
+      }
+      deck=new Deck.Data(parts[handSize+1]);
+      disc=new Deck.Data(parts[handSize+2]);
+      name=parts[handSize+3];
+    }
+    public String toString(){
+      String out=""+hand.size();
+      for(int i=0;i<hand.size();i++){
+        out+="@"+hand.get(i).toString();
+      }
+      out+="@"+deck.toString()+"@"+disc.toString()+"@"+name;
+      return out;
+    }
+  }
+  public Data makeData(){
+    Data out=new Data();
+    out.deck=deck.makeData();
+    out.disc=disc.makeData();
+    out.name=name;
+    DominionCard card;
+    for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
+      card=it.next();
+      out.hand.add(new DominionCard(card.isAction, card.isMoney, card.getImage()));
+    }
+    return out;
+  }
 }

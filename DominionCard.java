@@ -5,10 +5,9 @@ public class DominionCard extends Card{
 	public  boolean isVictory=false;
 	public boolean isAction=false;
   public boolean isAttack=false;
-  //a simple card is one that never goes to a different phase
-  //or calls stepselection for any other reason
-  //therefore stepselection will need to be called manually
-  public boolean simple=true; 
+  
+  public boolean isReaction1=false;
+  
 	public int value=0;
 	public int cost=0;
 	protected int vicPoints=0;
@@ -18,80 +17,89 @@ public class DominionCard extends Card{
 
   public DominionCard(String newname){
     super(newname);
- 		imagename="DominionCards/"+newname+".png";
+ 		imagename=newname;
 		
-		if(name=="copper"){
+		if(name.equals("copper")){
 		  isMoney=true;
 		  cost=0;
 		  value=1;
-		}else if(name=="silver"){
+		}else if(name.equals("silver")){
 		  isMoney=true;
 		  cost=3;
 		  value=2;
-		}else if(name=="gold"){
+		}else if(name.equals("gold")){
 		  isMoney=true;
 		  cost=6;
 		  value=3;
-		}else if(name=="estate"){
+		}else if(name.equals("estate")){
 		  isVictory=true;
 		  cost=2;
 		  vicPoints=1;
-		}else if(name=="duchy"){
+		}else if(name.equals("duchy")){
 		  isVictory=true;
 		  cost=5;
 		  vicPoints=3;
-		}else if(name=="province"){
+		}else if(name.equals("province")){
 		  isVictory=true;
 		  cost=8;
 		  vicPoints=6;
-		}else if(name=="village"){
+		}else if(name.equals("village")){
 		  cost=3;
 		  actions=2;
 		  cards=1;
 		  isAction=true;
-		}else if(name=="smithy"){
+		}else if(name.equals("smithy")){
 		  cost=4;
 		  isAction=true;
 		  cards=3;
-		}else if(name=="woodcutter"){
+		}else if(name.equals("woodcutter")){
 		  cost=3;
 		  isAction=true;
 		  value=2;
 		  buys=1;
-		}else if(name=="festival"){
+		}else if(name.equals("festival")){
 		  cost=5;
 		  isAction=true;
 		  value=2;
 		  buys=1;
 		  actions=2;
-		}else if(name=="laboratory"){
+		}else if(name.equals("laboratory")){
 		  cost=5;
 		  isAction=true;
 		  cards=2;
 		  actions=1;
-		}else if(name=="market"){
+		}else if(name.equals("market")){
 		  cost=5;
 		  isAction=true;
 		  cards=1;
 		  actions=1;
 		  buys=1;
 		  value=1;
-		}else if(name=="moat"){
+		}else if(name.equals("moat")){
 		  cost=2;
 		  isAction=true;
 		  cards=2;
-		}else if(name=="curse"){
+		  isReaction1=true;
+		}else if(name.equals("curse")){
 		  vicPoints=-1;
 		}else{
-		  simple=false;
-		  //if its not one of the above its probably not simple
 		}
   }
-  public void work(){
+  public DominionCard(boolean a, boolean b, String c){
+    super(c);
+    imagename=c;
+    isAction=a;
+    isMoney=b;
   }
-  public void step(){}
-  public boolean wrapup(){
-    return true;
+  public DominionCard(String in, int t){
+    super(in);
+    String [] parts=in.split("!");
+    isAction=Boolean.parseBoolean(parts[0]);
+    isMoney=Boolean.parseBoolean(parts[1]);
+    imagename=parts[2];
+  }
+
+  public void work(int x){
   }
   public boolean [] makeMask(Collection<DominionCard> hand){
       boolean [] mask=new boolean[hand.size()];
@@ -108,5 +116,8 @@ public class DominionCard extends Card{
   }
   public int getPoints(Collection<DominionCard> cards){
     return vicPoints;
+  }
+  public String toString(){
+    return isAction+"!"+isMoney+"!"+imagename;
   }
 }

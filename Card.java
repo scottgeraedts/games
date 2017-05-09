@@ -9,6 +9,6 @@ class Card{
 		name=newname;
 	}
 	public String getName(){ return name;}
-	public boolean equals(Card c){ return name==c.getName(); }
+	public boolean equals(Card c){ return name.equals(c.getName()); }
   public String getImage(){return imagename;}
 }

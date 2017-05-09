@@ -10,8 +10,8 @@ class Deck<T extends Card>{
 	//paths for images
 	public String backImage;
 	public static String standardBack="PlayingCards/PNG-cards-1.3/back.jpg";
-	public static String dominionBack="DominionCards/back.png";
-	public static String blankBack="DominionCards/empty.png";
+	public static String dominionBack="back";
+	public static String blankBack="empty";
 
 	//constructors and stuff
 	public Deck(){ 
@@ -87,7 +87,12 @@ class Deck<T extends Card>{
 	public ArrayList<T> toArrayList(){
 	  return new ArrayList<T>(cards);
 	}
-	
+	public Iterator<T> iterator(){
+	  return cards.iterator();
+	}
+	public void remove(T card){
+	  cards.remove(card);
+	}
 	//put cards on deck
 	public void put(T c){ cards.addFirst(c);	}
 	public void put(Collection<T> c){ 
@@ -105,6 +110,37 @@ class Deck<T extends Card>{
     public Data(int a, String image){
       size=a;
       this.image=image;
+    }
+    public Data(){}
+    public Data(String in){
+      String [] parts=in.split("!");
+      size=Integer.parseInt(parts[0]);
+      image=parts[1];
+    }
+    public String toString(){
+      return size+"!"+image;
+    }
+  }
+  public static class SupplyData extends Data{
+    public int cost;
+    public String name;
+    public SupplyData(int a, String image, int tcost, String name){
+      super(a,image);
+      size=a;
+      this.image=image;
+      cost=tcost;
+      this.name=name;
+    }
+    public SupplyData(String in){
+      super(in);
+      String [] parts=in.split("!");
+      cost=Integer.parseInt(parts[2]);
+      name=parts[3];      
+    }
+    public SupplyData(){}
+    @Override
+    public String toString(){
+      return super.toString()+"!"+cost+"!"+name;
     }
   }
   public Data makeData(){
