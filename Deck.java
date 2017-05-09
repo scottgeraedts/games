@@ -2,8 +2,8 @@ import java.util.*;
 import java.lang.Exception;
 import java.lang.reflect.Array;
 
-class Deck<T extends Card>{
-	protected LinkedList<T> cards;
+class Deck<T extends Card> extends LinkedList<T>{
+//	protected LinkedList<T> cards;
 	private Random ran;
 	public boolean faceup=false;
 	
@@ -16,21 +16,11 @@ class Deck<T extends Card>{
 	//constructors and stuff
 	public Deck(){ 
 		ran=new Random();
-		cards=new LinkedList<T>(); 
-	}
-	public Deck(String type){
-		this();
-
-		if(type=="standard"){
-
-		}else
-			System.out.println("invalid deck type specified");
-		
-		
+		//cards=new LinkedList<T>(); 
 	}
 	public Deck(Collection<T> newcards){
-		this();
-		cards=new LinkedList<T>(newcards);
+		super(newcards);
+		ran=new Random();
 	}
 	public Deck(Collection<T> newcards,String deckBackPath){
 		this(newcards);
@@ -38,21 +28,22 @@ class Deck<T extends Card>{
 	}	
 	
 	public Deck<T> copy(){
-		return new Deck<T>(cards, backImage);
+		return new Deck<T>(this, backImage);
 	}
 	
 	public void shuffle(){
-		LinkedList<T> newcards=new LinkedList<T>();
-			
-		while(cards.size()>0){
-			newcards.add(randomCard());
+		ArrayList<T> newcards=new ArrayList<T>();
+	  Deck<T> oldCards=copy();
+	  
+	  clear();
+		while(oldCards.size()>0){
+			add(oldCards.randomCard());
 		}
-		cards=newcards;
 	}
 	
 	public void printDeck(){
-		for(int i=0;i<cards.size();i++)
-			System.out.println(cards.remove().getName());
+		for(int i=0;i<size();i++)
+			System.out.println(get(i).getName());
 	
 	}
 	
@@ -60,49 +51,24 @@ class Deck<T extends Card>{
 	public ArrayList<T> deal(int n){
 		ArrayList<T> out=new ArrayList<T>();
 		for(int i=0;i<n;i++){
-			if(cards.size()<1) System.out.println("deal ran out of cards!");
-			out.add(cards.removeFirst());
+			if(size()<1) System.out.println("deal ran out of cards!");
+			out.add(removeFirst());
 		}
 		return out;
 	}
 	public T topCard(){ 
 		if(isEmpty()) System.out.println("topCard out of cards!");
-		return cards.removeFirst(); 
+		return removeFirst(); 
 	}
 	public T randomCard(){
 		if(isEmpty()) System.out.println("randomCard out of cards!");
-		
-		Iterator<T> it=cards.iterator();
-		int n=ran.nextInt(cards.size());
-		T out=it.next();
-		for(int i=0;i<n;i++){
-			out=it.next();
-		}
-		it.remove();
-		return out;
-	}
-	public T peekTop(){
-	  return cards.peek();
-	}
-	public ArrayList<T> toArrayList(){
-	  return new ArrayList<T>(cards);
-	}
-	public Iterator<T> iterator(){
-	  return cards.iterator();
-	}
-	public void remove(T card){
-	  cards.remove(card);
+		return remove(ran.nextInt(size()));
 	}
 	//put cards on deck
-	public void put(T c){ cards.addFirst(c);	}
+	public void put(T c){ addFirst(c);	}
 	public void put(Collection<T> c){ 
-    Iterator<T> it=c.iterator();
-    while(it.hasNext()) cards.addFirst( it.next());
-//		for(int i=0;i<c.size();i++) cards.addFirst(c.get(i));
+    addAll(c);
 	}	
-	public boolean isEmpty(){ return cards.isEmpty(); }
-	public int size(){ return cards.size(); }
-	public void clear(){ cards.clear(); }
 
   public static class Data{
     public int size;
@@ -146,9 +112,9 @@ class Deck<T extends Card>{
   public Data makeData(){
     String image;
     if(size()==0) image=blankBack;
-    else if(faceup) image=cards.get(0).getImage();
+    else if(faceup) image=get(0).getImage();
     else image=backImage;
-    return new Data(cards.size(), image);
+    return new Data(size(), image);
   }
   
   public static Deck<StandardCard> makeStandardDeck(){

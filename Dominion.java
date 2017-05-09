@@ -15,14 +15,16 @@ public class Dominion{
   private boolean gameOver;
   private String phase;
 
-  //stuff for selections
-  private int maxSelection=10,minSelection=10;
-  //cards that have been selected for trashing/discarding etc go here in case they need to be looked at by e.g. a forge
-  private ArrayList<DominionCard> selectedCards=new ArrayList<>(); 
-  private DominionCard currentCard;
   private int initialPlayer;
+
   private int gainLimit;
+  private int minGain=0;
+
+  //stuff for selections
+  //cards that have been selected for trashing/discarding etc go here in case they need to be looked at by e.g. a forge
   private String selectedDeck;
+  private int maxSelection=10,minSelection=10;
+  private ArrayList<DominionCard> selectedCards=new ArrayList<>(); 
 
   //specific card related counters
   private int merchantCounter;
@@ -69,7 +71,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("miningvillage"));
+      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("secretchamber"));
     }
     nPlayers=names.size();
 
@@ -196,8 +198,11 @@ public class Dominion{
     //can never gain a card if the supply is empty
     //if phase is buys you need a buy and enough money
     //if phase is gain you need the "gainLimit" set by the card you played to be big
-    //if phase is actions there are no conditions since an action card got you here
-    if(deck.size()>0 && ( (phase=="buys" && money>=deck.getCost() && buys>0) || (phase=="gain" && gainLimit>=deck.getCost()) || phase=="actions") ){
+    //if phase is something else there are no conditions since an action card got you here
+    if(deck.size()>0 && ( 
+           (phase=="buys" && money>=deck.getCost() && buys>0) 
+        || (phase=="gain" && gainLimit>=deck.getCost() && minGain<=deck.getCost()) 
+        || (phase!="gain" && phase != "buys") ) ){
       if(phase=="buys"){
         buys--;
         money-=deck.getCost();
@@ -210,6 +215,7 @@ public class Dominion{
             
       //put card on discard pile or (more rarely) top of deck
       if(where.equals("topcard")) player.deck.put(card);
+      if(where.equals("hand")) player.hand.add(card);
       else player.disc.put(card);
       
       System.out.println("End: "+gameOver+" "+emptyPiles);
@@ -314,12 +320,80 @@ public class Dominion{
     }
     return out;
   }
+  //********DO THINGS THAT MULTIPLE ACTION CARDS NEED***///
+  
+  //give user a choice
   public String optionPane(int activePlayer, OptionData o){
     server.optionPane(activePlayer,o);
     return server.getUserInput(activePlayer);
   }
+  //always use this to get the cost of cards
   public int cost2(DominionCard card){
     return Math.max(card.cost-bridgeCounter,0);
+  }
+  //puts a card anywhere in the deck
+  public void putAnywhere(int activePlayer, DominionCard card){
+    DominionPlayer player=players.get(activePlayer);
+    String [] options=new String[0];
+    OptionData o=new OptionData(options);
+    o.put("Choose the position to put the card (1 is top)","text");
+    for(int i=0;i<player.deck.size()+1;i++) o.put(Integer.toString(i),"textbutton");
+    String input=optionPane(activePlayer,o);
+    player.deck.add(Integer.parseInt(input),card);
+    displayPlayer(activePlayer);
+  }
+  //puts a bunch of cards on top of the deck in user-specified order
+  public void putBack(int activePlayer, ArrayList<DominionCard> cards){
+    String [] options;
+    OptionData o;
+    DominionPlayer player=players.get(activePlayer);
+    String input;
+    
+    while(cards.size()>1){
+      options=new String[0];
+      o=new OptionData(options);
+      for(int i=0;i<cards.size();i++){
+        o.put(cards.get(i).getImage(),"imagebutton");          
+      }
+      server.optionPane(activePlayer,o);
+      input=server.getUserInput(activePlayer);
+      for(int i=0;i<cards.size();i++){
+        if(input.equals(cards.get(i).getName())){
+          player.deck.put(cards.remove(i));
+          break;
+        }          
+      }
+      displayPlayer(activePlayer);
+      
+    }
+    player.deck.put(cards.get(0));
+    displayPlayer(activePlayer);
+  }
+  //"gain a card costing exactly"
+  public void controlledGain(int activePlayer){
+    //find out if there are any cards in the supply that we can gain
+    boolean canGain=false;
+    for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
+      if(entry.getValue().getCost()>=minGain && entry.getValue().getCost()<=gainLimit){
+        canGain=true;
+        break; 
+      }     
+    }
+    if(!canGain) return;
+    
+    //if so, let the player pick one
+    changePhase("gain");
+    Dominion.this.work(activePlayer);
+    minGain=0;     
+  }
+  //a typical request for the player to do something
+  public void doWork(String p, int min, int max, int activePlayer){
+    minSelection=min;
+    maxSelection=max;
+    changePhase(p);
+    work(activePlayer);
+    displayPlayer(activePlayer);
+    if(p.equals("trash")) displayTrash();
   }
 //  //***SETTING PRIVATE VARIABLES***///
 
@@ -356,8 +430,11 @@ public class Dominion{
       connection.cardPlayed(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),matcards);
     }
   }
-  
-  public Deck.Data trashData(){ return trash.makeData(); }
+  public void displayTrash(){
+    for( DominionServer.HumanPlayer connection : server.connections){
+      connection.displayTrash(trash.makeData());
+    }
+  }    
 //  
   //****INNER CLASSES***///
   class SupplyDeck extends Deck<DominionCard>{
@@ -380,13 +457,13 @@ public class Dominion{
         nCards=10;
       }
       for(int i=0;i<nCards;i++){
-        cards.add(cardFactory(name));
+        add(cardFactory(name));
       }
     }
     public int getCost(){return Math.max(cost-bridgeCounter,0);}
     public String getName(){return name;}
     public Deck.SupplyData makeData(){
-      return new Deck.SupplyData(cards.size(), backImage, getCost(), name);
+      return new Deck.SupplyData(size(), backImage, getCost(), name);
     }
     
   }
@@ -486,17 +563,19 @@ public class Dominion{
         boolean moat=false;
         reactions=reaction1Reveal(victim.hand,i);
         for(String r: reactions){
-          if(r.equals("moat")) moat=true;
-          else if(r.equals("diplomat")){
+          if(r.equals("moat")){ moat=true;
+          }else if(r.equals("diplomat")){
             if(victim.hand.size()>=5){
               victim.drawToHand(2);
-              maxSelection=3;
-              minSelection=3;
-              changePhase("discard");              
-              Dominion.this.work(i);
+              doWork("discard",3,3,i);
               selectedCards.clear();
               changePhase(attackPhase);
             }
+          }else if(r.equals("secretchamber")){
+            victim.drawToHand(2);
+            victim.doWork("topdeck",2,2,i);
+            selectedCards.clear();
+            changePhase(attackPhase);            
           }
         }
         if(moat){
@@ -585,17 +664,12 @@ public class Dominion{
     }
     @Override
     public void subWork(int activePlayer){
-      changePhase("gain");
       gainLimit=5;
-      maxSelection=1;
-      minSelection=0;
-      Dominion.this.work(activePlayer);
+      doWork("gain",0,1,activePlayer);
       players.get(activePlayer).hand.add(players.get(activePlayer).disc.topCard());
       displayPlayer(activePlayer);
-      changePhase("topdeck");
       selectedCards.clear();
-      minSelection=1;
-      Dominion.this.work(activePlayer);
+      doWork("topdeck",1,1,activePlayer);
       
     }
     
@@ -759,7 +833,7 @@ public class Dominion{
       minSelection=0;
       maxSelection=4;
       Dominion.this.work(activePlayer);
-      server.displayTrash(trashData());
+      displayTrash();
       server.displayPlayer(activePlayer,players.get(activePlayer).makeData());
     }
   }
@@ -828,7 +902,7 @@ public class Dominion{
       gainLimit=5;
       Dominion.this.work(activePlayer);
       trash.put(matcards.remove(matcards.size()-1));
-      server.displayTrash(trashData());
+      displayTrash();
     }
     
   }
@@ -915,7 +989,7 @@ public class Dominion{
 
       server.setMask(activePlayer,makeMask(players.get(activePlayer).hand));
       Dominion.this.work(activePlayer);
-      server.displayTrash(trashData());
+      displayTrash();
       int cost=selectedCards.get(0).cost;
       changePhase("selectDeck");
       
@@ -926,10 +1000,11 @@ public class Dominion{
         deck=supplyDecks.get(selectedDeck);
         if(deck.size()==0) continue;
         
-        card=deck.peekTop();
+        card=deck.peek();
         if(card.isMoney && deck.getCost()<=cost2(selectedCards.get(0))+3){
-          players.get(activePlayer).hand.add(deck.topCard());
-          server.cardGained(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),deck.makeData());          
+          gainCard(deck.getName(),activePlayer,"hand");
+//          players.get(activePlayer).hand.add(deck.topCard());
+//          server.cardGained(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),deck.makeData());          
           break;
         }   
       }
@@ -992,7 +1067,7 @@ public class Dominion{
       maxSelection=1;
       changePhase("trash");
       Dominion.this.work(activePlayer);
-      server.displayTrash(trashData());
+      displayTrash();
 
       changePhase("gain");
       gainLimit=cost2(selectedCards.get(0))+2;
@@ -1026,7 +1101,7 @@ public class Dominion{
           input=server.getUserInput(activePlayer);
           if(input.equals(options[0])){
             trash.put(card);
-            server.displayTrash(trashData());
+            displayTrash();
           }else if(input.equals(options[1])){
             player.disc.put(card);
           }else{
@@ -1039,26 +1114,8 @@ public class Dominion{
         }
       }
       if(cards.size()==0) return;
-      
-      while(cards.size()>1){
-        options=new String[0];
-        o=new OptionData(options);
-        for(int i=0;i<cards.size();i++){
-          o.put(cards.get(i).getImage(),"imagebutton");          
-        }
-        server.optionPane(activePlayer,o);
-        input=server.getUserInput(activePlayer);
-        for(int i=0;i<cards.size();i++){
-          if(input.equals(cards.get(i).getName())){
-            player.deck.put(cards.remove(i));
-            break;
-          }          
-        }
-        displayPlayer(activePlayer);
-        
-      }
-      player.deck.put(cards.get(0));
-      displayPlayer(activePlayer);
+
+      putBack(activePlayer,cards);      
     }
   }
   private class Spy extends Attack{
@@ -1146,7 +1203,7 @@ public class Dominion{
         players.get(attacker).disc.put(card);
       }else{
         trash.put(card);
-        server.displayTrash(trash.makeData());        
+        displayTrash();       
       }
       o.clear();
     }
@@ -1319,13 +1376,13 @@ public class Dominion{
           Dominion.this.work(activePlayer);
           deck=supplyDecks.get(selectedDeck);
           if(deck.size()==0) continue;
-          card=deck.peekTop();
+          card=deck.peek();
           if(card.isAction){
             trash.put(deck.topCard());
             break;
           }
         }
-        server.displayTrash(trashData());
+        displayTrash();
         server.displaySupply(deck.makeData()); 
       //if they are gaining an action from supply  
       }else{
@@ -1346,7 +1403,7 @@ public class Dominion{
             break;
           }
         }
-        server.displayTrash(trashData());
+        displayTrash();
         displayPlayer(activePlayer);
       }
     }
@@ -1395,7 +1452,7 @@ public class Dominion{
       minSelection=1;
       maxSelection=1;
       Dominion.this.work(activePlayer); 
-      server.displayTrash(trashData());   
+      displayTrash();   
     }
     @Override
     public void subWork(int activePlayer){
@@ -1472,6 +1529,7 @@ public class Dominion{
       super("swindler");
       cost=3;
       value=2;
+      attackPhase="selectDeck";
     }
     @Override
     public void subStep(int victim, int attacker){
@@ -1479,12 +1537,11 @@ public class Dominion{
         DominionCard card=players.get(victim).getCard();
         int value=card.value;
         SupplyDeck deck;
-        changePhase("selectDeck");
         while(true){
           Dominion.this.work(attacker);
           deck=supplyDecks.get(selectedDeck);
           if(deck.getCost()==value && deck.size()>0){
-            players.get(victim).disc.put(deck.topCard());
+            gainCard(deck.getName(),victim);
             break;
           }
         }        
@@ -1657,6 +1714,267 @@ public class Dominion{
           cardPlayed(activePlayer);
         }
       }
+    }
+  }
+  private class Secretpassage extends RegularCard{
+    public Secretpassage(){
+      super("secretpassage");
+      cost=4;
+      actions=1;
+      cards=2;
+    }
+    @Override
+    public void subWork(int activePlayer){
+      minSelection=1;
+      maxSelection=1;
+      changePhase("select");
+      Dominion.this.work(activePlayer);
+      putAnywhere(activePlayer,selectedCards.get(0));
+    }
+  }
+  private class Courtier extends RegularCard{
+    public Courtier(){
+      super("courtier");
+      cost=5;
+    }
+    @Override
+    public void subWork(int activePlayer){
+      minSelection=1;
+      maxSelection=1;
+      changePhase("select");
+      Dominion.this.work(activePlayer);
+      DominionCard card=selectedCards.get(0);
+      players.get(activePlayer).hand.add(card);
+      displayPlayer(activePlayer);
+      int picks=0;
+      if(card.isAction) picks++;
+      if(card.isVictory) picks++;
+      if(card.isMoney) picks++;
+      if(card.isAttack) picks++;
+      if(card.isReaction()) picks++;
+      
+      ArrayList<String> options=new ArrayList<>(4);
+      ArrayList<String> choices=new ArrayList<>(picks);
+      options.add("+1 Action");
+      options.add("+1 Buy");
+      options.add("+3 Money");
+      options.add("Gain Gold");
+      String input;
+      SupplyDeck deck=supplyDecks.get("gold");
+      while(picks>0){
+        input=optionPane(activePlayer,new OptionData(options.toArray(new String[options.size()])));
+        picks--;
+        options.remove(input);
+        choices.add(input);
+      }
+      for(String choice : choices){
+        if(choice.equals("+1 Action")) Dominion.this.actions++;
+        else if(choice.equals("+1 Buy")) Dominion.this.buys++;
+        else if(choice.equals("+3 Money")) money+=3;
+        else{
+          gainCard("gold",activePlayer);
+        }        
+      }
+      updateSharedFields();
+          
+    }
+  }
+  private class Duke extends DominionCard{
+    public Duke(){
+      super("duke");
+      cost=5;
+      isVictory=true;
+    }
+    @Override
+    public int getPoints(Collection<DominionCard> cards){
+      int nDuchies=0;
+      for(DominionCard card : cards){
+        if(card.getName().equals("duchy")) nDuchies++;
+      }
+      return nDuchies;
+    }
+  }
+  private class Minion extends Attack{
+    public String choice;
+    public final String [] options={"+2 Money", "Discard and Draw 4"};
+    public Minion(){
+      super("minion");
+      cost=5;
+      actions=1;
+    }
+    @Override
+    public void subWork(int activePlayer){
+      choice=optionPane(activePlayer,new OptionData(options));
+      if(choice.equals(options[1])){
+        redraw(activePlayer);
+        displayPlayer(activePlayer);
+      }else{
+        money+=2;
+        updateSharedFields();
+      }        
+    }
+    @Override 
+    public void subStep(int victim, int attacker){
+      if(choice.equals(options[1])) redraw(victim);
+    }
+    public void redraw(int victim){
+      DominionPlayer player=players.get(victim);
+      player.disc.put(player.hand);
+      player.hand.clear();
+      player.drawToHand(4);
+    }
+  }
+  private class Patrol extends DominionCard{
+    public Patrol(){
+      super("patrol");
+      cost=5;
+      isAction=true;
+      cards=3;
+    }
+    @Override
+    public void work(int activePlayer){
+      ArrayList<DominionCard> cards=new ArrayList<>(4);
+      DominionCard card;
+      
+      for(int i=0;i<4;i++){
+        try{
+          card=players.get(activePlayer).getCard();
+          if(card.isVictory || card.getName().equals("curse")){
+            players.get(activePlayer).hand.add(card);
+          }else{
+            cards.add(card);
+          }
+        }catch(OutOfCardsException ex){
+          break;
+        }
+      }
+      putBack(activePlayer,cards);
+    }
+  }
+  private class Replace extends Attack{
+    private boolean curse=false;
+    public Replace(){
+      super("remodel");
+      cost=5;
+      comment="Trash a card, gain a card costing up to 2 more than it";
+      attackPhase="actions";
+    }
+    @Override
+    public void subWork(int activePlayer){
+      minSelection=1;
+      maxSelection=1;
+      changePhase("trash");
+      Dominion.this.work(activePlayer);
+      displayTrash();
+
+      changePhase("gain");
+      gainLimit=cost2(selectedCards.get(0))+2;
+      selectedCards.clear();
+      minSelection=0;
+      Dominion.this.work(activePlayer);
+      DominionCard card=selectedCards.get(0);
+      if(card.isAction || card.isMoney){
+        curse=false;
+        players.get(activePlayer).deck.put(players.get(activePlayer).disc.topCard());
+      }else{
+        curse=true;
+      }
+    }  
+    @Override
+    public void subStep(int victim, int attacker){
+      if(curse) gainCard("curse",victim);
+    }
+  }
+  private class Torturer extends Attack{
+    private final String [] options={"Discard 2 cards", "Gain curse in hand"};
+    private OptionData o;
+    public Torturer(){
+      super("torturer");
+      cost=5;
+      cards=3;
+      attackPhase="discard";
+      o=new OptionData(options);
+    }
+    @Override
+    public void subStep(int victim, int attacker){
+      if(optionPane(victim,o).equals(options[0])){
+        minSelection=2;
+        maxSelection=2;
+        Dominion.this.work(victim);
+      }else{
+        gainCard("curse",victim,"hand");
+      }
+    }
+  }
+  private class Tradingpost extends RegularCard{
+    private final String [] options={"Trash 2 cards for a Silver", "Done"};
+    private OptionData o;
+    public Tradingpost(){
+      super("tradingpost");
+      cost=5;
+      o=new OptionData(options);
+    }
+    @Override
+    public void subWork(int activePlayer){
+      if(optionPane(activePlayer,o).equals(options[0])){
+        minSelection=2;
+        maxSelection=2;
+        changePhase("trash");
+        Dominion.this.work(activePlayer);
+        gainCard("silver",activePlayer,"hand");
+      }
+    }
+  }
+  private class Upgrade extends RegularCard{
+    public Upgrade(){
+      super("upgrade");
+      cards=1;
+      actions=1;
+      cost=5;
+    }
+    @Override
+    public void subWork(int activePlayer){
+      changePhase("trash");
+      minSelection=1;
+      maxSelection=1;
+      Dominion.this.work(activePlayer);
+      displayPlayer(activePlayer);
+      displayTrash();
+      minGain=cost2(selectedCards.get(0))+1;
+      gainLimit=minGain;
+      selectedCards.clear();
+      controlledGain(activePlayer);
+    }
+  }
+  private class Nobles extends DominionCard{
+    private final String [] options={"+3 cards", "+2 actions"};
+    private OptionData o; 
+    public Nobles(){
+      super("nobles");
+      cost=6;
+      isAction=true;
+      isVictory=true;
+      o=new OptionData(options);
+    }
+    @Override
+    public void work(int activePlayer){
+      String input=optionPane(activePlayer,o);
+      if(input.equals(options[0])) players.get(activePlayer).drawToHand(3);
+      else Dominion.this.actions+=2;
+    }
+  }
+  private class Secretchamber extends RegularCard{
+    public Secretchamber(){
+      super("secretchamber");
+      cost=2;
+      isAction=true;
+      isReaction1=true;
+    }
+    @Override
+    public void subWork(int activePlayer){
+      doWork("discard",0,100,activePlayer);
+      money+=selectedCards.size();
+      updateSharedFields();
     }
   }
 }

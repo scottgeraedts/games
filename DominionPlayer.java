@@ -52,11 +52,11 @@ public class DominionPlayer{
   }
 
   public int victoryPoints(){
-    deck.put(disc.toArrayList());
+    deck.put(disc);
     deck.put(hand);
     
     int out=0;
-    ArrayList<DominionCard> cardlist=deck.toArrayList();
+    ArrayList<DominionCard> cardlist=new ArrayList<>(deck);
     for(int i=0;i<cardlist.size();i++){
       out+=cardlist.get(i).getPoints(cardlist);
     }

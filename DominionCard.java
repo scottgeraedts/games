@@ -81,7 +81,13 @@ public class DominionCard extends Card{
 		  cards=2;
 		  isReaction1=true;
 		}else if(name.equals("curse")){
-		  vicPoints=-1;
+ 		  vicPoints=-1;
+    }else if(name.equals("harem")){
+      vicPoints=2;
+      cost=6;
+      value=2;
+      isMoney=true;
+      isVictory=true;
 		}else{
 		}
   }
@@ -116,6 +122,9 @@ public class DominionCard extends Card{
   }
   public int getPoints(Collection<DominionCard> cards){
     return vicPoints;
+  }
+  public boolean isReaction(){
+    return isReaction1;
   }
   public String toString(){
     return isAction+"!"+isMoney+"!"+imagename;

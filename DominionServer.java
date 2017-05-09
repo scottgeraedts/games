@@ -124,11 +124,6 @@ public class DominionServer{
   public void optionPane(int playerNum, Dominion.OptionData o){
     connections.get(player[playerNum]).optionPane(o);
   }
-  public void displayTrash(Deck.Data dat){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().displayTrash(dat);
-    }
-  }
   public void updateSharedFields(int a, int b, int c){
     for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
       it.next().updateSharedFields(a,b,c);
@@ -162,18 +157,14 @@ public class DominionServer{
     public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, int num){
      String out="initialize%";
      out+=toArray(playerData);
-//     out+=playerData.size();
-//     for(int i=0;i<playerData.size();i++){
-//      out+="#"+playerData.get(i).toString();
-//     }
      out+="%"+supplyData.size();
      for(int i=0;i<supplyData.size();i++){
       out+="#"+supplyData.get(i).toString();
      }
      out+="%"+startingPlayer+"%"+num;
-      output.println(out);
-      output.flush();
-    }
+     output.println(out);
+     output.flush();
+   }
     //reset for a new game
     public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer){
      String out="reset%";
