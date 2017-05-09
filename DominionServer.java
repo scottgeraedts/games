@@ -96,11 +96,6 @@ public class DominionServer{
       connections.get(i).reset(supplyData,playerData,startingPlayer);
     }
   }
-  public void cardPlayed(int actions, int money, int buys, int playerNum, DominionPlayer.Data player, ArrayList<DominionCard> matcards){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().cardPlayed(actions,money,buys,playerNum,player,matcards);
-    }
-  }
   public void cardGained(int actions, int money, int buys, int playerNum, DominionPlayer.Data player, Deck.SupplyData deck){
     for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
       it.next().cardGained(actions,money,buys,playerNum, player, deck);

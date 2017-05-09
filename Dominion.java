@@ -183,7 +183,7 @@ public class Dominion{
       if(!throneRoom){
         matcards.add(card);
       }
-      server.cardPlayed(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),matData());
+      cardPlayed(activePlayer);
       card.work(activePlayer);
   }
   public boolean gainCard(String supplyName, int activePlayer){
@@ -338,13 +338,6 @@ public class Dominion{
     }
     return out;
   }
-  public ArrayList<DominionCard> matData(){
-    ArrayList<DominionCard> out=new ArrayList<>(matcards.size());
-    for(Iterator<DominionCard> it=matcards.iterator(); it.hasNext(); ){
-      out.add(it.next());
-    }
-    return out;
-  }
   
   //some simple wrappers for server functions 
   public void displayPlayer(int i){
@@ -358,6 +351,12 @@ public class Dominion{
       server.displaySupply(entry.getValue().makeData());
     }
   }
+  public void cardPlayed(int activePlayer){
+    for( DominionServer.HumanPlayer connection : server.connections){
+      connection.cardPlayed(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),matcards);
+    }
+  }
+  
   public Deck.Data trashData(){ return trash.makeData(); }
 //  
   //****INNER CLASSES***///
@@ -520,7 +519,7 @@ public class Dominion{
       cleanup(activePlayer);
 
 //      server.updateSharedFields(Dominion.this.actions,money,Dominion.this.buys);
-      server.cardPlayed(Dominion.this.actions,money,Dominion.this.buys, activePlayer, players.get(activePlayer).makeData(), matData());
+      cardPlayed(activePlayer);
       server.displayComment(activePlayer,"");
       changePhase("actions");
       selectedCards.clear();
@@ -575,7 +574,7 @@ public class Dominion{
           players.get(activePlayer).disc.put(card);
         }
       }
-      server.cardPlayed(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),matData());
+      cardPlayed(activePlayer);
     }
   }
   private class Artisan extends RegularCard{
@@ -1191,7 +1190,7 @@ public class Dominion{
 
       //displayPlayer(activePlayer);
       matcards.add(card);
-      server.cardPlayed(Dominion.this.actions,money,Dominion.this.buys,activePlayer,players.get(activePlayer).makeData(),matData());
+      cardPlayed(activePlayer);
     }
     @Override 
     public boolean maskCondition(DominionCard card){
@@ -1655,7 +1654,7 @@ public class Dominion{
         if(matcards.remove(this)){
           trash.put(this);
           money+=2;
-          updateSharedFields();
+          cardPlayed(activePlayer);
         }
       }
     }
