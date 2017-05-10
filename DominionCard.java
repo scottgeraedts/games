@@ -88,6 +88,13 @@ public class DominionCard extends Card{
       value=2;
       isMoney=true;
       isVictory=true;
+    }else if(name.equals("greathall")){
+      cost=3;
+      vicPoints=1;
+      actions=1;
+      cards=1;
+      isVictory=true;
+      isAction=true;
 		}else{
 		}
   }

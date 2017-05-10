@@ -28,13 +28,18 @@ public class Dominion{
   private int merchantCounter;
   private int bridgeCounter; //counts cost reduction, also does highway and brige troll
   private int conspiratorCounter; //counts total actions played, also does peddler
+  private int coppersmithCounter;
     
   
   public static String [] coreCards={"adventurer", "bureaucrat", "cellar", "chancellor", "chapel", 
       "councilroom", "feast", "festival", "laboratory", "library", "market", "militia", 
       "mine","moneylender","remodel", "smithy", "spy", "thief", "throneroom", "village", "witch",
       "woodcutter","workshop","gardens","harbinger","merchant","vassal","bandit","poacher","sentry","artisan"};
-  public static String [] intrigueCards={"courtyard","lurker","masquerade","shantytown","pawn","steward","swindler"};
+  public static String [] intrigueCards={"courtyard","lurker","masquerade","shantytown","pawn",
+      "steward","swindler","wishingwell","baron","bridge","conspirator","diplomat","ironworks",
+      "mill","miningvillage","secretpassage","courtier","duke","minion","patrol","replace",
+      "torturer","tradingpost","upgrade","nobles","harem","secretchamber","greathall",
+      "coppersmith","scout","saboteur","tribute"};
   
  //**********8STUFF WHICH SETS UP THE GAME*********//
   public Dominion(ArrayList<String> names, DominionServer tserver){  
@@ -61,9 +66,8 @@ public class Dominion{
     emptyPiles=0;
     maxSelection=1;
 
-    merchantCounter=0;
-    bridgeCounter=0;
-
+    resetCardCounters();
+    
     //players
     players=new ArrayList<DominionPlayer>();    
     //make players
@@ -178,6 +182,7 @@ public class Dominion{
         money+=merchantCounter;
         merchantCounter=0;
       }
+      if(card.getName().equals("copper")) money+=coppersmithCounter;
       
       players.get(activePlayer).drawToHand(card.cards);
       if(!throneRoom){
@@ -282,7 +287,8 @@ public class Dominion{
       bridgeCounter=0;
       displaySupplies();
     } 
-    conspiratorCounter=0;   
+    conspiratorCounter=0;  
+    coppersmithCounter=0; 
   }
   public void endGame(){
     int temp;
@@ -1909,6 +1915,93 @@ public class Dominion{
       money+=selectedCards.size();
       updateSharedFields();
       displayPlayer(activePlayer);
+    }
+  }
+  private class Coppersmith extends DominionCard{
+    public Coppersmith(){
+      super("coppersmith");
+      cost=4;
+      isAction=true;
+    }
+    @Override
+    public void work(int activePlayer){
+      coppersmithCounter++;
+    }
+  }
+  private class Scout extends DominionCard{
+    public Scout(){
+      super("scout");
+      cost=4;
+      actions=1;
+      isAction=true;
+    }
+    @Override
+    public void work(int activePlayer){
+      ArrayList<DominionCard> cards=new ArrayList<>(4);
+      DominionCard card;
+      for(int i=0;i<4;i++){
+        try{
+          card=players.get(activePlayer).getCard();
+          if(card.isVictory) players.get(activePlayer).hand.add(card);
+          else cards.add(card);
+        }catch(OutOfCardsException ex){
+          break;
+        }
+      }
+      putBack(activePlayer,cards);
+    }
+  }
+  private class Saboteur extends Attack{
+    public Saboteur(){
+      super("saboteur");
+      cost=5;
+    }
+    @Override
+    public void subStep(int victim, int attacker){
+      DominionCard card;
+      while(true){
+        try{
+          card=players.get(victim).getCard();
+        }catch(OutOfCardsException ex){
+          break;
+        }
+        if(cost2(card)<3) players.get(victim).disc.put(card);
+        else{
+          trash.put(card);
+          gainLimit=cost2(card)-2;
+          if(gainLimit>=0) doWork("gain",1,1,victim);
+          break;
+        }
+      }
+    }
+  }
+  private class Tribute extends DominionCard{
+    public Tribute(){
+      super("tribute");
+      cost=5;
+      isAction=true;
+    }
+    @Override
+    public void work(int activePlayer){
+      HashSet<String> cards=new HashSet<>();
+      DominionCard  card;
+      for(int i=0;i<2;i++){
+        try{
+          card=players.get( (activePlayer+1)%players.size()).getCard();
+        }catch(OutOfCardsException ex){
+          break;
+        }
+        cards.add(card.getName());
+      }
+      for(String t : cards){
+        card=cardFactory(t);
+        if(card.isAction) Dominion.this.actions+=2;
+        if(card.isVictory) players.get(activePlayer).drawToHand(2);
+        if(card.isMoney) money+=2;
+      }
+      updateSharedFields();
+      displayPlayer(activePlayer);
+      displayPlayer( (activePlayer+1)%players.size());
     }
   }
 }
