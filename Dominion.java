@@ -8,6 +8,7 @@ public class Dominion{
   public LinkedHashMap<String, SupplyDeck> supplyDecks;
   public ArrayList<DominionCard> matcards;
   public Deck<DominionCard> trash;
+  public HashSet<String> startingOptions;
 
   public int money,actions,buys;
   private int nPlayers;
@@ -43,7 +44,7 @@ public class Dominion{
     expansions.put("Intrigue",new Intrigue(this));
     expansions.put("Seaside",new Seaside(this));
     int startingPlayer=startGame(names);      
-    server.initialize(supplyData(), playerData(),startingPlayer);    
+    server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
     
   }
@@ -51,7 +52,7 @@ public class Dominion{
   public void reset(ArrayList<String> names){
     int startingPlayer=startGame(names);
     resetCardCounters();
-    server.reset(supplyData(), playerData(), startingPlayer);
+    server.reset(supplyData(), playerData(), startingPlayer, startingOptions);
     work(startingPlayer);
   }
   
@@ -77,10 +78,18 @@ public class Dominion{
     nPlayers=names.size();
 
     //supplies
+    startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
+    ArrayList<String> supplies=randomSupply();
+    System.out.println(supplies);
+    for(String s : supplies){
+      if(s.equals("pirateship")) startingOptions.add("pirateship");
+      if(s.equals("island")) startingOptions.add("island");
+      if(cardFactory(s).isDuration) startingOptions.add("duration");
+    }
     String [] tcards={"copper","silver","gold","estate","duchy","province","curse"};
     ArrayList<String> cards=new ArrayList<String>(Arrays.asList(tcards));
-    cards.addAll(randomSupply());
+    cards.addAll(supplies);
     
     for(int i=0;i<cards.size();i++){
       supplyDecks.put(cards.get(i), new SupplyDeck( cards.get(i) ));
@@ -330,12 +339,14 @@ public class Dominion{
     
     //play duration cards
     for(DominionCard card2 : players.get(newPlayer).duration){
-      card2.duration(newPlayer);
+      for(int i=0;i<card2.throneroomed;i++) card2.duration(newPlayer);
+      card2.throneroomed=1;
     }
     players.get(newPlayer).duration.clear();
 
     //pass on this info to board
     server.changePlayer(activePlayer,players.get(activePlayer).makeData(),newPlayer,players.get(newPlayer).makeData());
+    updateSharedFields();
 
     
     return newPlayer;

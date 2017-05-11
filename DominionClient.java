@@ -85,7 +85,8 @@ public class DominionClient{
     ArrayList<DominionPlayer.Data> playerData=readArray(parts[0],new DominionPlayer.Data());
     //initialize supply
     ArrayList<Deck.SupplyData> supplyData=readArray(parts[1],new Deck.SupplyData());
-    board=new DominionBoard(playerData,supplyData,Integer.parseInt(parts[3]),Integer.parseInt(parts[2])); // Let the constructor do the job
+    ArrayList<String> options=readArray(parts[4],"");
+    board=new DominionBoard(playerData,supplyData,Integer.parseInt(parts[3]),Integer.parseInt(parts[2]),options); // Let the constructor do the job
     
   }
   public void playAgain(String input){
@@ -100,7 +101,8 @@ public class DominionClient{
     ArrayList<DominionPlayer.Data> playerData=readArray(parts[0],new DominionPlayer.Data());
     //initialize supply
     ArrayList<Deck.SupplyData> supplyData=readArray(parts[1],new Deck.SupplyData());
-    board.reset(playerData,supplyData,Integer.parseInt(parts[2])); // Let the constructor do the job
+    ArrayList<String> options=readArray(parts[4],"");
+    board.reset(playerData,supplyData,Integer.parseInt(parts[2]),options); // Let the constructor do the job
     
   }
   public void parseInput(String input){
@@ -188,7 +190,7 @@ public class DominionClient{
   }
   
   ///***THE PESKY READARRAYS***///
-  public ArrayList<DominionPlayer.Data> readArray(String parts, DominionPlayer.Data temp){
+  public static ArrayList<DominionPlayer.Data> readArray(String parts, DominionPlayer.Data temp){
     //initialize player
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
@@ -198,7 +200,7 @@ public class DominionClient{
     } 
     return x; 
   }
-  public ArrayList<Deck.SupplyData> readArray(String parts, Deck.SupplyData temp){
+  public static ArrayList<Deck.SupplyData> readArray(String parts, Deck.SupplyData temp){
     //initialize player
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
@@ -208,13 +210,22 @@ public class DominionClient{
     }  
     return x;
   }
-  public ArrayList<DominionCard> readArray(String parts, DominionCard temp){
+  public static ArrayList<DominionCard> readArray(String parts, DominionCard temp){
     //initialize player
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
     ArrayList<DominionCard> x=new ArrayList<DominionCard>(size);
     for(int i=0;i<size;i++){
       x.add(new DominionCard(playerParts[i+1],0));
+    }
+    return x;  
+  }
+  public static ArrayList<String> readArray(String parts, String temp){
+    String [] playerParts=parts.split("#");
+    int size=Integer.parseInt(playerParts[0]);
+    ArrayList<String> x=new ArrayList<String>(size);
+    for(int i=0;i<size;i++){
+      x.add(playerParts[i+1]);
     }
     return x;  
   }

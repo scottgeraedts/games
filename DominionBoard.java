@@ -14,6 +14,7 @@ public class DominionBoard extends JFrame{
 
   //player panel
   private ArrayList<PlayerDisplay> players=new ArrayList<PlayerDisplay>();
+  private ArrayList<String> gameOptions=new ArrayList<>();
 
   //supply panel
   private LinkedHashMap<String,SupplyDisplay> supplyDecks=new LinkedHashMap<>();
@@ -37,7 +38,9 @@ public class DominionBoard extends JFrame{
   private HashMap<String,ImageIcon> imageTable=new HashMap<>();
   private HashMap<String,ImageIcon> giantImageTable=new HashMap<>();
   
-  public DominionBoard(ArrayList<DominionPlayer.Data> playersData, ArrayList<Deck.SupplyData> supplyData, int playerNum, int startingPlayer){
+  public DominionBoard(ArrayList<DominionPlayer.Data> playersData, 
+      ArrayList<Deck.SupplyData> supplyData, int playerNum, int startingPlayer, ArrayList<String> o){
+
 		setTitle("Dominion");
 
     doneButtons.put("buys",new JButton("Done Buying"));
@@ -50,6 +53,7 @@ public class DominionBoard extends JFrame{
     doneButtons.put("reveal",new JButton("Done Revealing"));
     
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
+    gameOptions=o;
     
     //some graphics setup
   	setSize(1500,800);
@@ -60,7 +64,11 @@ public class DominionBoard extends JFrame{
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  // Exit program if close-window button clicked      
     setVisible(true);
   }
-  public void reset(ArrayList<DominionPlayer.Data> playersData, ArrayList<Deck.SupplyData> supplyData, int startingPlayer){
+  public void reset(ArrayList<DominionPlayer.Data> playersData, 
+      ArrayList<Deck.SupplyData> supplyData, int startingPlayer, ArrayList<String> o){
+
+    gameOptions=o;
+    
     //reset supplies
     supplyPanel.removeAll();
     SupplyDisplay tempSupply;
@@ -307,6 +315,13 @@ public class DominionBoard extends JFrame{
     private DeckDisplay deck,disc;
     private JButton treasuresButton=new JButton("Play All Treasures");
     
+    //stuff for special cards
+    private JTextField pirateship=new JTextField();
+    private JButton islandButton=new JButton("Island");
+    private ArrayList<String> islandCards;
+    private JButton durationButton=new JButton("Duration");
+    private ArrayList<String> durationCards;
+    
     public PlayerDisplay(DominionPlayer.Data tplayer){
 
       player=tplayer;
@@ -333,7 +348,36 @@ public class DominionBoard extends JFrame{
           }
          }
       });
-         
+      
+      //stuff that isn't always displayed
+      islandCards=player.islandCards;
+      durationCards=player.durationCards;
+      nativeVillageCards=player.nativeVillage;
+      JPanel optionPanel=new JPanel();
+      optionPanel.setLayout(new GridLayout(gameOptions.size(),1));
+      for(String s : gameOptions){
+        if(s.equals("pirateship")){
+          JPanel piratepanel=new JPanel();
+          piratepanel.setLayout(new FlowLayout());
+          piratepanel.add(new JLabel("Pirate Money"));
+          pirateship.setEditable(false);
+          pirateship.setText(player.pirateship+"");
+          piratepanel.add(pirateship);
+        }
+        if(s.equals("island")){
+          islandButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,islandCards));        
+          optionPanel.add(islandButton);
+        }
+        if(s.equals("duration")){
+          durationButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,durationCards));  
+          optionPanel.add(durationButton);                
+        }
+        if(s.equals("nativevillage")){
+          nativevillageButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,nativeVillageCards));  
+          optionPanel.add(durationButton);                
+        }
+      }
+      infoPanel.add(optionPanel);   
       panel.add(infoPanel);
       panel.add(handPanel);
       
@@ -388,6 +432,13 @@ public class DominionBoard extends JFrame{
       }
       deck.display(player.deck);
       disc.display(player.disc);
+
+      //option stuff
+      islandCards=player.islandCards;
+      durationCards=player.durationCards;
+      nativeVillageCards=player.nativeVillage;
+      pirateship.setText(player.pirateship+"");
+      
       repaint();
       revalidate();
     }
@@ -404,7 +455,35 @@ public class DominionBoard extends JFrame{
     }
     
   }
- 
+  public class PlayerMouseAdapter extends MouseAdapter{
+    JDialog popup=new JDialog();
+    JLabel image;
+    public PlayerMouseAdapter(JFrame parent, ArrayList<String> names){
+      Dimension parentSize = parent.getSize(); 
+      Point p = parent.getLocation(); 
+      popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
+      popup.setLayout(new FlowLayout());
+      for(String name : names){
+        image=new JLabel(getImage(name));
+        popup.add(image);
+      }
+      popup.pack();
+      popup.setDefaultCloseOperation(HIDE_ON_CLOSE);
+    }
+    @Override
+    public void mousePressed(MouseEvent e){
+      if(SwingUtilities.isRightMouseButton(e)){
+        popup.setVisible(true);
+      }
+    }
+    @Override
+    public void mouseReleased(MouseEvent e){
+      if(SwingUtilities.isRightMouseButton(e)){
+        popup.setVisible(false);
+      }
+    }
+  }
+   
   //holds a JPanel and some associated info associated with a deck of cards
   public class DeckDisplay{
     protected JTextField n;

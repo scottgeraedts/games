@@ -588,16 +588,24 @@ public class Core extends Expansion{
         game.server.displayComment(activePlayer,"");
         
         game.playCard(card,activePlayer,true);
-        game.playCard(card,activePlayer,true);
+        game.playCard(card,activePlayer,false);
 
+        //if you throne room a duration card, send this to the duration mat also
+        if(card.isDuration) isDuration=true;
+        card.throneroomed++;
+        
         //game.displayPlayer(activePlayer);
-        game.matcards.add(card);
+        //game.matcards.add(card);
         game.cardPlayed(activePlayer);
       }
     }
     @Override 
     public boolean maskCondition(DominionCard card){
       return card.isAction;
+    }
+    @Override
+    public void duration(int ap){
+      isDuration=false;
     }
   }
   private class Vassal extends DominionCard{

@@ -87,14 +87,14 @@ public class DominionServer{
       connections.add( new HumanPlayer(br.get(i),pw.get(i)));
   }
   //pass initial string to all players
-  public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer){
+  public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
     for(int i=0;i<connections.size();i++){
-      connections.get(i).initialize(supplyData,playerData,startingPlayer,player[i]);
+      connections.get(i).initialize(supplyData,playerData,startingPlayer,player[i],o);
     }
   }
-  public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer){
+  public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
     for(int i=0;i<connections.size();i++){
-      connections.get(i).reset(supplyData,playerData,startingPlayer);
+      connections.get(i).reset(supplyData,playerData,startingPlayer,o);
     }
   }
   public void cardGained(int actions, int money, int buys, int playerNum, DominionPlayer.Data player, Deck.SupplyData deck){
@@ -141,7 +141,7 @@ public class DominionServer{
     }
     //make initial string
     //pass initial string to all players
-    public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, int num){
+    public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, int num, HashSet<String> o){
      String out="initialize%";
      out+=toArray(playerData);
      out+="%"+supplyData.size();
@@ -149,11 +149,12 @@ public class DominionServer{
       out+="#"+supplyData.get(i).toString();
      }
      out+="%"+startingPlayer+"%"+num;
+     out+="%"+toArray(o);
      output.println(out);
      output.flush();
    }
     //reset for a new game
-    public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer){
+    public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
      String out="reset%";
      out+=toArray(playerData);
      out+="%"+supplyData.size();
@@ -161,6 +162,7 @@ public class DominionServer{
       out+="#"+supplyData.get(i).toString();
      }
      out+="%"+startingPlayer;
+     out+="%"+toArray(o);
       output.println(out);
       output.flush();
     }
@@ -219,10 +221,10 @@ public class DominionServer{
       }
     }
   }
-  public static <T extends Object> String toArray(ArrayList<T> x){
+  public static <T extends Object> String toArray(Collection<T> x){
     String out="";
     out+=x.size();
-    for(int i=0;i<x.size();i++) out+="#"+x.get(i).toString();
+    for(T y : x) out+="#"+y.toString();
     return out;
   }
 }

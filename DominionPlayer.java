@@ -86,6 +86,11 @@ public class DominionPlayer{
     public ArrayList<DominionCard> hand=new ArrayList<>();
     public Deck.Data deck, disc;
     public String name;
+    public ArrayList<String> islandCards=new ArrayList<>();
+    public ArrayList<String> durationCards=new ArrayList<>();
+    public ArrayList<String> nativeVillage=new ArrayList<>();
+    public int pirateship=0;
+    
     public Data(){}
     public Data (String in){
       String [] parts=in.split("@");
@@ -97,6 +102,10 @@ public class DominionPlayer{
       deck=new Deck.Data(parts[handSize+1]);
       disc=new Deck.Data(parts[handSize+2]);
       name=parts[handSize+3];
+      durationCards=DominionClient.readArray(parts[handSize+4],"");
+      islandCards=DominionClient.readArray(parts[handSize+5],"");
+      nativeVillage=DominionClient.readArray(parts[handSize+6],"");
+      pirateship=Integer.parseInt(parts[handSize+7]);
     }
     public String toString(){
       String out=""+hand.size();
@@ -104,6 +113,10 @@ public class DominionPlayer{
         out+="@"+hand.get(i).toString();
       }
       out+="@"+deck.toString()+"@"+disc.toString()+"@"+name;
+      out+="@"+DominionServer.toArray(durationCards);
+      out+="@"+DominionServer.toArray(islandCards);
+      out+="@"+DominionServer.toArray(nativeVillage);
+      out+="@"+pirateship;
       return out;
     }
   }
@@ -117,6 +130,16 @@ public class DominionPlayer{
       card=it.next();
       out.hand.add(new DominionCard(card.isAction, card.isMoney, card.getImage()));
     }
+    for(DominionCard card2 : duration){
+      out.durationCards.add(card2.getImage());
+    }
+    for(DominionCard card2 : island){
+      out.islandCards.add(card2.getImage());
+    }
+    for(DominionCard card2 : nativevillage){
+      out.nativeVillage.add(card2.getImage());
+    }
+    out.pirateship=pirateship;
     return out;
   }
 }

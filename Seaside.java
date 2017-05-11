@@ -4,7 +4,9 @@ public class Seaside extends Expansion{
   public Seaside(Dominion g){
     super(g);
     String [] t={"embargo","haven","lighthouse","nativevillage","pearldiver","ambassador",
-        "fishingvillage","lookout","smugglers","warehouse","caravan","cutpurse"};
+        "fishingvillage","lookout","smugglers","warehouse","caravan","cutpurse","island",
+        "navigator","pirateship","salvager","seahag","treasuremap","explorer","ghostship",
+        "merchantship","outpost","tactician","treasury","wharf"};
     cards=t;
   }
   public class Embargo extends RegularCard{
@@ -135,6 +137,7 @@ public class Seaside extends Expansion{
       value=1;
       isAction=true;
       isDuration=true;
+      cost=3;
     }
     @Override
     public void duration(int ap){
@@ -147,7 +150,9 @@ public class Seaside extends Expansion{
     public Lookout(){
       super("lookout");
       actions=1;
-      cost=3;    }
+      cost=3;    
+      isAction=true;
+    }
     @Override
     public void work(int ap){
       ArrayList<DominionCard> options=new ArrayList<>(3);

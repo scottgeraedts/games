@@ -15,6 +15,10 @@ public class DominionCard extends Card{
 	public int actions=0;
 	public int buys=0;
 	public int cards=0;
+	
+	//a switch to tell duration cards activate their duration power twice 
+	//or three times if kings courted
+	public int throneroomed=1;
 
   public DominionCard(String newname){
     super(newname);
