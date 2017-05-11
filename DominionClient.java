@@ -156,14 +156,14 @@ public class DominionClient{
     board.changePhase(parts[0],parts[1]);
   }
   public void showScores(String input){
-    board.showScores(new Dominion.OptionData(input));
+    board.showScores(new OptionData(input));
   }
   public void displayPlayer(String input){
     String [] parts=input.split("%");
     board.displayPlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]));
   }
   public void optionPane(String input){
-    board.optionPane(new Dominion.OptionData(input));
+    board.optionPane(new OptionData(input));
   }
   public void displayTrash(String input){
     board.displayTrash(new Deck.Data(input));

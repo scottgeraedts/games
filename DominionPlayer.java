@@ -4,6 +4,9 @@ public class DominionPlayer{
   public LinkedList<DominionCard> hand=new LinkedList<DominionCard>();
 	public Deck<DominionCard> deck, disc;
 	private String name;
+	public LinkedList<DominionCard> duration=new LinkedList<>();
+	public ArrayList<DominionCard> nativevillage=new ArrayList<>();
+	public ArrayList<LinkedList> island=new ArrayList<>();
 	
   public DominionPlayer(String newname){
 		disc=new Deck<DominionCard>();
@@ -50,10 +53,22 @@ public class DominionPlayer{
       }
     }
   }
+  public ArrayList<DominionCard> draw(int n){
+    ArrayList<DominionCard> out=new ArrayList<>();
+    for(int i=0;i<n;i++){
+      try{
+        out.add(getCard());
+      }catch(OutOfCardsException e){
+        break;
+      }
+    }
+  }
 
   public int victoryPoints(){
     deck.put(disc);
     deck.put(hand);
+    deck.put(island);
+    deck.put(duration);
     
     int out=0;
     ArrayList<DominionCard> cardlist=new ArrayList<>(deck);

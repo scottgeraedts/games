@@ -11,4 +11,8 @@ class Card{
 	public String getName(){ return name;}
 	public boolean equals(Card c){ return name.equals(c.getName()); }
   public String getImage(){return imagename;}
+  @Override
+  public int hashCode(){
+    return name.hashCode();
+  }
 }

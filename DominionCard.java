@@ -5,6 +5,7 @@ public class DominionCard extends Card{
 	public  boolean isVictory=false;
 	public boolean isAction=false;
   public boolean isAttack=false;
+  public boolean isDuration=false;
   
   public boolean isReaction1=false;
   
@@ -95,6 +96,12 @@ public class DominionCard extends Card{
       cards=1;
       isVictory=true;
       isAction=true;
+    }else if(name.equals("bazaar")){
+      cost=5;
+      isAction=true;
+      value=1;
+      actions=2;
+      cards=1;    
 		}else{
 		}
   }
@@ -112,8 +119,9 @@ public class DominionCard extends Card{
     imagename=parts[2];
   }
 
-  public void work(int x){
-  }
+  public void work(int x){}
+  public void duration(int x){}
+  
   public boolean [] makeMask(Collection<DominionCard> hand){
       boolean [] mask=new boolean[hand.size()];
       Arrays.fill(mask,false);

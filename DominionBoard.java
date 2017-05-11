@@ -47,6 +47,7 @@ public class DominionBoard extends JFrame{
     doneButtons.put("trash",new JButton("Done Trashing"));
     doneButtons.put("gain",new JButton("Done Gaining"));
     doneButtons.put("select",new JButton("Done Selecting"));
+    doneButtons.put("reveal",new JButton("Done Revealing"));
     
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
     
@@ -79,7 +80,7 @@ public class DominionBoard extends JFrame{
   }
   public void playAgain(){
     String [] options={"Play again","Quit"};
-    Dominion.OptionData o=new Dominion.OptionData(options);
+    OptionData o=new OptionData(options);
     optionPane(o);
   }
   public void kill(){
@@ -132,7 +133,7 @@ public class DominionBoard extends JFrame{
     
     //action listener for the done buying button
     EndSelection listener=new EndSelection();
-    String [] phases={"actions","buys","topdeck","discard","trash","gain","select"};
+    String [] phases={"actions","buys","topdeck","discard","trash","gain","select","reveal"};
     for(int i=0;i<phases.length;i++){
       doneButtons.get(phases[i]).addActionListener(listener);
       doneButtons.get(phases[i]).setActionCommand("B"+phases[i]);
@@ -231,7 +232,7 @@ public class DominionBoard extends JFrame{
     buysField.setText(buys+"");
     actionsField.setText(actions+"");  
   }
-  public void showScores(Dominion.OptionData points){
+  public void showScores(OptionData points){
     String out="";
     for(int i=0;i<points.size();i++){
       out+=points.getKey(i)+": "+points.getValue(i)+"\n";
@@ -270,7 +271,7 @@ public class DominionBoard extends JFrame{
     maskSet=true;
     players.get(activePlayer).display();
   }
-  public void optionPane(Dominion.OptionData o){
+  public void optionPane(OptionData o){
     OptionPane pane=new OptionPane(this,o);
     output=pane.getValue();
   }
@@ -353,21 +354,21 @@ public class DominionBoard extends JFrame{
       while(it.hasNext()){
         DominionCard card=it.next();
         JButton button=new JButton();
-        
         //if its your turn and its your player you can see the cards and click on some of them
         if(active && controlled){
           button.setIcon(getImage(card.getImage()));          
           if((phase.equals("actions") && (card.isMoney || card.isAction)) || (phase.equals("buys") && card.isMoney) ){
             button.setEnabled(true);
           }else if ((!maskSet || mask[i]) && 
-              (phase.equals("trash") || phase.equals("discard") || phase.equals("topdeck") || phase.equals("select"))){
+              (phase.equals("trash") || phase.equals("discard") || phase.equals("topdeck") 
+              || phase.equals("select") || phase.equals("reveal"))){
 
             button.setEnabled(true); 
             button.setOpaque(true);  
             if(phase.equals("trash")) button.setBackground(Color.RED);
             else if(phase.equals("discard")) button.setBackground(Color.YELLOW);
             else if(phase.equals("topdeck")) button.setBackground(Color.GREEN);
-            else if(phase.equals("select")) button.setBackground(Color.ORANGE);           
+            else if(phase.equals("select") || phase.equals("reveal")) button.setBackground(Color.ORANGE);           
                   
           }else button.setEnabled(false);
           
@@ -563,7 +564,7 @@ public class DominionBoard extends JFrame{
   //can't be static because it uses the image hashtable
   public class OptionPane extends JDialog implements ActionListener{
     private String out="";
-    public OptionPane(JFrame parent, Dominion.OptionData o){
+    public OptionPane(JFrame parent, OptionData o){
       super(parent, "", true);
       if (parent != null) {
         Dimension parentSize = parent.getSize(); 

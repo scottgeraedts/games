@@ -70,6 +70,7 @@ public class DominionServer{
       }
       System.out.println("Application ended normally");
     }catch(NullPointerException e){
+      e.printStackTrace();
       System.out.println("A client terminated their application!");
     }catch(Exception e){
       e.printStackTrace();
@@ -116,22 +117,13 @@ public class DominionServer{
       it.next().showScores(scores);
     }
   }
-  public void optionPane(int playerNum, Dominion.OptionData o){
+  public void optionPane(int playerNum, OptionData o){
     connections.get(player[playerNum]).optionPane(o);
-  }
-  public void updateSharedFields(int a, int b, int c){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().updateSharedFields(a,b,c);
-    }
   }  
   public void displayComment(int playerNum, String text){
+    System.out.println("displayed");
     connections.get(player[playerNum]).displayComment(text);
   }
-  public void displaySupply(Deck.SupplyData data){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().displaySupply(data);
-    }
-  }    
   public void setMask(int playerNum, boolean [] mask){
     connections.get(player[playerNum]).setMask(mask);
   }
@@ -197,7 +189,7 @@ public class DominionServer{
     public void displayPlayer(int playerNum, DominionPlayer.Data player){
       output.println("displayPlayer%"+playerNum+"%"+player.toString());
     }
-    public void optionPane(Dominion.OptionData o){
+    public void optionPane(OptionData o){
       output.println("optionPane%"+o.toString());
     }
     public void displayTrash(Deck.Data dat){
