@@ -31,6 +31,7 @@ public class Dominion{
   public int merchantCounter=0;
   private ArrayList<String> smugglerCards1=new ArrayList<>();
   public ArrayList<String> smugglerCards2=new ArrayList<>();
+  private boolean outpost;
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
@@ -279,28 +280,63 @@ public class Dominion{
     phase=newPhase;
   }
   public int endTurn(int activePlayer){
-    int newPlayer=(activePlayer+1)%players.size();
+    //****end the previous turn***//
+    DominionCard card;
+
+    //check if any cards do things at the end of the turn    
+    for(ListIterator<DominionCard> it=matcards.listIterator(); it.hasNext(); ){
+      card=it.next();
+      if(card.cleanup(activePlayer,players.get(activePlayer))){
+        it.remove();
+      }
+    }
+    
+    //put remaining matcards on discard pile and clear the mat
     players.get(activePlayer).disc.put(matcards);
-    players.get(activePlayer).endTurn();   
+    matcards.clear();
+    
     if(gameOver) endGame();
+    
+
+    int newPlayer;
+    //check if the player put an outpost on their duration mat, and didn't play an outpost last time
+    if(outpost){
+      outpost=false;
+    }else{
+      for(DominionCard card2 : players.get(activePlayer).duration){
+        if(card2.getName().equals("outpost")){
+          outpost=true;
+          break;
+        }
+      }
+    }
+    //if there is an outpost on the duration mat, that player gets to go again
+    if(outpost){
+      newPlayer=activePlayer;
+      players.get(activePlayer).disc.put(players.get(activePlayer).hand);
+      players.get(activePlayer).hand.clear();
+      players.get(activePlayer).drawToHand(3);
+    }else{
+      players.get(activePlayer).endTurn();       
+      newPlayer=(activePlayer+1)%players.size();
+    }
+    
+    //start the next turn
+    changePhase("actions");
     money=0;
     buys=1;
     actions=1; 
-    for(DominionCard card : matcards){
-      if(card.isDuration) players.get(activePlayer).duration.add(card);
-    }
-    matcards.clear();
-    changePhase("actions");
-
     resetCardCounters();
     
+    //play duration cards
+    for(DominionCard card2 : players.get(newPlayer).duration){
+      card2.duration(newPlayer);
+    }
+    players.get(newPlayer).duration.clear();
+
     //pass on this info to board
     server.changePlayer(activePlayer,players.get(activePlayer).makeData(),newPlayer,players.get(newPlayer).makeData());
 
-    for(DominionCard card : players.get(newPlayer).duration){
-      card.duration(newPlayer);
-    }
-    players.get(newPlayer).duration.clear();
     
     return newPlayer;
     

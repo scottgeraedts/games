@@ -121,6 +121,18 @@ public class DominionCard extends Card{
 
   public void work(int x){}
   public void duration(int x){}
+  //takes care of what to do with this card at the end of the turn
+  //if it returns true, the card will not be added to the discard pile
+  //it gets the player object directly since we can't modify the player here in dominioncard
+  //it also gets the index of the player so its subclasses can do stuff
+  public boolean cleanup(int x, DominionPlayer player){
+    if(isDuration){
+      player.duration.add(this);
+      return true;
+    }else{
+      return false;
+    }
+  }
   
   public boolean [] makeMask(Collection<DominionCard> hand){
       boolean [] mask=new boolean[hand.size()];

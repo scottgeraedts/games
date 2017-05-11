@@ -6,7 +6,8 @@ public class DominionPlayer{
 	private String name;
 	public LinkedList<DominionCard> duration=new LinkedList<>();
 	public ArrayList<DominionCard> nativevillage=new ArrayList<>();
-	public ArrayList<LinkedList> island=new ArrayList<>();
+	public ArrayList<DominionCard> island=new ArrayList<>();
+	public int pirateship=0;
 	
   public DominionPlayer(String newname){
 		disc=new Deck<DominionCard>();
@@ -62,6 +63,7 @@ public class DominionPlayer{
         break;
       }
     }
+    return out;
   }
 
   public int victoryPoints(){
