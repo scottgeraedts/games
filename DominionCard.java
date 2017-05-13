@@ -8,6 +8,7 @@ public class DominionCard extends Card{
   public boolean isDuration=false;
   
   public boolean isReaction1=false;
+  public boolean isReaction2=false;
   
 	public int value=0;
 	public int cost=0;
@@ -36,6 +37,10 @@ public class DominionCard extends Card{
 		  isMoney=true;
 		  cost=6;
 		  value=3;
+		}else if(name.equals("platinum")){
+		  isMoney=true;
+		  cost=9;
+		  value=5;		
 		}else if(name.equals("estate")){
 		  isVictory=true;
 		  cost=2;
@@ -48,6 +53,10 @@ public class DominionCard extends Card{
 		  isVictory=true;
 		  cost=8;
 		  vicPoints=6;
+		}else if(name.equals("colony")){
+		  isVictory=true;
+		  cost=11;
+		  vicPoints=10;
 		}else if(name.equals("village")){
 		  cost=3;
 		  actions=2;
@@ -105,7 +114,13 @@ public class DominionCard extends Card{
       isAction=true;
       value=1;
       actions=2;
-      cards=1;    
+      cards=1;  
+    }else if(name.equals("workersvillage")){
+      cost=4;
+      actions=2;
+      cards=1;
+      buys=1;
+      isAction=true;
 		}else{
 		}
   }
@@ -137,6 +152,7 @@ public class DominionCard extends Card{
       return false;
     }
   }
+  public void onGain(int x){}
   
   public boolean [] makeMask(Collection<DominionCard> hand){
       boolean [] mask=new boolean[hand.size()];
@@ -155,7 +171,7 @@ public class DominionCard extends Card{
     return vicPoints;
   }
   public boolean isReaction(){
-    return isReaction1;
+    return isReaction1 || isReaction2;
   }
   public String toString(){
     return isAction+"!"+isMoney+"!"+imagename;

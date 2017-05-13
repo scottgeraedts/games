@@ -72,46 +72,32 @@ public class Core extends Expansion{
     public void subStep(int victim, int attacker){
       DominionPlayer player=game.players.get(victim);
       DominionCard card1,card2;
+      OptionData o=new OptionData(new String[0]);
+      boolean doneButton=true;
 
-      //handling cases where there is no card to get
-      try{
-        card1=player.getCard();
-        
-        try{
-          card2=player.getCard();
-
-          //if both cards can be trashed have to let player pick
-          if(test(card1) && test(card2)){
-            OptionData o=new OptionData(new String[0]);
-            o.put(card1.getName(),"imagebutton");
-            o.put(card2.getName(),"imagebutton");
-            String input=game.optionPane(attacker,o);
-            if(input.equals(card1.getName())){
-              game.trash.put(card1);
-              player.disc.put(card2);
-            }else{
-              game.trash.put(card2);
-              player.disc.put(card1);
-            }
-          }else if(test(card1)){
-            game.trash.put(card1);
-            player.disc.put(card2);
-          }else if(test(card2)){
-            game.trash.put(card2);
-            player.disc.put(card1);
-          }else{
-            player.disc.put(card2);
-            player.disc.put(card1);        
-          }
-        //if there is no second card just result first card
-        }catch(OutOfCardsException ex){
-          if(test(card1)) game.trash.put(card1);
-          else player.disc.put(card1);
+      ArrayList<DominionCard> cards=player.draw(2);
+      for(DominionCard card : cards){
+        if(test(card)){
+          o.put(card.getImage(),"imagebutton");
+          doneButton=false;
+        }else{
+          o.put(card.getImage(),"image");
         }
-        
-      }catch(OutOfCardsException ex){
-        return;
+      }       
+      if(doneButton) o.put("Done","textbutton");
+      String input=game.optionPane(attacker,o);
+
+      DominionCard card;
+      for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
+        card=it.next();
+        if(input.equals(card.getName())){
+          game.trash.put(card);
+          it.remove();
+          break;
+        }
       }
+      game.displayTrash();
+      player.disc.put(cards);
     }
     private boolean test(DominionCard card){
       return !card.getName().equals("copper") && card.isMoney;
@@ -130,40 +116,27 @@ public class Core extends Expansion{
     @Override
     public void subStep(int activePlayer, int attacker){
 
-      boolean mask[];
-      int firstVictory=0,count,j;
       LinkedList<DominionCard> hand;
       DominionCard card;
-
-      count=0;
-      j=0;
-      
-      //a custom mask creation because if there is only one victory card, we just topdeck it and are done
       hand=game.players.get(activePlayer).hand;
-      mask=new boolean[hand.size()];
-      Arrays.fill(mask,false);
-      for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
-        card=it.next();
-        if(card.isVictory){
-          mask[j]=true;
-          count++;
-          firstVictory=j;
-        }
-        j++;
-      }
+      DominionPlayer player=game.players.get(activePlayer);
+
+      boolean mask[]=makeMask(hand);
+
+      ArrayList<Boolean> maskL=new ArrayList<>(mask.length);
+      for(int i=0;i<mask.length;i++) maskL.add(mask[i]);
+      
+      int count=Collections.frequency(maskL,true);
       if(count==1){
-        //we found the only victory card, skip selection step
-        game.players.get(activePlayer).disc.put(hand.remove(firstVictory));
-        game.displayPlayer(activePlayer);
-      }else if(count>0){
-        game.changePhase("topcard");
-        game.server.setMask(activePlayer, mask);
-        game.displayPlayer(activePlayer);
+        player.deck.add(player.hand.remove(maskL.indexOf(true)));
+      }else if(count>1){
+        game.server.setMask(activePlayer,mask);
         game.doWork(1,1,activePlayer);
-      }else{
-        //no victory cards, nothing to be done
       }
-    
+    }
+    @Override
+    public boolean maskCondition(DominionCard card){
+      return card.isVictory;
     }
   }  
   

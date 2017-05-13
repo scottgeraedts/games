@@ -123,6 +123,7 @@ public class Intrigue extends Expansion{
     }
   }
   private class Masquerade extends Attack{
+    HashMap<Integer,DominionCard> passedCards;
     public Masquerade(){
       super("masquerade");
       cost=3;
@@ -132,11 +133,22 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void cleanup(int activePlayer){
+      //put the cards into the players hands
+      DominionCard card;
+      for(int i=0;i<game.players.size();i++){
+        card=passedCards.get(i);
+        if(card!=null){
+          game.players.get(i).hand.add(card);
+          game.displayPlayer(i);
+        }
+      }
+
       game.doWork("trash",1,1,activePlayer);
       game.displayTrash();
     }
     @Override
     public void subWork(int activePlayer){
+      passedCards=new HashMap<>();
       passCard(activePlayer,(activePlayer+1)%game.players.size());
       
     }
@@ -147,9 +159,7 @@ public class Intrigue extends Expansion{
     //passes a cardfrom player i to player i+1
     public void passCard(int fromPlayer, int toPlayer){
       game.doWork("select",1,1,fromPlayer);
-      game.players.get(toPlayer).hand.add(game.selectedCards.get(0));
-      game.displayPlayer(fromPlayer);
-      game.displayPlayer(toPlayer);
+      passedCards.put(toPlayer,game.selectedCards.get(0));
       game.selectedCards.clear();
     }
   }
@@ -210,7 +220,11 @@ public class Intrigue extends Expansion{
     public void subStep(int victim, int attacker){
       try{
         DominionCard card=game.players.get(victim).getCard();
-        int value=card.value;
+        System.out.println("swindler trashed "+card.getName());
+        int value=game.cost2(card);
+        game.trash.put(card);
+        game.displayTrash();
+        game.server.displayComment(attacker,"Trashed a "+card.getName()+", choose a card costing "+value);
         Dominion.SupplyDeck deck;
         while(true){
           game.work(attacker);
@@ -320,7 +334,10 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void work(int activePlayer){
-      if(game.players.get(activePlayer).hand.size()<=5) game.actions+=2;
+      if(game.players.get(activePlayer).hand.size()<=5){
+        game.actions+=2;
+        game.updateSharedFields();
+      }
     }
   }
   private class Ironworks extends RegularCard{
@@ -376,6 +393,7 @@ public class Intrigue extends Expansion{
       if(game.optionPane(activePlayer,new OptionData(options)).equals(options[0])){
         if(game.matcards.remove(this)){
           game.trash.put(this);
+          game.displayTrash();
           game.money+=2;
           game.cardPlayed(activePlayer);
         }
@@ -516,7 +534,7 @@ public class Intrigue extends Expansion{
   private class Replace extends Attack{
     private boolean curse=false;
     public Replace(){
-      super("remodel");
+      super("replace");
       cost=5;
       comment="trash a card, gain a card costing up to 2 more than it";
       attackPhase="actions";
@@ -704,6 +722,7 @@ public class Intrigue extends Expansion{
         }
         cards.add(card);
       }
+      game.players.get( (activePlayer+1)%game.players.size()).disc.put(cards);
       for(DominionCard card2 : cards){
         if(card2.isAction) game.actions+=2;
         if(card2.isVictory) game.players.get(activePlayer).drawToHand(2);

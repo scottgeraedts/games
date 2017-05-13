@@ -3,11 +3,29 @@ public abstract class Expansion{
   String [] cards;
   String name;
   Dominion game;
+  public static ArrayList<String> vicTokens;
+  
+  public static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
+      "talisman","city","contraband","countinghouse","mint","mountebank","rabble"};
+  
   public Expansion(Dominion g){
     game=g;
+    String [] vic={"bishop","goons","monument"};
+    vicTokens=new ArrayList<>(Arrays.asList(vic));
   }
   public boolean hasCard(String cardName){
     return Arrays.asList(cards).contains(cardName);
+  }
+  public static boolean usePlatinums(ArrayList<String> supplyCards){
+    Random ran=new Random();
+    double weight=0.05;
+
+    ArrayList<String> pCards=new ArrayList<>(Arrays.asList(prosperityCards));
+    for(String card : supplyCards){
+      if(pCards.contains(card)) weight+=0.15;
+    }
+    if(ran.nextDouble()<weight) return true;
+    else return false;
   }
   
   protected abstract class Attack extends DominionCard{
@@ -40,12 +58,13 @@ public abstract class Expansion{
 
         //resolve possible reactions
         boolean moat=false;
-        if(isAttack) reactions=game.reaction1Reveal(victim.hand,i);
+        if(isAttack) reactions=game.reactionReveal(victim.hand,i,1);
         for(String r: reactions){
           if(r.equals("moat")){ moat=true;
           }else if(r.equals("diplomat")){
             if(victim.hand.size()>=5){
               victim.drawToHand(2);
+              game.displayPlayer(i);
               game.doWork("discard",3,3,i);
               game.selectedCards.clear();
               game.changePhase(attackPhase);
@@ -53,6 +72,7 @@ public abstract class Expansion{
             }
           }else if(r.equals("secretchamber")){
             victim.drawToHand(2);
+            game.displayPlayer(i);
             game.doWork("topdeck",2,2,i);
             game.selectedCards.clear();
             game.changePhase(attackPhase);

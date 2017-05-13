@@ -5,6 +5,7 @@ import javax.swing.*;    // Using Swing components and containers
 import java.awt.event.WindowEvent;
 
 public class DominionClient{
+  public static final boolean DEBUG=true;
   private BufferedReader input;
   private PrintWriter output;
   private DominionBoard board;
@@ -12,10 +13,14 @@ public class DominionClient{
   public static void main(String [] args) throws IOException{
   
     BufferedReader stdin=new BufferedReader(new InputStreamReader(System.in));
-//    System.out.println("enter IP of the server");
-//    String IP=stdin.readLine();  
-//    Socket socket=new Socket(IP,4444);
-    Socket socket=new Socket("localhost",4444);
+    Socket socket;
+    if(!DEBUG){
+      System.out.println("enter IP of the server");
+      String IP=stdin.readLine();  
+      socket=new Socket(IP,4444);
+    }else{
+      socket=new Socket("localhost",4444);
+    }
     BufferedReader input=new BufferedReader(new InputStreamReader(socket.getInputStream()));
     PrintWriter output=new PrintWriter(socket.getOutputStream(),true);
 
@@ -27,9 +32,12 @@ public class DominionClient{
         break;
       }
       if(inputLine.charAt(0)=='!'){
-        //name=stdin.readLine();
-        //output.println(name);
-        output.println("no");
+        if(!DEBUG){
+          name=stdin.readLine();
+          output.println(name);
+        }else{
+          output.println("no");
+        }
       }
     }
     new DominionClient(output,input);
@@ -101,7 +109,7 @@ public class DominionClient{
     ArrayList<DominionPlayer.Data> playerData=readArray(parts[0],new DominionPlayer.Data());
     //initialize supply
     ArrayList<Deck.SupplyData> supplyData=readArray(parts[1],new Deck.SupplyData());
-    ArrayList<String> options=readArray(parts[4],"");
+    ArrayList<String> options=readArray(parts[3],"");
     board.reset(playerData,supplyData,Integer.parseInt(parts[2]),options); // Let the constructor do the job
     
   }
@@ -132,17 +140,8 @@ public class DominionClient{
   public void cardPlayed(String input){
 //    System.out.println(input);
     String [] parts=input.split("%");
-    board.refreshCardPanel(readArray(parts[5],new DominionCard("copper")));
-    board.refreshSharedFields(Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),Integer.parseInt(parts[2]));
-    board.displayPlayer(Integer.parseInt(parts[3]),new DominionPlayer.Data(parts[4]));
-    
-  }
-  public void cardGained(String input){
-//    System.out.println(input);
-    String [] parts=input.split("%");
-    board.displaySupply(new Deck.SupplyData(parts[5]));
-    board.refreshSharedFields(Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),Integer.parseInt(parts[2]));
-    board.displayPlayer(Integer.parseInt(parts[3]),new DominionPlayer.Data(parts[4]));
+    board.refreshCardPanel(readArray(parts[2],new DominionCard("copper")));
+    board.displayPlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]));
     
   }
   public void changePlayer(String input){
@@ -176,7 +175,8 @@ public class DominionClient{
   public void updateSharedFields(String input){
 //    System.out.println(input);
     String [] parts=input.split("%");
-     board.refreshSharedFields(Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),Integer.parseInt(parts[2]));
+     board.refreshSharedFields(Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),
+        Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
   }
   public void displayComment(String input){
     board.displayComment(input);

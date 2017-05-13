@@ -10,7 +10,7 @@ public class Dominion{
   public Deck<DominionCard> trash;
   public HashSet<String> startingOptions;
 
-  public int money,actions,buys;
+  public int money,actions,buys,potions;
   private int nPlayers;
   public int emptyPiles;
   private boolean gameOver;
@@ -27,12 +27,17 @@ public class Dominion{
 
   //specific card related counters
   public int bridgeCounter=0; //counts cost reduction, also does highway and brige troll
+  public int quarryCounter=0; 
   public int conspiratorCounter=0; //counts total actions played, also does peddler
   public int coppersmithCounter=0;
   public int merchantCounter=0;
   private ArrayList<String> smugglerCards1=new ArrayList<>();
   public ArrayList<String> smugglerCards2=new ArrayList<>();
   private boolean outpost;
+  public boolean victoryBought=false; //did we gain a victory card this turn (for treasury)
+  public HashSet<String> tradeRouteCards;
+  public int talismanCounter=0;
+  public HashSet<String> contrabandDecks=new HashSet<>();
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
@@ -43,6 +48,7 @@ public class Dominion{
     expansions.put("Core",new Core(this));
     expansions.put("Intrigue",new Intrigue(this));
     expansions.put("Seaside",new Seaside(this));
+    expansions.put("Prosperity",new Prosperity(this));
     int startingPlayer=startGame(names);      
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
@@ -51,6 +57,7 @@ public class Dominion{
   
   public void reset(ArrayList<String> names){
     int startingPlayer=startGame(names);
+    trash.clear();
     resetCardCounters();
     server.reset(supplyData(), playerData(), startingPlayer, startingOptions);
     work(startingPlayer);
@@ -73,7 +80,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      //for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("haven"));
+      //for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("nativevillage"));
     }
     nPlayers=names.size();
 
@@ -81,14 +88,23 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
+    supplies.add("nativevillage");
     System.out.println(supplies);
+    boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
       if(s.equals("pirateship")) startingOptions.add("pirateship");
       if(s.equals("island")) startingOptions.add("island");
+      if(s.equals("nativevillage")) startingOptions.add("nativevillage");
       if(cardFactory(s).isDuration) startingOptions.add("duration");
+      if(s.equals("traderoute")) startingOptions.add("traderoute");
+      if(Expansion.vicTokens.contains(s)) startingOptions.add("victorytokens");
     }
     String [] tcards={"copper","silver","gold","estate","duchy","province","curse"};
     ArrayList<String> cards=new ArrayList<String>(Arrays.asList(tcards));
+    if(usePlatinums){
+      cards.add(3,"platinum");
+      cards.add(7,"colony");
+    }
     cards.addAll(supplies);
     
     for(int i=0;i<cards.size();i++){
@@ -99,6 +115,9 @@ public class Dominion{
     trash=new Deck<>();
     trash.backImage=Deck.blankBack;
     trash.faceup=true;  
+    
+    //specific card related stuff
+    tradeRouteCards=new HashSet<>();
     
     Random ran=new Random();
     int startingPlayer=ran.nextInt(players.size());  
@@ -178,7 +197,8 @@ public class Dominion{
       //check if a selection phase should be ended
       if(selectedCards.size()>=maxSelection 
           || (selectedCards.size()>=minSelection && doneSelection) 
-          || players.get(activePlayer).hand.size()==0){
+          || ((phase.equals("trash") || phase.equals("discard") || phase.equals("topcard")
+               || phase.equals("select") || phase.equals("reveal")) && players.get(activePlayer).hand.size()==0)){
         doneSelection=false;
         break;
       }
@@ -222,11 +242,22 @@ public class Dominion{
            (phase=="buys" && money>=deck.getCost() && buys>0) 
         || (phase=="gain" && gainLimit>=deck.getCost() && minGain<=deck.getCost()) 
         || (phase!="gain" && phase != "buys") ) ){
+      DominionCard card=deck.topCard();
+
       if(phase=="buys"){
+      
+        if(contrabandDecks.contains(supplyName)) return false;
         buys--;
         money-=deck.getCost();
+        
+        //extra gains from talisman
+        if(!card.isVictory){
+          phase="actions"; //so buy and money aren't depleted
+          for(int i=0;i<talismanCounter; i++) gainCard(supplyName, activePlayer, where);
+          phase="buys";
+        }
+                
       }
-      DominionCard card=deck.topCard();
 
       if(phase=="gain"){
         selectedCards.add(card);
@@ -241,20 +272,44 @@ public class Dominion{
         phase="buys";
       }
       
-      //put card on discard pile or (more rarely) top of deck
-      if(where.equals("topcard")) player.deck.put(card);
-      if(where.equals("hand")) player.hand.add(card);
-      else player.disc.put(card);
-      
       System.out.println("End: "+gameOver+" "+emptyPiles);
       if(deck.size()==0){
         if(card.getName()=="province" || card.getName()=="colony") gameOver=true;
         else if(emptyPiles<2) emptyPiles++;
         else gameOver=true;
       }
+
+      //stuff related to specific cards      
+      if(supplyDecks.get(supplyName).getCost()<=6) smugglerCards1.add(supplyName);
+      if(phase.equals("buys") && card.isVictory) victoryBought=true;
+      if(card.isVictory) tradeRouteCards.add(card.getName());
+
+      //play reactions
+      OptionData o;     
+      ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,2);
+      for(String r : reactions){
+        if(r.equals("watchtower")){
+          String [] options = {"Top Deck","trash"};
+          o=new OptionData(options);
+          o.put(card.getImage(),"image");
+          if(optionPane(activePlayer,o).equals(options[0]))
+            player.deck.put(card);
+          else{
+            trash.put(card);
+            displayTrash();
+          }
+        }
+      }
+
+      //resolve ongain effects
+      card.onGain(activePlayer);
       
-      smugglerCards1.add(supplyName);
-      server.cardGained(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),deck.makeData());
+      //put card on discard pile or (more rarely) top of deck
+      if(where.equals("topcard")) player.deck.put(card);
+      if(where.equals("hand")) player.hand.add(card);
+      else player.disc.put(card);      
+
+      cardGained(activePlayer,supplyName);
       
       return true;
     }
@@ -279,7 +334,7 @@ public class Dominion{
           playCard(card,activePlayer);
         }
       }
-    }else if(input.equals("discard") || input.equals("trash") || input.equals("select")){
+    }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal")){
       return true;
     }
     return false;
@@ -341,6 +396,8 @@ public class Dominion{
     for(DominionCard card2 : players.get(newPlayer).duration){
       for(int i=0;i<card2.throneroomed;i++) card2.duration(newPlayer);
       card2.throneroomed=1;
+      matcards.add(card2);
+      players.get(newPlayer).duration.remove(card2);
     }
     players.get(newPlayer).duration.clear();
 
@@ -354,8 +411,9 @@ public class Dominion{
   }
   //resets specific card-related stuff
   public void resetCardCounters(){
-    if(bridgeCounter>0){
+    if(bridgeCounter>0 || quarryCounter>0){
       bridgeCounter=0;
+      quarryCounter=0;
       displaySupplies();
     } 
     conspiratorCounter=0;  
@@ -364,6 +422,10 @@ public class Dominion{
     
     smugglerCards2=new ArrayList<>(smugglerCards1);
     smugglerCards1.clear();
+    
+    victoryBought=false;
+    talismanCounter=0;
+    contrabandDecks.clear();
   }
   public void endGame(){
     int temp;
@@ -382,7 +444,7 @@ public class Dominion{
     maxSelection=0;
   }
   
-  public ArrayList<String> reaction1Reveal(Collection<DominionCard> hand, int activePlayer){
+  public ArrayList<String> reactionReveal(Collection<DominionCard> hand, int activePlayer, int type){
     DominionCard card;
     String [] options={"Reveal","Pass"};
     OptionData o=new OptionData(options);
@@ -390,7 +452,7 @@ public class Dominion{
 
     for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
       card=it.next();
-      if(card.isReaction1){
+      if( (type==1 && card.isReaction1) || (type==2 && card.isReaction2)){
         o.put(card.getImage(),"image");
         if(optionPane(activePlayer,o).equals("Reveal")){
           out.add(card.getName());
@@ -408,14 +470,15 @@ public class Dominion{
   }
   //always use this to get the cost of cards
   public int cost2(DominionCard card){
-    return Math.max(card.cost-bridgeCounter,0);
+    if(card.isAction) return Math.max(card.cost-bridgeCounter-quarryCounter,0);
+    else return Math.max(card.cost-bridgeCounter,0);
   }
   //puts a card anywhere in the deck
   public void putAnywhere(int activePlayer, DominionCard card){
     DominionPlayer player=players.get(activePlayer);
     String [] options=new String[0];
     OptionData o=new OptionData(options);
-    o.put("Choose the position to put the card (1 is top)","text");
+    o.put("Choose the position to put the card (0 is top)","text");
     for(int i=0;i<player.deck.size()+1;i++) o.put(Integer.toString(i),"textbutton");
     String input=optionPane(activePlayer,o);
     player.deck.add(Integer.parseInt(input),card);
@@ -509,7 +572,7 @@ public class Dominion{
   }
   public void updateSharedFields(){
     for( DominionServer.HumanPlayer connection : server.connections){  
-      connection.updateSharedFields(actions,money,buys);
+      connection.updateSharedFields(actions,money,buys,tradeRouteCards.size(),potions);
     }
   }
   public void displaySupply(Deck.SupplyData data){
@@ -529,8 +592,14 @@ public class Dominion{
   }
   public void cardPlayed(int activePlayer){
     for( DominionServer.HumanPlayer connection : server.connections){
-      connection.cardPlayed(actions,money,buys,activePlayer,players.get(activePlayer).makeData(),matcards);
+      connection.cardPlayed(activePlayer,players.get(activePlayer).makeData(),matcards);      
     }
+    updateSharedFields();
+  }
+  public void cardGained(int activePlayer, String supplyDeck){
+    displayPlayer(activePlayer);
+    displaySupply(supplyDeck);
+    updateSharedFields();
   }
   public void displayTrash(){
     for( DominionServer.HumanPlayer connection : server.connections){
@@ -544,9 +613,10 @@ public class Dominion{
     private int cost;
     private String name;
     public int curses=0;
+    private DominionCard card;
     public SupplyDeck(String name){
       this.name=name;
-      DominionCard card=cardFactory(name);
+      card=cardFactory(name);
       cost=card.cost;
       backImage=card.getImage();
       
@@ -554,7 +624,7 @@ public class Dominion{
       if(card.getName()=="copper" || card.getName()=="silver" || card.getName()=="gold" || card.getName()=="platinum"){
         nCards=30;
       }else if(card.isVictory){
-        nCards=1;//=Math.min(4*players.size(),12);
+        nCards=Math.min(4*players.size(),12);
       }else if(card.getName()=="curse"){
         nCards=10*(players.size()-1);
       }else{
@@ -564,7 +634,7 @@ public class Dominion{
         add(cardFactory(name));
       }
     }
-    public int getCost(){return Math.max(cost-bridgeCounter,0);}
+    public int getCost(){return cost2(card);}
     public String getName(){return name;}
     public Deck.SupplyData makeData(){
       return new Deck.SupplyData(size(), backImage, getCost(), name);

@@ -17,6 +17,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
+      game.server.displayComment(activePlayer,"Choose a pile for the embargo token");
       game.doWork("selectDeck",0,1,activePlayer);
       game.supplyDecks.get(game.selectedDeck).curses++;
       game.matcards.remove(this);
@@ -35,7 +36,6 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.server.displayComment(ap,"Choose a pile for the embargo token");
       game.doWork("select",0,1,ap);
       card=game.selectedCards.get(0);
     }
@@ -70,8 +70,9 @@ public class Seaside extends Expansion{
       DominionPlayer player=game.players.get(ap);
       String input=game.optionPane(ap,new OptionData(options));
       if(input.equals(options[0])){
-        game.doWork("select",1,1,ap);
-        player.nativevillage.add(game.selectedCards.get(0));
+        try{
+          player.nativevillage.add(player.getCard());
+        }catch(OutOfCardsException ex){}
       }else{
         for(DominionCard card : player.nativevillage){
           player.hand.add(card);
@@ -95,7 +96,9 @@ public class Seaside extends Expansion{
       DominionPlayer player=game.players.get(ap);
       if(player.deck.size()==0) return;
       DominionCard card=player.deck.removeLast();
-      String input=game.optionPane(ap,new OptionData(options));
+      OptionData o=new OptionData(options);
+      o.put(card.getImage(),"image");
+      String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
         player.deck.put(card);
       }else{
@@ -112,7 +115,7 @@ public class Seaside extends Expansion{
     @Override 
     public void subWork(int ap){
       game.server.displayComment(ap,"choose the type of card");
-      game.doWork("select",1,1,ap);
+      game.doWork("reveal",1,1,ap);
       card=game.selectedCards.get(0);
       game.server.displayComment(ap,"trash up to two of those cards");
       game.displayPlayer(ap);
@@ -229,6 +232,8 @@ public class Seaside extends Expansion{
       cost=4;
       cards=1;
       actions=1;
+      isAction=true;
+      isDuration=true;
     }
     @Override
     public void duration(int ap){
@@ -278,6 +283,7 @@ public class Seaside extends Expansion{
       game.doWork("select",1,1,ap);
       player.island.add(game.selectedCards.get(0));
       player.island.add(this);
+      game.matcards.remove(this);
     }
   }
   public class Navigator extends DominionCard{
@@ -349,6 +355,7 @@ public class Seaside extends Expansion{
           break;
         }
       }
+      game.displayTrash();
       victim.disc.put(cards);      
     }
   }
@@ -376,7 +383,7 @@ public class Seaside extends Expansion{
         game.players.get(vic).disc.put(game.players.get(vic).getCard());
       }catch(OutOfCardsException ex){}
       
-      game.gainCard("curse",vic,"topdeck");
+      game.gainCard("curse",vic,"topcard");
     }
   }
   public class Treasuremap extends RegularCard{
@@ -465,6 +472,7 @@ public class Seaside extends Expansion{
         player.disc.put(player.hand);
         player.hand.clear();
         discarded=true;
+        game.displayPlayer(ap);
       }else discarded=false;
     }
     @Override
@@ -473,6 +481,7 @@ public class Seaside extends Expansion{
         game.actions++;
         game.buys++;
         game.players.get(ap).drawToHand(5);
+        game.displayPlayer(ap);
       }
     }      
   }
@@ -491,13 +500,18 @@ public class Seaside extends Expansion{
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
-      String input=game.optionPane(ap,o);
-      if(input.equals(options[0])){
-        player.deck.put(this);
+    
+      if(game.victoryBought){
+        return false;
       }else{
-        player.disc.put(this);
+        String input=game.optionPane(ap,o);
+        if(input.equals(options[0])){
+          player.deck.put(this);
+        }else{
+          player.disc.put(this);
+        }
+        return true;  
       }
-      return true;  
     }
   }
   public class Wharf extends DominionCard{
@@ -506,6 +520,8 @@ public class Seaside extends Expansion{
       cost=5;
       buys=1;
       cards=2;
+      isAction=true;
+      isDuration=true;
     }
     @Override
     public void duration(int ap){

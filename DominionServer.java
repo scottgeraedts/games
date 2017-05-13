@@ -97,11 +97,6 @@ public class DominionServer{
       connections.get(i).reset(supplyData,playerData,startingPlayer,o);
     }
   }
-  public void cardGained(int actions, int money, int buys, int playerNum, DominionPlayer.Data player, Deck.SupplyData deck){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().cardGained(actions,money,buys,playerNum, player, deck);
-    }
-  }
   public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer){
     for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
       it.next().changePlayer(oldPlayerNum,oldPlayer,newPlayerNum,newPlayer);
@@ -166,15 +161,11 @@ public class DominionServer{
       output.println(out);
       output.flush();
     }
-    public void cardPlayed(int actions, int money, int buys, int playerNum, DominionPlayer.Data player, ArrayList<DominionCard> matcards){
-      String out="cardPlayed%"+actions+"%"+money+"%"+buys+"%"+playerNum+"%"+player.toString()+"%"+matcards.size();
+    public void cardPlayed(int playerNum, DominionPlayer.Data player, ArrayList<DominionCard> matcards){
+      String out="cardPlayed%"+playerNum+"%"+player.toString()+"%"+matcards.size();
       for(int i=0; i<matcards.size(); i++){
         out+="#"+matcards.get(i).toString();
       }
-      output.println(out);
-    }
-    public void cardGained(int actions, int money, int buys, int playerNum, DominionPlayer.Data player, Deck.SupplyData deck){
-      String out="cardGained%"+actions+"%"+money+"%"+buys+"%"+playerNum+"%"+player.toString()+"%"+deck.toString();
       output.println(out);
     }
     public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer){
@@ -208,8 +199,8 @@ public class DominionServer{
     public void displayComment(String text){
       output.println("displayComment%"+text);
     }
-    public void updateSharedFields(int actions, int money, int buys){
-      output.println("updateSharedFields%"+actions+"%"+money+"%"+buys);
+    public void updateSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
+      output.println("updateSharedFields%"+actions+"%"+money+"%"+buys+"%"+tradeRoute+"%"+potions);
     }
      
     public String getUserInput(){

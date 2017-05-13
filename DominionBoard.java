@@ -25,6 +25,7 @@ public class DominionBoard extends JFrame{
   private JPanel supplyPanel;
   private HashMap<String,JButton> doneButtons=new HashMap<>();
   private JTextField moneyField,buysField,actionsField;
+  private JTextField potionsField, tradeRouteField;
   private JTextField helpField;
   private DeckDisplay trash;
   
@@ -32,7 +33,7 @@ public class DominionBoard extends JFrame{
   private boolean maskSet=false;
 
   private String phase="actions";
-  private int actions, money, buys;
+  private int actions, money, buys, potions, tradeRoute;
   private int activePlayer=0;
   
   private HashMap<String,ImageIcon> imageTable=new HashMap<>();
@@ -148,7 +149,8 @@ public class DominionBoard extends JFrame{
     }
     
     JPanel fieldsPanel=new JPanel();
-    fieldsPanel.setLayout(new GridLayout(3,2));
+    fieldsPanel.setLayout(new GridLayout(5,2));
+    
     JLabel actionsLabel=new JLabel("Actions: ");
     fieldsPanel.add(actionsLabel);
     actionsField=new JTextField(2);
@@ -166,12 +168,33 @@ public class DominionBoard extends JFrame{
     buysField=new JTextField(2);
     buysField.setEditable(false);
     fieldsPanel.add(buysField);
+
+    //optional additions to the fields panel
+    JLabel tradeRouteLabel=new JLabel("Trade Route: ");
+    tradeRouteField=new JTextField(2);
+    tradeRouteField.setEditable(false);
+    
+    JLabel potionsLabel=new JLabel("Potions: ");
+    potionsField=new JTextField(2);
+    potionsField.setEditable(false);
+    
+    for(String option : gameOptions){
+      if(option.equals("traderoute")){
+        fieldsPanel.add(tradeRouteLabel);
+        fieldsPanel.add(tradeRouteField);
+      }
+      if(option.equals("potions")){
+        fieldsPanel.add(potionsLabel);
+        fieldsPanel.add(potionsField);
+      }
+    }
+    
     dataPanel.add(fieldsPanel);
 
     dataPanel.add(trash.getPanel());
     dataPanel.add(doneButtons.get("actions"));
     
-    refreshSharedFields(1,0,1);
+    refreshSharedFields(1,0,1,0,0);
  
     helpField=new JTextField("");
     infoPanel.add(helpField);
@@ -197,7 +220,7 @@ public class DominionBoard extends JFrame{
     activePlayer=newPlayer; 
     players.get(newPlayer).active=true;
     players.get(newPlayer).display(newData); 
-    refreshSharedFields(1,0,1);
+    refreshSharedFields(1,0,1,0,0);
     cardPanel.removeAll();
     repaint();
     revalidate();
@@ -232,13 +255,17 @@ public class DominionBoard extends JFrame{
     repaint();
     revalidate();
   }
-  public void refreshSharedFields(int actions, int money, int buys){
+  public void refreshSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
     this.actions=actions;
     this.money=money;
     this.buys=buys;
+    this.tradeRoute=tradeRoute;
+    this.potions=potions;
     moneyField.setText(money+"");
     buysField.setText(buys+"");
     actionsField.setText(actions+"");  
+    tradeRouteField.setText(tradeRoute+"");  
+    potionsField.setText(potions+"");  
   }
   public void showScores(OptionData points){
     String out="";
@@ -265,7 +292,11 @@ public class DominionBoard extends JFrame{
     }else{
       ImageIcon img=new ImageIcon();
       //System.out.println("loading image "+imagename);
-      img = new ImageIcon(this.getClass().getResource("DominionCards/"+imagename+".png"));     
+      try{
+        img = new ImageIcon(this.getClass().getResource("DominionCards/"+imagename+".png"));     
+      }catch(NullPointerException ex){
+        System.out.println("failed to load "+imagename);
+      }
       if(giant) img=new ImageIcon(resize(img.getImage(),400,550));
       else img=new ImageIcon(resize(img.getImage(),80,110));
       dummy.put(imagename,img);
@@ -321,6 +352,10 @@ public class DominionBoard extends JFrame{
     private ArrayList<String> islandCards;
     private JButton durationButton=new JButton("Duration");
     private ArrayList<String> durationCards;
+    private JButton nativevillageButton=new JButton("Native Village");
+    private ArrayList<String> nativeVillageCards;
+    private int vicTokens;
+    private JTextField vicfield=new JTextField();    
     
     public PlayerDisplay(DominionPlayer.Data tplayer){
 
@@ -353,6 +388,7 @@ public class DominionBoard extends JFrame{
       islandCards=player.islandCards;
       durationCards=player.durationCards;
       nativeVillageCards=player.nativeVillage;
+      vicTokens=player.vicTokens;
       JPanel optionPanel=new JPanel();
       optionPanel.setLayout(new GridLayout(gameOptions.size(),1));
       for(String s : gameOptions){
@@ -363,6 +399,16 @@ public class DominionBoard extends JFrame{
           pirateship.setEditable(false);
           pirateship.setText(player.pirateship+"");
           piratepanel.add(pirateship);
+          optionPanel.add(piratepanel);
+        }
+        if(s.equals("victorytokens")){
+          JPanel vicpanel=new JPanel();
+          vicpanel.setLayout(new FlowLayout());
+          vicpanel.add(new JLabel("Victory Tokens"));
+          vicfield.setEditable(false);
+          vicfield.setText(player.vicTokens+"");
+          vicpanel.add(vicfield);
+          optionPanel.add(vicpanel);
         }
         if(s.equals("island")){
           islandButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,islandCards));        
@@ -374,7 +420,7 @@ public class DominionBoard extends JFrame{
         }
         if(s.equals("nativevillage")){
           nativevillageButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,nativeVillageCards));  
-          optionPanel.add(durationButton);                
+          optionPanel.add(nativevillageButton);                
         }
       }
       infoPanel.add(optionPanel);   
@@ -434,10 +480,14 @@ public class DominionBoard extends JFrame{
       disc.display(player.disc);
 
       //option stuff
-      islandCards=player.islandCards;
-      durationCards=player.durationCards;
-      nativeVillageCards=player.nativeVillage;
+      islandCards.clear();
+      islandCards.addAll(player.islandCards);
+      durationCards.clear();
+      durationCards.addAll(player.durationCards);
+      nativeVillageCards.clear();
+      nativeVillageCards.addAll(player.nativeVillage);
       pirateship.setText(player.pirateship+"");
+      vicfield.setText(player.vicTokens+"");
       
       repaint();
       revalidate();
@@ -457,22 +507,26 @@ public class DominionBoard extends JFrame{
   }
   public class PlayerMouseAdapter extends MouseAdapter{
     JDialog popup=new JDialog();
-    JLabel image;
+    ArrayList<String> cards;
     public PlayerMouseAdapter(JFrame parent, ArrayList<String> names){
+      cards=names;
       Dimension parentSize = parent.getSize(); 
       Point p = parent.getLocation(); 
       popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
-      popup.setLayout(new FlowLayout());
-      for(String name : names){
-        image=new JLabel(getImage(name));
-        popup.add(image);
-      }
-      popup.pack();
+      popup.getContentPane().setLayout(new FlowLayout());
       popup.setDefaultCloseOperation(HIDE_ON_CLOSE);
     }
     @Override
     public void mousePressed(MouseEvent e){
       if(SwingUtilities.isRightMouseButton(e)){
+        popup.removeAll();
+        for(String name : cards){
+          System.out.println("native card "+name);
+          popup.getContentPane().add(new JLabel(getImage(name)));
+        }
+        popup.getContentPane().revalidate();
+        popup.getContentPane().repaint();
+        popup.pack();
         popup.setVisible(true);
       }
     }
