@@ -13,6 +13,7 @@ class Card{
   public String getImage(){return imagename;}
   @Override
   public int hashCode(){
+    System.out.println("hashcode "+name.hashCode());
     return name.hashCode();
   }
 }

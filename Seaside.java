@@ -56,6 +56,7 @@ public class Seaside extends Expansion{
     @Override
     public void duration(int ap){
       game.money++;
+      game.updateSharedFields();
     }
   }
   public class Nativevillage extends RegularCard{
@@ -78,8 +79,8 @@ public class Seaside extends Expansion{
           player.hand.add(card);
         }
         player.nativevillage.clear();
-        game.displayPlayer(ap);
       }
+      game.displayPlayer(ap);
     }
   }
   public class Pearldiver extends DominionCard{
@@ -119,6 +120,8 @@ public class Seaside extends Expansion{
       card=game.selectedCards.get(0);
       game.server.displayComment(ap,"trash up to two of those cards");
       game.displayPlayer(ap);
+      game.changePhase("select");
+      game.selectedCards.clear();
       game.server.setMask(ap,makeMask(game.players.get(ap).hand));
       game.doWork(0,2,ap);
       game.supplyDecks.get(card.getName()).put(game.selectedCards);
@@ -284,6 +287,7 @@ public class Seaside extends Expansion{
       player.island.add(game.selectedCards.get(0));
       player.island.add(this);
       game.matcards.remove(this);
+      game.displayPlayer(ap);
     }
   }
   public class Navigator extends DominionCard{
@@ -397,7 +401,7 @@ public class Seaside extends Expansion{
       game.server.setMask(ap,makeMask(game.players.get(ap).hand));
       game.doWork(0,1,ap);
       if(game.selectedCards.size()>0){
-        for(int i=0;i<4;i++) game.gainCard("gold",ap,"topdeck");
+        for(int i=0;i<4;i++) game.gainCard("gold",ap,"topcard");
       }
       game.trash.put(this);
       game.matcards.remove(this);
@@ -527,6 +531,7 @@ public class Seaside extends Expansion{
     public void duration(int ap){
       game.buys++;
       game.players.get(ap).drawToHand(2);
+      game.displayPlayer(ap);
     }
   }
 }

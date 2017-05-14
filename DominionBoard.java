@@ -34,6 +34,7 @@ public class DominionBoard extends JFrame{
 
   private String phase="actions";
   private int actions, money, buys, potions, tradeRoute;
+  private ArrayList<String> playedDuration=new ArrayList<>();
   private int activePlayer=0;
   
   private HashMap<String,ImageIcon> imageTable=new HashMap<>();
@@ -103,7 +104,7 @@ public class DominionBoard extends JFrame{
     for(int i=0;i<playersData.size();i++){
       players.add( new PlayerDisplay(playersData.get(i)) );
       panel.add(players.get(i).getPanel());
-      //players.get(i).controlled=true;
+      players.get(i).controlled=true;
     }
     players.get(playerNum).controlled=true;
     System.out.println("this client controls player "+playerNum);
@@ -222,11 +223,17 @@ public class DominionBoard extends JFrame{
     players.get(newPlayer).display(newData); 
     refreshSharedFields(1,0,1,0,0);
     cardPanel.removeAll();
-    repaint();
-    revalidate();
+    playedDuration=new ArrayList<>(players.get(newPlayer).durationCards);
+    players.get(newPlayer).durationCards.clear();
+    refreshCardPanel(new ArrayList<DominionCard>());
+//    repaint();
+//    revalidate();
   }  
   public void refreshCardPanel(ArrayList<DominionCard> matcards){
     cardPanel.removeAll();
+    for(String card : playedDuration){
+      cardPanel.add(new JLabel(getImage(card)));
+    }
     
     for(int i=0;i<matcards.size();i++){
       cardPanel.add(new JLabel(getImage(matcards.get(i).getImage())));
@@ -351,7 +358,7 @@ public class DominionBoard extends JFrame{
     private JButton islandButton=new JButton("Island");
     private ArrayList<String> islandCards;
     private JButton durationButton=new JButton("Duration");
-    private ArrayList<String> durationCards;
+    public ArrayList<String> durationCards;
     private JButton nativevillageButton=new JButton("Native Village");
     private ArrayList<String> nativeVillageCards;
     private int vicTokens;
@@ -506,26 +513,28 @@ public class DominionBoard extends JFrame{
     
   }
   public class PlayerMouseAdapter extends MouseAdapter{
-    JDialog popup=new JDialog();
     ArrayList<String> cards;
+    JFrame parent;
+    Dimension parentSize;
+    Point p;
+    JDialog popup;
     public PlayerMouseAdapter(JFrame parent, ArrayList<String> names){
       cards=names;
-      Dimension parentSize = parent.getSize(); 
-      Point p = parent.getLocation(); 
-      popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
-      popup.getContentPane().setLayout(new FlowLayout());
-      popup.setDefaultCloseOperation(HIDE_ON_CLOSE);
+      this.parent=parent;
+      parentSize = parent.getSize(); 
+      p = parent.getLocation(); 
     }
     @Override
     public void mousePressed(MouseEvent e){
       if(SwingUtilities.isRightMouseButton(e)){
-        popup.removeAll();
+        popup=new JDialog();
+        popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
+        popup.getContentPane().setLayout(new FlowLayout());
+        popup.setDefaultCloseOperation(HIDE_ON_CLOSE);
         for(String name : cards){
           System.out.println("native card "+name);
           popup.getContentPane().add(new JLabel(getImage(name)));
         }
-        popup.getContentPane().revalidate();
-        popup.getContentPane().repaint();
         popup.pack();
         popup.setVisible(true);
       }
@@ -534,6 +543,7 @@ public class DominionBoard extends JFrame{
     public void mouseReleased(MouseEvent e){
       if(SwingUtilities.isRightMouseButton(e)){
         popup.setVisible(false);
+        popup.dispose();
       }
     }
   }

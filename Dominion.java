@@ -88,7 +88,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    supplies.add("nativevillage");
+    supplies.add("wharf");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -144,9 +144,9 @@ public class Dominion{
       if(input.charAt(0)<='9' && input.charAt(0)>='0'){
 
         //always happens unless revealing a card
-        if(!phase.equals("reveal"))
+        if(!phase.equals("reveal")){
           card=players.get(activePlayer).hand.remove(Integer.parseInt(input));
-        else
+        }else
           card=players.get(activePlayer).hand.get(Integer.parseInt(input));
         
         //action specific stuff
@@ -392,17 +392,19 @@ public class Dominion{
     actions=1; 
     resetCardCounters();
     
+    //pass on this info to board
+    //have to do this before playing the duration cards because we're about to delete them all!
+    server.changePlayer(activePlayer,players.get(activePlayer).makeData(),newPlayer,players.get(newPlayer).makeData());
+
     //play duration cards
     for(DominionCard card2 : players.get(newPlayer).duration){
       for(int i=0;i<card2.throneroomed;i++) card2.duration(newPlayer);
       card2.throneroomed=1;
-      matcards.add(card2);
-      players.get(newPlayer).duration.remove(card2);
+//      matcards.add(card2);
     }
+    players.get(newPlayer).disc.put(players.get(newPlayer).duration);
     players.get(newPlayer).duration.clear();
 
-    //pass on this info to board
-    server.changePlayer(activePlayer,players.get(activePlayer).makeData(),newPlayer,players.get(newPlayer).makeData());
     updateSharedFields();
 
     

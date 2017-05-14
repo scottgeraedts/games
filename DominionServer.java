@@ -44,7 +44,7 @@ public class DominionServer{
       }
       for(int i=0;i<nPlayers;i++) output.get(i).println("break");
         
-      //playerNames.add("bot");
+      playerNames.add("bot");
       
       Dominion game=new Dominion(playerNames, new DominionServer(input,output));
       System.out.println("game over");
@@ -81,7 +81,7 @@ public class DominionServer{
     if(size!=pw.size()) System.out.println("size mismatch");
     player=new int[2];
     player[0]=0;
-    player[1]=1;
+    player[1]=0;
     connections=new ArrayList<HumanPlayer>(size);
     for(int i=0;i<size;i++)
       connections.add( new HumanPlayer(br.get(i),pw.get(i)));

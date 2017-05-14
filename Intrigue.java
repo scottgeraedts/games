@@ -322,6 +322,7 @@ public class Intrigue extends Expansion{
         game.actions++;
       }
       game.displayPlayer(activePlayer);
+      game.updateSharedFields();
     }
   }
   private class Diplomat extends DominionCard{
@@ -697,7 +698,9 @@ public class Intrigue extends Expansion{
         if(game.cost2(card)<3) game.players.get(victim).disc.put(card);
         else{
           game.trash.put(card);
+          game.displayTrash();
           game.gainLimit=game.cost2(card)-2;
+          game.server.displayComment(victim,"Gain a card costing up to"+game.gainLimit);
           if(game.gainLimit>=0) game.doWork("gain",1,1,victim);
           break;
         }
@@ -723,11 +726,16 @@ public class Intrigue extends Expansion{
         cards.add(card);
       }
       game.players.get( (activePlayer+1)%game.players.size()).disc.put(cards);
+      System.out.println("size in tribute "+cards.size());
+      OptionData o=new OptionData();      
       for(DominionCard card2 : cards){
         if(card2.isAction) game.actions+=2;
         if(card2.isVictory) game.players.get(activePlayer).drawToHand(2);
         if(card2.isMoney) game.money+=2;
+        o.put(card2.getImage(),"image");
       }
+      o.put("Done","textbutton");
+      game.optionPane(activePlayer,o);
       game.updateSharedFields();
       game.displayPlayer(activePlayer);
       game.displayPlayer( (activePlayer+1)%game.players.size());

@@ -551,7 +551,10 @@ public class Core extends Expansion{
       
       game.changePhase("select");
       boolean [] mask=makeMask(hand);
-      if(Arrays.asList(mask).contains(true)){
+      ArrayList<Boolean> maskL=new ArrayList<>(mask.length);
+      for(int i=0; i<mask.length; i++) maskL.add(mask[i]);
+      
+      if(maskL.contains(true)){
         game.server.setMask(activePlayer,mask);
         game.doWork(1,1,activePlayer);
         DominionCard card=game.selectedCards.get(0);

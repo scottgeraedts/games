@@ -59,14 +59,20 @@ public class DominionClient{
     
     while(true){
       try{
-        Thread.sleep(1);
+        Thread.sleep(10);
       }catch(InterruptedException ex){
         System.out.println("interupted!");
       }
       
       //check if there's any input to display
       if(watcher.isNew()){
-        inputLine=watcher.getValue();
+        try{
+          inputLine=watcher.getValue();
+        }catch(NullPointerException ex){
+          System.out.println("wtf its a null pointer exception "+watcher.isNew());
+          ex.printStackTrace();
+          break;
+        }
         if(inputLine.equals("Terminate")) break;
         parseInput(inputLine);
       }
@@ -247,7 +253,9 @@ public class DominionClient{
       while(true){
         try{
           Thread.sleep(10);
-        }catch(InterruptedException ex){}
+        }catch(InterruptedException ex){
+          System.out.println("watcher interrupted");
+        }
         
         try{
           out=input.readLine();
