@@ -18,6 +18,7 @@ public class DominionBoard extends JFrame{
 
   //supply panel
   private LinkedHashMap<String,SupplyDisplay> supplyDecks=new LinkedHashMap<>();
+  private ImageIcon embargo;
   
   //mat panel
   private JPanel cardPanel;
@@ -29,9 +30,6 @@ public class DominionBoard extends JFrame{
   private JTextField helpField;
   private DeckDisplay trash;
   
-  private boolean mask[];
-  private boolean maskSet=false;
-
   private String phase="actions";
   private int actions, money, buys, potions, tradeRoute;
   private ArrayList<String> playedDuration=new ArrayList<>();
@@ -57,6 +55,8 @@ public class DominionBoard extends JFrame{
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
     gameOptions=o;
     
+    embargo=new ImageIcon(this.getClass().getResource("DominionCards/curse.png"));
+    embargo=new ImageIcon(resize(embargo.getImage(),10,30));
     //some graphics setup
   	setSize(1500,800);
 		cp = getContentPane();
@@ -82,11 +82,11 @@ public class DominionBoard extends JFrame{
     
     //reset players
     for(int i=0;i<playersData.size();i++){
-      displayPlayer(i,playersData.get(i));
+      displayPlayer(i,playersData.get(i),new ArrayList<Boolean>());
     }
-    changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer));
+    changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer),new ArrayList<Boolean>());
     activePlayer=startingPlayer;
-    changePhase(phase,"actions");
+    changePhase(phase,"actions",new ArrayList<Boolean>());
   }
   public void playAgain(){
     String [] options={"Play again","Quit"};
@@ -104,13 +104,13 @@ public class DominionBoard extends JFrame{
     for(int i=0;i<playersData.size();i++){
       players.add( new PlayerDisplay(playersData.get(i)) );
       panel.add(players.get(i).getPanel());
-      players.get(i).controlled=true;
+      if(DominionClient.DEBUG) players.get(i).controlled=true;
     }
     players.get(playerNum).controlled=true;
     System.out.println("this client controls player "+playerNum);
     activePlayer=startingPlayer;
     players.get(startingPlayer).active=true;
-    players.get(startingPlayer).display(playersData.get(startingPlayer));
+    players.get(startingPlayer).display(playersData.get(startingPlayer),new ArrayList<Boolean>());
     return panel;
   }  
   
@@ -214,13 +214,12 @@ public class DominionBoard extends JFrame{
         output=evt.getActionCommand();
     }
   }
-  public void changePlayer(int oldPlayer, DominionPlayer.Data oldData, int newPlayer, DominionPlayer.Data newData){
-    maskSet=false;
+  public void changePlayer(int oldPlayer, DominionPlayer.Data oldData, int newPlayer, DominionPlayer.Data newData, ArrayList<Boolean> mask){
     players.get(oldPlayer).active=false;
-    players.get(oldPlayer).display(oldData);
+    players.get(oldPlayer).display(oldData,new ArrayList<Boolean>());
     activePlayer=newPlayer; 
     players.get(newPlayer).active=true;
-    players.get(newPlayer).display(newData); 
+    players.get(newPlayer).display(newData,mask); 
     refreshSharedFields(1,0,1,0,0);
     cardPanel.removeAll();
     playedDuration=new ArrayList<>(players.get(newPlayer).durationCards);
@@ -243,8 +242,7 @@ public class DominionBoard extends JFrame{
     repaint();
     revalidate();
   }
-  public void changePhase(String oldPhase, String newPhase){
-    maskSet=false;
+  public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask){
 
     phase=newPhase;
     try{
@@ -257,8 +255,7 @@ public class DominionBoard extends JFrame{
     }catch(NullPointerException e){
     }
  
-    players.get(activePlayer).display();
-     
+    displayPlayer(activePlayer,players.get(activePlayer).player,mask);
     repaint();
     revalidate();
   }
@@ -312,11 +309,6 @@ public class DominionBoard extends JFrame{
   }
   
 
-  public void setMask(boolean [] t){
-    mask=t;
-    maskSet=true;
-    players.get(activePlayer).display();
-  }
   public void optionPane(OptionData o){
     OptionPane pane=new OptionPane(this,o);
     output=pane.getValue();
@@ -331,8 +323,8 @@ public class DominionBoard extends JFrame{
   public void displaySupply(Deck.SupplyData data){ 
     supplyDecks.get(data.name).display(data); 
   }
-  public void displayPlayer(int i, DominionPlayer.Data data){ 
-    players.get(i).display(data); 
+  public void displayPlayer(int i, DominionPlayer.Data data, ArrayList<Boolean> mask){ 
+    players.get(i).display(data,mask); 
   }
   public void displayTrash(Deck.Data data){
     trash.display(data);
@@ -434,29 +426,28 @@ public class DominionBoard extends JFrame{
       panel.add(infoPanel);
       panel.add(handPanel);
       
-      display(player);
+      display(player,new ArrayList<Boolean>());
     }
     //use last times data to display
     public void display(){
-      display(player);
+      display(player,new ArrayList<Boolean>());
     }
-    public void display(DominionPlayer.Data tplayer){
+    public void display(DominionPlayer.Data tplayer, ArrayList<Boolean> mask){
       player=tplayer;
       handPanel.removeAll();
       
       Iterator<DominionCard> it=player.hand.iterator();
       int i=0;
-//      if (maskSet) 
-//        for(int k=0;k<mask.length;k++) System.out.println(mask[k]);
+
       while(it.hasNext()){
         DominionCard card=it.next();
         JButton button=new JButton();
         //if its your turn and its your player you can see the cards and click on some of them
         if(active && controlled){
-          button.setIcon(getImage(card.getImage()));          
+          button.setIcon(getImage(card.getImage()));      
           if((phase.equals("actions") && (card.isMoney || card.isAction)) || (phase.equals("buys") && card.isMoney) ){
             button.setEnabled(true);
-          }else if ((!maskSet || mask[i]) && 
+          }else if ((mask.size()!=player.hand.size() || mask.get(i)) && 
               (phase.equals("trash") || phase.equals("discard") || phase.equals("topdeck") 
               || phase.equals("select") || phase.equals("reveal"))){
 
@@ -600,20 +591,24 @@ public class DominionBoard extends JFrame{
     private JTextField cost;
     private String name;
     private Deck.SupplyData data;
+    public boolean embargo=false;
+    private JTextField embargoLabel;
+    
     public SupplyDisplay(Deck.SupplyData tdata){
       data=tdata;
       name=data.name;
       image=getImage(data.image);
       
       panel.setLayout(new OverlayLayout(panel));
+      //panel.setPreferredSize(new Dimension(110,140));
       
       n=new JTextField(2);
       n.setEditable(false);
       n.setBackground(Color.WHITE);
+      n.setMaximumSize(new Dimension(30,25));
       n.setAlignmentY(0.f);
       n.setAlignmentX(0.f);
       n.setFont(new Font("Arial", Font.BOLD, 20));
-      n.setMaximumSize(new Dimension(30,25));
       n.setText(data.size+"");  
       
       panel.add(n);      
@@ -621,12 +616,21 @@ public class DominionBoard extends JFrame{
       cost=new JTextField(1);
       cost.setBackground(Color.WHITE);
       cost.setEditable(false);
+      cost.setMaximumSize(new Dimension(30,25));
       cost.setAlignmentY(1.f);
       cost.setAlignmentX(0.f);
       cost.setFont(new Font("Arial", Font.BOLD, 20));
-      cost.setMaximumSize(new Dimension(30,25));
       cost.setText(data.cost+"");
       panel.add(cost);
+      
+      embargoLabel=new JTextField("");
+      embargoLabel.setAlignmentY(1.f);
+      embargoLabel.setAlignmentX(0.f);
+      embargoLabel.setBackground(Color.RED);
+      embargoLabel.setMaximumSize(new Dimension(30,25));
+      embargoLabel.setText(data.cost+"");
+      if(embargo)
+        panel.add(embargoLabel);
       
       button.setIcon(image);
       button.setOpaque(false);
@@ -674,6 +678,8 @@ public class DominionBoard extends JFrame{
       panel.add(n);
       panel.add(cost);
       panel.add(button);
+      if(embargo)
+        panel.add(embargoLabel);
     }
 
   }

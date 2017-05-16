@@ -278,7 +278,7 @@ public class Intrigue extends Expansion{
     @Override 
     public void subWork(int activePlayer){
       DominionPlayer player=game.players.get(activePlayer);
-      game.server.setMask(activePlayer,makeMask(player.hand));
+      game.mask=makeMask(player.hand);
       game.doWork("discard",0,1,activePlayer);
       
       if(game.selectedCards.size()>0){

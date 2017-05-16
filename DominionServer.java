@@ -44,7 +44,7 @@ public class DominionServer{
       }
       for(int i=0;i<nPlayers;i++) output.get(i).println("break");
         
-      playerNames.add("bot");
+      if(DominionClient.DEBUG) playerNames.add("bot");
       
       Dominion game=new Dominion(playerNames, new DominionServer(input,output));
       System.out.println("game over");
@@ -81,7 +81,8 @@ public class DominionServer{
     if(size!=pw.size()) System.out.println("size mismatch");
     player=new int[2];
     player[0]=0;
-    player[1]=0;
+    if(DominionClient.DEBUG) player[1]=0;
+    else player[1]=1;
     connections=new ArrayList<HumanPlayer>(size);
     for(int i=0;i<size;i++)
       connections.add( new HumanPlayer(br.get(i),pw.get(i)));
@@ -97,17 +98,7 @@ public class DominionServer{
       connections.get(i).reset(supplyData,playerData,startingPlayer,o);
     }
   }
-  public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().changePlayer(oldPlayerNum,oldPlayer,newPlayerNum,newPlayer);
-    }
-  }
-  public void changePhase(String oldPhase, String newPhase){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
-      it.next().changePhase(oldPhase,newPhase);
-    }
-  }
-  public void showScores(PairList<String,Integer> scores){
+  public void showScores(PairList<String,String> scores){
     for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
       it.next().showScores(scores);
     }
@@ -119,10 +110,7 @@ public class DominionServer{
     System.out.println("displayed");
     connections.get(player[playerNum]).displayComment(text);
   }
-  public void setMask(int playerNum, boolean [] mask){
-    connections.get(player[playerNum]).setMask(mask);
-  }
-  
+
   public String getUserInput(int i){
     System.out.println("requesting input from player "+player[i]);
     return connections.get(player[i]).getUserInput();
@@ -161,26 +149,26 @@ public class DominionServer{
       output.println(out);
       output.flush();
     }
-    public void cardPlayed(int playerNum, DominionPlayer.Data player, ArrayList<DominionCard> matcards){
-      String out="cardPlayed%"+playerNum+"%"+player.toString()+"%"+matcards.size();
+    public void displayMatCards(ArrayList<DominionCard> matcards){
+      String out="displayMatCards%"+matcards.size();
       for(int i=0; i<matcards.size(); i++){
         out+="#"+matcards.get(i).toString();
       }
       output.println(out);
     }
-    public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer){
+    public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer, ArrayList<Boolean> mask){
       String out="changePlayer%"+oldPlayerNum+"%"+oldPlayer.toString();
-      out+="%"+newPlayerNum+"%"+newPlayer.toString();
+      out+="%"+newPlayerNum+"%"+newPlayer.toString()+"%"+toArray(mask);
       output.println(out);
     }
-    public void changePhase(String oldPhase, String newPhase){
-      output.println("changePhase%"+oldPhase+"%"+newPhase);
+    public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask){
+      output.println("changePhase%"+oldPhase+"%"+newPhase+"%"+toArray(mask));
     }
-    public void showScores(PairList<String,Integer> scores){
+    public void showScores(PairList<String,String> scores){
       output.println("showScores%"+scores.toString());
     } 
-    public void displayPlayer(int playerNum, DominionPlayer.Data player){
-      output.println("displayPlayer%"+playerNum+"%"+player.toString());
+    public void displayPlayer(int playerNum, DominionPlayer.Data player, Collection<Boolean> mask){
+      output.println("displayPlayer%"+playerNum+"%"+player.toString()+"%"+toArray(mask));
     }
     public void optionPane(OptionData o){
       output.println("optionPane%"+o.toString());
@@ -190,11 +178,6 @@ public class DominionServer{
     }
     public void displaySupply(Deck.SupplyData dat){
       output.println("displaySupply%"+dat.toString());
-    }
-    public void setMask(boolean [] mask){
-      String out="setMask%"+mask.length;
-      for(int i=0;i<mask.length;i++) out+="#"+mask[i];
-      output.println(out);
     }
     public void displayComment(String text){
       output.println("displayComment%"+text);

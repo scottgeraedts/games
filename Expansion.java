@@ -54,7 +54,7 @@ public abstract class Expansion{
       for(int i=(activePlayer+1)%game.players.size(); i!=activePlayer; i=(i+1)%game.players.size()){
 
         victim=game.players.get(i);
-        game.server.changePlayer(oldPlayer,game.players.get(oldPlayer).makeData(),i%game.players.size(),victim.makeData());
+        game.changePlayer(oldPlayer,i%game.players.size());
 
         //resolve possible reactions
         boolean moat=false;
@@ -89,13 +89,14 @@ public abstract class Expansion{
           continue;
         }
         
+        game.mask.clear();
         game.server.displayComment(i,comment);
         subStep(i,activePlayer);
         game.selectedCards.clear();
         game.server.displayComment(i,"");
         oldPlayer=i;
       }
-      game.server.changePlayer(oldPlayer,game.players.get(oldPlayer).makeData(),activePlayer,game.players.get(activePlayer).makeData());
+      game.changePlayer(oldPlayer,activePlayer);
       game.money=oldmoney;
       game.actions=oldActions;
       game.buys=oldBuys;
@@ -125,6 +126,7 @@ public abstract class Expansion{
 
       subWork(activePlayer);
 
+      game.mask.clear();
       game.changePhase("actions");
       game.server.displayComment(activePlayer,"");
       game.selectedCards.clear();

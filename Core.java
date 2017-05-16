@@ -121,17 +121,13 @@ public class Core extends Expansion{
       hand=game.players.get(activePlayer).hand;
       DominionPlayer player=game.players.get(activePlayer);
 
-      boolean mask[]=makeMask(hand);
+      game.mask=makeMask(hand);
 
-      ArrayList<Boolean> maskL=new ArrayList<>(mask.length);
-      for(int i=0;i<mask.length;i++) maskL.add(mask[i]);
-      
-      int count=Collections.frequency(maskL,true);
+      int count=Collections.frequency(game.mask,true);
       if(count==1){
-        player.deck.add(player.hand.remove(maskL.indexOf(true)));
+        player.deck.add(player.hand.remove(game.mask.indexOf(true)));
       }else if(count>1){
-        game.server.setMask(activePlayer,mask);
-        game.doWork(1,1,activePlayer);
+        game.doWork("topdeck",1,1,activePlayer);
       }
     }
     @Override
@@ -320,11 +316,10 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.changePhase("trash");
-      game.server.setMask(activePlayer,makeMask(game.players.get(activePlayer).hand));
-      game.doWork(0,1,activePlayer);
-      game.displayTrash();
+      game.mask=makeMask(game.players.get(activePlayer).hand);
+      game.doWork("trash",0,1,activePlayer);
       int cost=game.selectedCards.get(0).cost;
+
       game.changePhase("selectDeck");
       
       DominionCard card;
@@ -356,9 +351,9 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.changePhase("trash");
-      game.server.setMask(activePlayer,makeMask(game.players.get(activePlayer).hand));
-      game.doWork(0,1,activePlayer);
+      game.mask=makeMask(game.players.get(activePlayer).hand);
+      game.displayPlayer(activePlayer);
+      game.doWork("trash",0,1,activePlayer);
       if(game.selectedCards.size()>0){
         game.money+=3;
         game.updateSharedFields();
@@ -537,26 +532,11 @@ public class Core extends Expansion{
     public void work(int activePlayer){
       game.server.displayComment(activePlayer,"Choose a card to play twice");
       Collection<DominionCard> hand=game.players.get(activePlayer).hand;
-      boolean foundAction=false;
-      for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
-        if(maskCondition(it.next())){
-          foundAction=true;
-          break;
-        }
-      }
-      if(foundAction==false){
-        game.server.displayComment(activePlayer,"");
-        return;
-      }
       
-      game.changePhase("select");
-      boolean [] mask=makeMask(hand);
-      ArrayList<Boolean> maskL=new ArrayList<>(mask.length);
-      for(int i=0; i<mask.length; i++) maskL.add(mask[i]);
+      game.mask=makeMask(hand);
       
-      if(maskL.contains(true)){
-        game.server.setMask(activePlayer,mask);
-        game.doWork(1,1,activePlayer);
+      if(game.mask.contains(true)){
+        game.doWork("select",1,1,activePlayer);
         DominionCard card=game.selectedCards.get(0);
 
         game.selectedCards.clear();

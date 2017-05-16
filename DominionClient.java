@@ -72,6 +72,10 @@ public class DominionClient{
           System.out.println("wtf its a null pointer exception "+watcher.isNew());
           ex.printStackTrace();
           break;
+        }catch(NoSuchElementException ex){
+          System.out.println("wtf its a null pointer exception "+watcher.isNew());
+          ex.printStackTrace();
+          break;
         }
         if(inputLine.equals("Terminate")) break;
         parseInput(inputLine);
@@ -143,11 +147,10 @@ public class DominionClient{
     }
     
   }
-  public void cardPlayed(String input){
+  public void displayMatCards(String input){
 //    System.out.println(input);
     String [] parts=input.split("%");
-    board.refreshCardPanel(readArray(parts[2],new DominionCard("copper")));
-    board.displayPlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]));
+    board.refreshCardPanel(readArray(input,new DominionCard("copper")));
     
   }
   public void changePlayer(String input){
@@ -155,19 +158,19 @@ public class DominionClient{
     String [] parts=input.split("%");
     System.out.println("changing player "+parts[0]+" "+parts[2]);
     board.changePlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]),
-        Integer.parseInt(parts[2]),new DominionPlayer.Data(parts[3]));
+        Integer.parseInt(parts[2]),new DominionPlayer.Data(parts[3]),readArray(parts[4],new Boolean(true)));
     
   }
   public void changePhase(String input){
     String [] parts=input.split("%");
-    board.changePhase(parts[0],parts[1]);
+    board.changePhase(parts[0],parts[1],readArray(parts[2],new Boolean(true)));
   }
   public void showScores(String input){
     board.showScores(new OptionData(input));
   }
   public void displayPlayer(String input){
     String [] parts=input.split("%");
-    board.displayPlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]));
+    board.displayPlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]),readArray(parts[2],new Boolean(true)));
   }
   public void optionPane(String input){
     board.optionPane(new OptionData(input));
@@ -186,13 +189,6 @@ public class DominionClient{
   }
   public void displayComment(String input){
     board.displayComment(input);
-  }
-  public void setMask(String input){
-    String [] parts=input.split("#");
-    int size=Integer.parseInt(parts[0]);
-    boolean [] out=new boolean[size];
-    for(int i=0;i<size;i++) out[i]=Boolean.parseBoolean(parts[i+1]);
-    board.setMask(out);
   }
   
   ///***THE PESKY READARRAYS***///
@@ -235,7 +231,15 @@ public class DominionClient{
     }
     return x;  
   }
-
+  public static ArrayList<Boolean> readArray(String parts, Boolean temp){
+    String [] playerParts=parts.split("#");
+    int size=Integer.parseInt(playerParts[0]);
+    ArrayList<Boolean> x=new ArrayList<Boolean>(size);
+    for(int i=0;i<size;i++){
+      x.add(Boolean.parseBoolean(playerParts[i+1]));
+    }
+    return x;  
+  }
     
   /////**SERVER WATCHER***///
   //constantly checks to see if there's more information from the server

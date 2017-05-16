@@ -154,12 +154,11 @@ public class DominionCard extends Card{
   }
   public void onGain(int x){}
   
-  public boolean [] makeMask(Collection<DominionCard> hand){
-      boolean [] mask=new boolean[hand.size()];
-      Arrays.fill(mask,false);
+  public ArrayList<Boolean> makeMask(Collection<DominionCard> hand){
+      ArrayList<Boolean> mask=new ArrayList<Boolean>(hand.size());
       int i=0;
       for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
-        mask[i]=maskCondition(it.next());
+        mask.add(maskCondition(it.next()));
         i++;
       }
       return mask;

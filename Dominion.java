@@ -24,6 +24,7 @@ public class Dominion{
   public String selectedDeck;
   private int maxSelection=10,minSelection=10;
   public ArrayList<DominionCard> selectedCards=new ArrayList<>(); 
+  public ArrayList<Boolean> mask=new ArrayList<>();
 
   //specific card related counters
   public int bridgeCounter=0; //counts cost reduction, also does highway and brige troll
@@ -88,7 +89,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    supplies.add("wharf");
+    supplies.add("seahag");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -107,6 +108,7 @@ public class Dominion{
     }
     cards.addAll(supplies);
     
+    //make the supplies
     for(int i=0;i<cards.size();i++){
       supplyDecks.put(cards.get(i), new SupplyDeck( cards.get(i) ));
     } 
@@ -145,6 +147,7 @@ public class Dominion{
 
         //always happens unless revealing a card
         if(!phase.equals("reveal")){
+          if(mask.size()==players.get(activePlayer).hand.size()) mask.remove(Integer.parseInt(input));
           card=players.get(activePlayer).hand.remove(Integer.parseInt(input));
         }else
           card=players.get(activePlayer).hand.get(Integer.parseInt(input));
@@ -306,8 +309,11 @@ public class Dominion{
       
       //put card on discard pile or (more rarely) top of deck
       if(where.equals("topcard")) player.deck.put(card);
-      if(where.equals("hand")) player.hand.add(card);
-      else player.disc.put(card);      
+      else if(where.equals("hand")) player.hand.add(card);
+      else if(where.equals("discard")) player.disc.put(card);      
+      else{
+        System.out.println("I don't know where to put this card! "+where);
+      }
 
       cardGained(activePlayer,supplyName);
       
@@ -338,10 +344,6 @@ public class Dominion{
       return true;
     }
     return false;
-  }
-  public void changePhase(String newPhase){
-    server.changePhase(phase,newPhase);
-    phase=newPhase;
   }
   public int endTurn(int activePlayer){
     //****end the previous turn***//
@@ -394,7 +396,7 @@ public class Dominion{
     
     //pass on this info to board
     //have to do this before playing the duration cards because we're about to delete them all!
-    server.changePlayer(activePlayer,players.get(activePlayer).makeData(),newPlayer,players.get(newPlayer).makeData());
+    changePlayer(activePlayer,newPlayer);
 
     //play duration cards
     for(DominionCard card2 : players.get(newPlayer).duration){
@@ -430,8 +432,8 @@ public class Dominion{
     contrabandDecks.clear();
   }
   public void endGame(){
-    int temp;
-    PairList<String,Integer> points=new PairList<>();
+    String temp;
+    PairList<String,String> points=new PairList<>();
     String name;
     
     for(int i=0;i<players.size();i++){
@@ -540,14 +542,6 @@ public class Dominion{
     displayPlayer(activePlayer);
     if(p.equals("trash")) displayTrash();
   }
-  //a variant that doesn't change the phase, important whenever there is a mask
-  public void doWork(int min, int max, int activePlayer){
-    minSelection=min;
-    maxSelection=max;
-    if(max==0) max=1;
-    work(activePlayer);
-    displayPlayer(activePlayer);
-  }
 //  //***SETTING PRIVATE VARIABLES***///
 
 //  //***STUFF WHICH GETS STATUS OF GAME***///
@@ -569,13 +563,24 @@ public class Dominion{
   //some simple wrappers for server functions 
   public void displayPlayer(int i){
     for( DominionServer.HumanPlayer connection : server.connections){
-      connection.displayPlayer(i,players.get(i).makeData());
+      connection.displayPlayer(i,players.get(i).makeData(),mask);
     }
+  }
+  public void changePlayer(int oldP, int newP){
+    for( DominionServer.HumanPlayer connection : server.connections){
+      connection.changePlayer(oldP,players.get(oldP).makeData(),newP,players.get(newP).makeData(),mask);
+    }    
   }
   public void updateSharedFields(){
     for( DominionServer.HumanPlayer connection : server.connections){  
       connection.updateSharedFields(actions,money,buys,tradeRouteCards.size(),potions);
     }
+  }
+  public void changePhase(String newPhase){
+    for( DominionServer.HumanPlayer connection : server.connections){  
+      connection.changePhase(phase,newPhase,mask);
+    }
+    phase=newPhase;
   }
   public void displaySupply(Deck.SupplyData data){
     for( DominionServer.HumanPlayer connection : server.connections){  
@@ -593,8 +598,9 @@ public class Dominion{
     }
   }
   public void cardPlayed(int activePlayer){
+    displayPlayer(activePlayer);
     for( DominionServer.HumanPlayer connection : server.connections){
-      connection.cardPlayed(activePlayer,players.get(activePlayer).makeData(),matcards);      
+      connection.displayMatCards(matcards);      
     }
     updateSharedFields();
   }
@@ -615,7 +621,7 @@ public class Dominion{
     private int cost;
     private String name;
     public int curses=0;
-    private DominionCard card;
+    public DominionCard card;
     public SupplyDeck(String name){
       this.name=name;
       card=cardFactory(name);

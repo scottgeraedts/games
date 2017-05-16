@@ -120,10 +120,9 @@ public class Seaside extends Expansion{
       card=game.selectedCards.get(0);
       game.server.displayComment(ap,"trash up to two of those cards");
       game.displayPlayer(ap);
-      game.changePhase("select");
       game.selectedCards.clear();
-      game.server.setMask(ap,makeMask(game.players.get(ap).hand));
-      game.doWork(0,2,ap);
+      game.mask=makeMask(game.players.get(ap).hand);
+      game.doWork("select",0,2,ap);
       game.supplyDecks.get(card.getName()).put(game.selectedCards);
       game.displaySupply(card.getName());
     }
@@ -253,19 +252,12 @@ public class Seaside extends Expansion{
     @Override
     public void subStep(int vic, int ap){
       DominionPlayer player=game.players.get(vic);
-      game.changePhase("discard");
-      boolean [] mask=makeMask(player.hand);
-      //since mask is primitive casting to to a list is a huge pain
-      ArrayList<Boolean> maskL=new ArrayList<>(mask.length);
-      for(int i=0;i<mask.length;i++) maskL.add(mask[i]);
-      
-      int count=Collections.frequency(maskL,true);
+      game.mask=makeMask(player.hand);
+      int count=Collections.frequency(game.mask,true);
       if(count==1){
-        player.disc.add(player.hand.remove(maskL.indexOf(true)));
+        player.disc.add(player.hand.remove(game.mask.indexOf(true)));
       }else if(count>1){
-        game.changePhase("discard");
-        game.server.setMask(vic,mask);
-        game.doWork(1,1,vic);
+        game.doWork("discard",1,1,vic);
       }
     }
     @Override
@@ -397,9 +389,8 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.changePhase("trash");
-      game.server.setMask(ap,makeMask(game.players.get(ap).hand));
-      game.doWork(0,1,ap);
+      game.mask=makeMask(game.players.get(ap).hand);
+      game.doWork("trash",0,1,ap);
       if(game.selectedCards.size()>0){
         for(int i=0;i<4;i++) game.gainCard("gold",ap,"topcard");
       }
@@ -415,9 +406,8 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.changePhase("reveal");
-      game.server.setMask(ap,makeMask(game.players.get(ap).hand));
-      game.doWork(0,1,ap);
+      game.mask=makeMask(game.players.get(ap).hand);
+      game.doWork("reveal",0,1,ap);
       if(game.selectedCards.size()>0) game.gainCard("gold",ap,"hand");
       else game.gainCard("silver",ap,"hand");
     }
