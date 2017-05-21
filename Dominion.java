@@ -39,6 +39,7 @@ public class Dominion{
   public HashSet<String> tradeRouteCards;
   public int talismanCounter=0;
   public HashSet<String> contrabandDecks=new HashSet<>();
+  public boolean royalSeal=false;
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
@@ -81,7 +82,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      //for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("nativevillage"));
+//      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bishop"));
     }
     nPlayers=names.size();
 
@@ -89,7 +90,6 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    supplies.add("seahag");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -249,7 +249,7 @@ public class Dominion{
 
       if(phase=="buys"){
       
-        if(contrabandDecks.contains(supplyName)) return false;
+        if(deck.contraband) return false;
         buys--;
         money-=deck.getCost();
         
@@ -259,7 +259,6 @@ public class Dominion{
           for(int i=0;i<talismanCounter; i++) gainCard(supplyName, activePlayer, where);
           phase="buys";
         }
-                
       }
 
       if(phase=="gain"){
@@ -269,7 +268,7 @@ public class Dominion{
       //check for embargo-type effects
       if(phase.equals("buys")){
         phase="actions";
-        for(int i=0;i<deck.curses;i++){
+        for(int i=0;i<deck.embargo;i++){
           gainCard("curse",activePlayer);
         }
         phase="buys";
@@ -286,6 +285,11 @@ public class Dominion{
       if(supplyDecks.get(supplyName).getCost()<=6) smugglerCards1.add(supplyName);
       if(phase.equals("buys") && card.isVictory) victoryBought=true;
       if(card.isVictory) tradeRouteCards.add(card.getName());
+      if(royalSeal){
+        String [] options={"Deck","Discard"};
+        String input=optionPane(activePlayer,new OptionData(options));
+        if(input.equals(options[0])) where="topcard";
+      }
 
       //play reactions
       OptionData o;     
@@ -335,7 +339,7 @@ public class Dominion{
 
       for(ListIterator<DominionCard> it=player.hand.listIterator(); it.hasNext(); ){
         card=it.next();
-        if(card.isMoney){
+        if(card.getName().equals("copper") || card.getName().equals("silver") || card.getName().equals("gold") || card.getName().equals("platinum")){
           it.remove();
           playCard(card,activePlayer);
         }
@@ -613,15 +617,17 @@ public class Dominion{
     for( DominionServer.HumanPlayer connection : server.connections){
       connection.displayTrash(trash.makeData());
     }
-  }    
+  }  
 //  
   //****INNER CLASSES***///
   //can't be static because it uses cardFactory
   class SupplyDeck extends Deck<DominionCard>{
     private int cost;
     private String name;
-    public int curses=0;
+    public int embargo=0;
+    public boolean contraband=false;
     public DominionCard card;
+    
     public SupplyDeck(String name){
       this.name=name;
       card=cardFactory(name);
@@ -645,7 +651,7 @@ public class Dominion{
     public int getCost(){return cost2(card);}
     public String getName(){return name;}
     public Deck.SupplyData makeData(){
-      return new Deck.SupplyData(size(), backImage, getCost(), name);
+      return new Deck.SupplyData(size(), backImage, getCost(), name, embargo, contraband);
     }
     
   }

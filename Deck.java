@@ -90,23 +90,29 @@ class Deck<T extends Card> extends LinkedList<T>{
   public static class SupplyData extends Data{
     public int cost;
     public String name;
-    public SupplyData(int a, String image, int tcost, String name){
+    public boolean contraband;
+    public int embargo;
+    public SupplyData(int a, String image, int tcost, String name, int embargo, boolean contraband){
       super(a,image);
       size=a;
       this.image=image;
       cost=tcost;
       this.name=name;
+      this.embargo=embargo;
+      this.contraband=contraband;
     }
     public SupplyData(String in){
       super(in);
       String [] parts=in.split("!");
       cost=Integer.parseInt(parts[2]);
       name=parts[3];      
+      embargo=Integer.parseInt(parts[4]);
+      contraband=Boolean.parseBoolean(parts[5]);
     }
     public SupplyData(){}
     @Override
     public String toString(){
-      return super.toString()+"!"+cost+"!"+name;
+      return super.toString()+"!"+cost+"!"+name+"!"+embargo+"!"+contraband;
     }
   }
   public Data makeData(){

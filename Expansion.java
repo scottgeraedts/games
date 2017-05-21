@@ -80,8 +80,10 @@ public abstract class Expansion{
           }
         }
         //check for lighthouse
-        for(DominionCard card : victim.duration){
-          if(card.getName().equals("lighthouse")) moat=true;
+        if(isAttack){
+          for(DominionCard card : victim.duration){
+            if(card.getName().equals("lighthouse")) moat=true;
+          }
         }
         
         if(moat){
@@ -127,7 +129,7 @@ public abstract class Expansion{
       subWork(activePlayer);
 
       game.mask.clear();
-      game.changePhase("actions");
+      if(isAction) game.changePhase("actions");
       game.server.displayComment(activePlayer,"");
       game.selectedCards.clear();
     }

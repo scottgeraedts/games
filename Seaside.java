@@ -19,10 +19,11 @@ public class Seaside extends Expansion{
     public void subWork(int activePlayer){
       game.server.displayComment(activePlayer,"Choose a pile for the embargo token");
       game.doWork("selectDeck",0,1,activePlayer);
-      game.supplyDecks.get(game.selectedDeck).curses++;
+      game.supplyDecks.get(game.selectedDeck).embargo++;
       game.matcards.remove(this);
       game.trash.put(this);
       game.displayTrash();
+      game.displaySupply(game.selectedDeck);
     }
   }
   public class Haven extends RegularCard{
@@ -426,7 +427,7 @@ public class Seaside extends Expansion{
     public void subStep(int vic, int ap){
       int diff=game.players.get(vic).hand.size()-3;
       if(diff>=2)
-        game.doWork("topcard",diff,diff,vic);
+        game.doWork("topdeck",diff,diff,vic);
     }
   }
   public class Merchantship extends DominionCard{

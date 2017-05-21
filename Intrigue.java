@@ -352,10 +352,18 @@ public class Intrigue extends Expansion{
       game.doWork("gain",0,1,activePlayer);
       DominionCard card=game.selectedCards.get(0);
       
-      if(card.isAction) game.actions++;
-      if(card.isMoney) game.money++;
-      if(card.isVictory) game.players.get(activePlayer).drawToHand(1);
-      game.updateSharedFields();
+      if(card.isAction){
+        game.actions++;
+        game.updateSharedFields();        
+      }
+      if(card.isMoney){ 
+        game.money++;
+        game.updateSharedFields();
+      }
+      if(card.isVictory){
+        game.players.get(activePlayer).drawToHand(1);
+        game.displayPlayer(activePlayer);
+      }
     }
   }
   private class Mill extends RegularCard{
@@ -515,7 +523,6 @@ public class Intrigue extends Expansion{
     public void work(int activePlayer){
       ArrayList<DominionCard> cards=new ArrayList<>(4);
       DominionCard card;
-      
       for(int i=0;i<4;i++){
         try{
           card=game.players.get(activePlayer).getCard();
@@ -628,8 +635,13 @@ public class Intrigue extends Expansion{
     @Override
     public void work(int activePlayer){
       String input=game.optionPane(activePlayer,o);
-      if(input.equals(options[0])) game.players.get(activePlayer).drawToHand(3);
-      else game.actions+=2;
+      if(input.equals(options[0])){
+        game.players.get(activePlayer).drawToHand(3);
+        game.displayPlayer(activePlayer);
+      }else{
+        game.actions+=2;
+        game.updateSharedFields();
+      }
     }
   }
   private class Secretchamber extends RegularCard{
@@ -701,7 +713,7 @@ public class Intrigue extends Expansion{
           game.displayTrash();
           game.gainLimit=game.cost2(card)-2;
           game.server.displayComment(victim,"Gain a card costing up to"+game.gainLimit);
-          if(game.gainLimit>=0) game.doWork("gain",1,1,victim);
+          if(game.gainLimit>=0) game.doWork("gain",0,1,victim);
           break;
         }
       }

@@ -11,6 +11,7 @@ public class DominionBoard extends JFrame{
 
   private Container cp;
   private String output="";
+  public boolean lock=true;
 
   //player panel
   private ArrayList<PlayerDisplay> players=new ArrayList<PlayerDisplay>();
@@ -18,7 +19,7 @@ public class DominionBoard extends JFrame{
 
   //supply panel
   private LinkedHashMap<String,SupplyDisplay> supplyDecks=new LinkedHashMap<>();
-  private ImageIcon embargo;
+  private ImageIcon embargoToken, contrabandToken;
   
   //mat panel
   private JPanel cardPanel;
@@ -55,8 +56,12 @@ public class DominionBoard extends JFrame{
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
     gameOptions=o;
     
-    embargo=new ImageIcon(this.getClass().getResource("DominionCards/curse.png"));
-    embargo=new ImageIcon(resize(embargo.getImage(),10,30));
+    //images that will be used later to mark supply piles
+    embargoToken=new ImageIcon(this.getClass().getResource("DominionCards/embargotoken.png"));
+    embargoToken=new ImageIcon(resize(embargoToken.getImage(),35,25));
+    contrabandToken=new ImageIcon(this.getClass().getResource("DominionCards/contrabandtoken.png"));
+    contrabandToken=new ImageIcon(resize(contrabandToken.getImage(),35,25));
+
     //some graphics setup
   	setSize(1500,800);
 		cp = getContentPane();
@@ -119,13 +124,18 @@ public class DominionBoard extends JFrame{
     panel.setLayout(new GridLayout(2,0));
     
     supplyPanel=new JPanel();
+    supplyPanel.setPreferredSize(new Dimension(500,1000));
     SupplyDisplay tempSupply;
     for(int i=0; i<supplyData.size(); i++){
       tempSupply=new SupplyDisplay(supplyData.get(i));
       supplyDecks.put(supplyData.get(i).name,tempSupply);
       supplyPanel.add(tempSupply.getPanel()); 
     }  
-    panel.add(supplyPanel);
+//    scrollPane.add(supplyPanel);    
+    JScrollPane scrollPane=new JScrollPane(supplyPanel);
+    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);    
+    panel.add(scrollPane);
 
     //starting mat panel    
     JPanel matPanel=new JPanel();
@@ -211,7 +221,7 @@ public class DominionBoard extends JFrame{
     public EndSelection(){}
     public void actionPerformed(ActionEvent evt){
       if(players.get(activePlayer).controlled)
-        output=evt.getActionCommand();
+        if(!lock) output=evt.getActionCommand();
     }
   }
   public void changePlayer(int oldPlayer, DominionPlayer.Data oldData, int newPlayer, DominionPlayer.Data newData, ArrayList<Boolean> mask){
@@ -311,7 +321,7 @@ public class DominionBoard extends JFrame{
 
   public void optionPane(OptionData o){
     OptionPane pane=new OptionPane(this,o);
-    output=pane.getValue();
+    if(!lock) output=pane.getValue();
   }
   
 //  //***ACCESS FUNCTIONS***///
@@ -378,7 +388,7 @@ public class DominionBoard extends JFrame{
          @Override
          public void actionPerformed(ActionEvent evt) {
           if(active && (phase.equals("actions") || phase.equals("buys"))){
-            output="Btreasures";
+            if(!lock) output="Btreasures";
           }
          }
       });
@@ -498,7 +508,7 @@ public class DominionBoard extends JFrame{
       if(phase.equals("actions") && player.hand.get(cardnum).isMoney){
         pressButton(doneButtons.get("actions"));
       }
-      output=Integer.toString(cardnum);
+      if(!lock) output=Integer.toString(cardnum);
       
     }
     
@@ -517,7 +527,7 @@ public class DominionBoard extends JFrame{
     }
     @Override
     public void mousePressed(MouseEvent e){
-      if(SwingUtilities.isRightMouseButton(e)){
+      if(SwingUtilities.isRightMouseButton(e) || e.isControlDown()){
         popup=new JDialog();
         popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
         popup.getContentPane().setLayout(new FlowLayout());
@@ -587,84 +597,64 @@ public class DominionBoard extends JFrame{
   }
   //an extension of DeckDisplay for supply piles, JLabel is replaced by a button
   public class SupplyDisplay extends DeckDisplay{
-    private JButton button=new JButton();
+    private JLabel button=new JLabel();
     private JTextField cost;
-    private String name;
-    private Deck.SupplyData data;
-    public boolean embargo=false;
-    private JTextField embargoLabel;
+    public String name;
+    public Deck.SupplyData data;
+    private JPanel embargoPanel=new JPanel(), contrabandPanel=new JPanel();
     
     public SupplyDisplay(Deck.SupplyData tdata){
       data=tdata;
       name=data.name;
       image=getImage(data.image);
       
+      panel.setPreferredSize(new Dimension(100,130));
       panel.setLayout(new OverlayLayout(panel));
-      //panel.setPreferredSize(new Dimension(110,140));
+      panel.setBorder(BorderFactory.createLineBorder(Color.black));     
+      
+      JPanel dataPanel=new JPanel();
+      dataPanel.setLayout(new GridLayout(2,2));
+      embargoPanel.setOpaque(false);
+      dataPanel.add(embargoPanel);
+      contrabandPanel.setOpaque(false);
+      dataPanel.add(contrabandPanel);
+      dataPanel.setAlignmentX(0.5f);
+      dataPanel.setAlignmentY(0.f);
       
       n=new JTextField(2);
       n.setEditable(false);
       n.setBackground(Color.WHITE);
-      n.setMaximumSize(new Dimension(30,25));
-      n.setAlignmentY(0.f);
-      n.setAlignmentX(0.f);
       n.setFont(new Font("Arial", Font.BOLD, 20));
       n.setText(data.size+"");  
       
-      panel.add(n);      
+      dataPanel.add(n);      
       
       cost=new JTextField(1);
       cost.setBackground(Color.WHITE);
       cost.setEditable(false);
-      cost.setMaximumSize(new Dimension(30,25));
-      cost.setAlignmentY(1.f);
-      cost.setAlignmentX(0.f);
       cost.setFont(new Font("Arial", Font.BOLD, 20));
       cost.setText(data.cost+"");
-      panel.add(cost);
+      dataPanel.add(cost);
       
-      embargoLabel=new JTextField("");
-      embargoLabel.setAlignmentY(1.f);
-      embargoLabel.setAlignmentX(0.f);
-      embargoLabel.setBackground(Color.RED);
-      embargoLabel.setMaximumSize(new Dimension(30,25));
-      embargoLabel.setText(data.cost+"");
-      if(embargo)
-        panel.add(embargoLabel);
-      
-      button.setIcon(image);
+      if(data.embargo>0){
+        embargoPanel.setOpaque(true);
+        embargoPanel.add(new JLabel(embargoToken));
+      }
+      if(data.contraband){
+        contrabandPanel.setOpaque(true);
+        contrabandPanel.add(new JLabel(contrabandToken));
+      }      
+      dataPanel.setOpaque(false);
+      panel.add(dataPanel);
+      button=new JLabel(image);
       button.setOpaque(false);
+      button.setAlignmentX(0.5f);
+      button.setAlignmentY(0.5f);
       panel.add(button);
-
-      //action listener
-      button.addActionListener(new ActionListener() {
-         @Override
-         public void actionPerformed(ActionEvent evt) {
-          if( (phase.equals("selectDeck") || phase.equals("gain") || (phase.equals("buys") && money>=data.cost && buys>0) ) && data.size>0){
-            output="G"+name;
-          }
-        }
-      });
       
       //display card on right click
-      button.addMouseListener(new SupplyMouseAdapter(DominionBoard.this,name));
-//      button.addMouseListener(new MouseAdapter(){
-//        JDialog popup=new JDialog();
-//        
-//        @Override
-//        public void mouseClicked(MouseEvent e){
-//          if(SwingUtilities.isRightMouseButton(e)){
-//            System.out.println("Right clicked!");
-//          }
-//        }
-//        @Override
-//        public void mouseClicked(MouseEvent e){
-//          if(SwingUtilities.isRightMouseButton(e)){
-//            System.out.println("Right clicked!");
-//            JDialog popup
-//          }
-//        }
-//      });
+      panel.addMouseListener(new SupplyMouseAdapter(DominionBoard.this,name,this));
+
 
     }
 
@@ -674,19 +664,25 @@ public class DominionBoard extends JFrame{
       button.setIcon(image);
       n.setText(data.size+"");
       cost.setText(data.cost+"");
-      panel.removeAll();
-      panel.add(n);
-      panel.add(cost);
-      panel.add(button);
-      if(embargo)
-        panel.add(embargoLabel);
+      if(tdata.embargo>0){
+        embargoPanel.setOpaque(true);
+        embargoPanel.add(new JLabel(embargoToken));
+      }
+      if(tdata.contraband){
+        contrabandPanel.setOpaque(true);
+        contrabandPanel.add(new JLabel(contrabandToken));
+      }else{
+        contrabandPanel.removeAll();
+        contrabandPanel.setOpaque(false);
+      }
     }
-
   }
   public class SupplyMouseAdapter extends MouseAdapter{
     JDialog popup=new JDialog();
     JLabel image;
-    public SupplyMouseAdapter(JFrame parent, String name){
+    SupplyDisplay supply;
+    public SupplyMouseAdapter(JFrame parent, String name, SupplyDisplay tsupply){
+      supply=tsupply;
       Dimension parentSize = parent.getSize(); 
       Point p = parent.getLocation(); 
       popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
@@ -697,8 +693,12 @@ public class DominionBoard extends JFrame{
     }
     @Override
     public void mousePressed(MouseEvent e){
-      if(SwingUtilities.isRightMouseButton(e)){
+      if(SwingUtilities.isRightMouseButton(e) || e.isControlDown()){
         popup.setVisible(true);
+      }else{
+        if( (phase.equals("selectDeck") || phase.equals("gain") || (phase.equals("buys") && money>=supply.data.cost && buys>0) ) && supply.data.size>0){
+          if(!lock) output="G"+supply.name;
+        }
       }
     }
     @Override

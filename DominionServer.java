@@ -107,7 +107,7 @@ public class DominionServer{
     connections.get(player[playerNum]).optionPane(o);
   }  
   public void displayComment(int playerNum, String text){
-    System.out.println("displayed");
+    System.out.println("displayed "+text);
     connections.get(player[playerNum]).displayComment(text);
   }
 
@@ -185,8 +185,8 @@ public class DominionServer{
     public void updateSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
       output.println("updateSharedFields%"+actions+"%"+money+"%"+buys+"%"+tradeRoute+"%"+potions);
     }
-     
     public String getUserInput(){
+      output.println("unlock%");
       try{
         return input.readLine();
       }catch(IOException ex){

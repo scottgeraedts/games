@@ -5,7 +5,7 @@ import javax.swing.*;    // Using Swing components and containers
 import java.awt.event.WindowEvent;
 
 public class DominionClient{
-  public static final boolean DEBUG=true;
+  public static final boolean DEBUG=false;
   private BufferedReader input;
   private PrintWriter output;
   private DominionBoard board;
@@ -58,12 +58,6 @@ public class DominionClient{
     thread.start(); 
     
     while(true){
-      try{
-        Thread.sleep(10);
-      }catch(InterruptedException ex){
-        System.out.println("interupted!");
-      }
-      
       //check if there's any input to display
       if(watcher.isNew()){
         try{
@@ -79,13 +73,27 @@ public class DominionClient{
         }
         if(inputLine.equals("Terminate")) break;
         parseInput(inputLine);
-      }
-      
-      //check if there's any output to send
-      //TODO sanity check on output
-      outputLine=board.getOutput();
-      if(outputLine.length()>0){
-        output.println(outputLine);
+      }else if(!board.lock){
+        
+        //check if there's any output to send
+        //TODO sanity check on output
+        outputLine=board.getOutput();
+        if(outputLine.length()>0){
+          output.println(outputLine);
+          board.lock=true;
+        }else{
+            try{
+              Thread.sleep(100);
+            }catch(InterruptedException ex){
+              System.out.println("interupted!");
+            }                    
+        }
+      }else{
+        try{
+          Thread.sleep(100);
+        }catch(InterruptedException ex){
+          System.out.println("interupted!");
+        }            
       }
       
     }
@@ -173,6 +181,7 @@ public class DominionClient{
     board.displayPlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]),readArray(parts[2],new Boolean(true)));
   }
   public void optionPane(String input){
+    board.lock=false;
     board.optionPane(new OptionData(input));
   }
   public void displayTrash(String input){
@@ -182,13 +191,15 @@ public class DominionClient{
     board.displaySupply(new Deck.SupplyData(input));
   }
   public void updateSharedFields(String input){
-//    System.out.println(input);
     String [] parts=input.split("%");
      board.refreshSharedFields(Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),
         Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
   }
   public void displayComment(String input){
     board.displayComment(input);
+  }
+  public void unlock(String input){
+    board.lock=false;
   }
   
   ///***THE PESKY READARRAYS***///
