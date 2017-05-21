@@ -37,7 +37,7 @@ public class Hinterlands extends Expansion{
     public Duchess(){
       super("duchess");
       cost=2;
-      isAttact=false;
+      isAttack=false;
       value=2;
     }
     @Override
@@ -54,7 +54,7 @@ public class Hinterlands extends Expansion{
       DominionPlayer player=game.players.get(ap);
       DominionCard card;
       try{
-        card=player.deck.getCard();
+        card=player.getCard();
         o.put(card.getImage(),"image");
         String input=game.optionPane(ap,o);
         if(input.equals(options[0])){
