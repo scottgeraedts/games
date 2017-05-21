@@ -62,6 +62,7 @@ public class Prosperity extends Expansion{
     public void work(int ap){
       DominionPlayer player=game.players.get(ap);
       player.drawToHand(6-player.hand.size());
+      game.displayPlayer(ap);
     }
   }
   public class Bishop extends Attack{
@@ -294,6 +295,23 @@ public class Prosperity extends Expansion{
     public boolean cleanup(int ap, DominionPlayer player){
       game.royalSeal=false;
       return false;
+    }
+  }
+  public class Vault extends Attack{
+    public Vault(){
+      super("vault");
+      cost=5;
+      cards=2;
+      isAttack=false;
+    }
+    @Override
+    public void subWork(int ap){
+      game.doWork("discard",0,100,ap);
+      game.players.get(ap).drawToHand(game.selectedCards.size());
+    }
+    @Override
+    public void subStep(int ap, int atk){
+      //String [] options={};
     }
   }
 }
