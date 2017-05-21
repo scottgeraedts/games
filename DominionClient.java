@@ -5,7 +5,7 @@ import javax.swing.*;    // Using Swing components and containers
 import java.awt.event.WindowEvent;
 
 public class DominionClient{
-  public static final boolean DEBUG=false;
+  public static final boolean DEBUG=true;
   private BufferedReader input;
   private PrintWriter output;
   private DominionBoard board;
@@ -13,11 +13,16 @@ public class DominionClient{
   public static void main(String [] args) throws IOException{
   
     BufferedReader stdin=new BufferedReader(new InputStreamReader(System.in));
-    Socket socket;
+    Socket socket=new Socket();
     if(!DEBUG){
       System.out.println("enter IP of the server");
-      String IP=stdin.readLine();  
-      socket=new Socket(IP,4444);
+      String IP=stdin.readLine(); 
+      try{
+        socket=new Socket(IP,4444);
+      }catch(ConnectException e){
+        System.out.println("No Server is available");
+        System.exit(0);
+      }
     }else{
       socket=new Socket("localhost",4444);
     }

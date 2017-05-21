@@ -307,13 +307,185 @@ public class Prosperity extends Expansion{
     @Override
     public void subWork(int ap){
       game.doWork("discard",0,100,ap);
-      game.players.get(ap).drawToHand(game.selectedCards.size());
+      game.money+=game.selectedCards.size();
+      game.updateSharedFields();
     }
     @Override
     public void subStep(int ap, int atk){
-      //String [] options={};
+      game.selectedCards.clear();
+      String [] options={"Discard 2 cards","pass"};
+      String input=game.optionPane(ap,new OptionData(options));
+      if(input.equals(options[0])){
+        game.doWork("discard",2,2,ap);
+        game.players.get(ap).drawToHand(1);
+        game.displayPlayer(ap);
+      }
     }
   }
+  public class Venture extends DominionCard{
+    public Venture(){
+      super("venture");
+      cost=5;
+      value=1;
+      isMoney=true;
+    }
+    @Override
+    public void work(int ap){
+      DominionCard card;
+      DominionPlayer player=game.players.get(ap);
+      while(true){
+        try{
+          card=player.getCard();
+        }catch(OutOfCardsException ex){
+          return;
+        }
+        if(card.isMoney){
+          game.playCard(card,ap);
+          break;
+        }else player.disc.put(card);
+      }
+      game.displayPlayer(ap);
+    }
+  }
+  private class Goons extends Attack{
+    private boolean inPlay=false;
+    public Goons(){
+      super("goons");
+      cost=6;
+      value=2;
+    }
+    @Override
+    public void subStep(int activePlayer, int attacker){
+      game.server.displayComment(activePlayer,"Discard down to three cards");
+      int n=game.players.get(activePlayer).hand.size()-3;
+      if(n>1) game.doWork("discard",n,n,activePlayer);
+    }
+    @Override
+    public void subWork(int ap){
+      if(!inPlay) game.goons++;
+      inPlay=true;
+    }
+    @Override
+    public boolean cleanup(int ap, DominionPlayer player){
+      game.goons--;
+      inPlay=false;
+      return false;
+    }
+  }
+  private class Hoard extends DominionCard{
+    private boolean inPlay=false;
+    public Hoard(){
+      super("hoard");
+      cost=6;
+      value=2;
+      isMoney=true;
+    }
+    @Override
+    public void work(int ap){
+      if(!inPlay) game.hoard++;
+      inPlay=true;
+    }
+    @Override
+    public boolean cleanup(int ap, DominionPlayer player){
+      inPlay=false;
+      game.hoard--;
+      return false;
+    }   
+  }  
+  private class Bank extends DominionCard{
+    public Bank(){
+      super("bank");
+      cost=7;
+      isMoney=true;
+    }
+    @Override
+    public void work(int ap){
+      int temp=0;
+      for(DominionCard card : game.matcards){
+        if(card.isMoney) temp++;
+      }
+      game.money+=temp;
+      game.updateSharedFields();
+    }
+  }
+  private class Expand extends RegularCard{
+    public Expand(){
+      super("expand");
+      cost=7;
+      comment="Trash a card, gain a card costing up to 3 more than it";
+    }
+    @Override
+    public void subWork(int activePlayer){
+      game.doWork("trash",1,1,activePlayer);
+      game.displayTrash();
+
+      game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
+      game.doWork("gain",0,1,activePlayer);      
+    }    
+  }
+  private class Forge extends RegularCard{
+    public Forge(){
+      super("forge");
+      cost=7;
+    }
+    @Override
+    public void subWork(int ap){
+      game.doWork("trash",0,100,ap);
+      int temp=0;
+      for(DominionCard card : game.selectedCards){
+        temp+=card.cost;
+      }
+      game.server.displayComment(ap,"Gain a card costing exactly "+temp);
+      game.selectedCards.clear();
+      game.gainLimit=temp;
+      game.minGain=temp;
+      game.controlledGain(ap);
+    }
+  }
+  private class Kingscourt extends DominionCard{
+    public Kingscourt(){
+      super("kingscourt");
+      cost=7;
+      isAction=true;
+    }
+    @Override
+    public void work(int activePlayer){
+      game.server.displayComment(activePlayer,"Choose a card to play thrice");
+      Collection<DominionCard> hand=game.players.get(activePlayer).hand;
+      
+      game.mask=makeMask(hand);
+      
+      if(game.mask.contains(true)){
+        game.doWork("select",1,1,activePlayer);
+        DominionCard card=game.selectedCards.get(0);
+
+        game.selectedCards.clear();
+        game.changePhase("actions");
+        game.server.displayComment(activePlayer,"");
+        
+        game.playCard(card,activePlayer,true);
+        game.playCard(card,activePlayer,false);
+        game.playCard(card,activePlayer,false);
+
+        //if you throne room a duration card, send this to the duration mat also
+        if(card.isDuration) isDuration=true;
+        card.throneroomed++;
+        
+        //game.displayPlayer(activePlayer);
+        //game.matcards.add(card);
+        game.cardPlayed(activePlayer);
+      }
+    }
+    @Override 
+    public boolean maskCondition(DominionCard card){
+      return card.isAction;
+    }
+    @Override
+    public void duration(int ap){
+      isDuration=false;
+    }
+  }
+
 }
 
 

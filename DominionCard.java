@@ -121,6 +121,19 @@ public class DominionCard extends Card{
       cards=1;
       buys=1;
       isAction=true;
+    }else if(name.equals("grandmarket")){
+      cost=6;
+      actions=1;
+      cards=1;
+      buys=1;
+      value=2;
+      isAction=true;
+    }else if(name.equals("peddler")){
+      cost=8;
+      actions=1;
+      cards=1;
+      value=1;
+      isAction=true;
 		}else{
 		}
   }

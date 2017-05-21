@@ -34,6 +34,7 @@ public class DominionServer{
         playerNames.add(inputLine);
         output.get(nPlayers).println("Welcome "+inputLine);
         System.out.println(inputLine+" has joined the game");
+        output.get(0).println(inputLine+" has joined the game");
         
         nPlayers++;
         
@@ -56,6 +57,7 @@ public class DominionServer{
           inputLine=input.get(i).readLine();
           if(inputLine.equals("Quit")){
             playAgain=false;
+            output.get(i).println("Terminate");
             break;
           }
         }

@@ -7,6 +7,7 @@ public class Dominion{
   public ArrayList<DominionPlayer> players;
   public LinkedHashMap<String, SupplyDeck> supplyDecks;
   public ArrayList<DominionCard> matcards;
+  public ArrayList<DominionCard> durationHolder=new ArrayList<>();
   public Deck<DominionCard> trash;
   public HashSet<String> startingOptions;
 
@@ -27,19 +28,28 @@ public class Dominion{
   public ArrayList<Boolean> mask=new ArrayList<>();
 
   //specific card related counters
+  //intrigue
   public int bridgeCounter=0; //counts cost reduction, also does highway and brige troll
-  public int quarryCounter=0; 
   public int conspiratorCounter=0; //counts total actions played, also does peddler
   public int coppersmithCounter=0;
+  //core
   public int merchantCounter=0;
+  //seaside
   private ArrayList<String> smugglerCards1=new ArrayList<>();
   public ArrayList<String> smugglerCards2=new ArrayList<>();
   private boolean outpost;
   public boolean victoryBought=false; //did we gain a victory card this turn (for treasury)
+  public int quarryCounter=0; 
+  //prosperity
   public HashSet<String> tradeRouteCards;
   public int talismanCounter=0;
   public HashSet<String> contrabandDecks=new HashSet<>();
   public boolean royalSeal=false;
+  public int goons=0;
+  public int hoard=0;
+  //hinterlands
+  public boolean crossroadsPlayed=false;
+  public boolean foolsGoldPlayed=false;
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
@@ -51,6 +61,7 @@ public class Dominion{
     expansions.put("Intrigue",new Intrigue(this));
     expansions.put("Seaside",new Seaside(this));
     expansions.put("Prosperity",new Prosperity(this));
+    expansions.put("Hinterlands",new Hinterlands(this));
     int startingPlayer=startGame(names);      
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
@@ -90,6 +101,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
+    supplies.add("caravan");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -219,9 +231,15 @@ public class Dominion{
       buys+=card.buys;
       if(card.getName().equals("silver")){
         money+=merchantCounter;
-       merchantCounter=0;
+        merchantCounter=0;
       }
-      if(card.getName().equals("copper")) money+=coppersmithCounter;
+      if(card.getName().equals("copper")){
+        money+=coppersmithCounter;
+        if(supplyDecks.containsKey("grandmarket")){
+          displaySupply("grandmarket");
+          supplyDecks.get("grandmarket").contraband=true;
+        }
+      }
       
       players.get(activePlayer).drawToHand(card.cards);
       if(!throneRoom){
@@ -253,12 +271,22 @@ public class Dominion{
         buys--;
         money-=deck.getCost();
         
+        //** CARD SPECIFIC BUYING STUFF **//
         //extra gains from talisman
         if(!card.isVictory){
           phase="actions"; //so buy and money aren't depleted
           for(int i=0;i<talismanCounter; i++) gainCard(supplyName, activePlayer, where);
           phase="buys";
         }
+        //goons
+        players.get(activePlayer).vicTokens+=goons;
+
+        //hoard
+        phase="actions"; //so that the gain succeeds
+        for(int i=0;i<hoard;i++){
+          if(card.isVictory) gainCard("gold",activePlayer);
+        }
+        phase="buys";
       }
 
       if(phase=="gain"){
@@ -281,15 +309,53 @@ public class Dominion{
         else gameOver=true;
       }
 
-      //stuff related to specific cards      
+      //**stuff related to specific cards**//
+      String input;
+      DominionCard card2;
+      //smuggler
       if(supplyDecks.get(supplyName).getCost()<=6) smugglerCards1.add(supplyName);
+      //treasury
       if(phase.equals("buys") && card.isVictory) victoryBought=true;
+      //traderoute
       if(card.isVictory) tradeRouteCards.add(card.getName());
+      //royalseal
       if(royalSeal){
         String [] options={"Deck","Discard"};
-        String input=optionPane(activePlayer,new OptionData(options));
+        input=optionPane(activePlayer,new OptionData(options));
         if(input.equals(options[0])) where="topcard";
       }
+      //duchess
+      if(card.getName().equals("duchy") && supplyDecks.containsKey("duchess")){
+        String [] options={"Gain Duchess","Pass"};
+        input=optionPane(activePlayer,new OptionData(options));
+        if(input.equals(options[0])){
+          phase="actions";
+          gainCard("duchess",activePlayer);
+          phase="buys";
+        }
+      }
+      //fools gold is the worst
+      if(card.getName().equals("province") && supplyDecks.containsKey("foolsgold")){
+        String [] options2={"Trash Fools Gold","Pass"};
+        OptionData o=new OptionData(options2);
+        o.put(supplyDecks.get("foolsgold").card.getImage(),"image");
+
+        for(int i=(activePlayer+1)%players.size(); i!=activePlayer; i=(i+1)%players.size()){
+          for(ListIterator<DominionCard> it=players.get(i).hand.listIterator(); it.hasNext(); ){
+            card2=it.next();
+            if(card2.getName().equals("foolsgold")){
+              input=optionPane(i,o);
+              if(input.equals(options2[0])){
+                trash.put(card2);
+                displayTrash();
+                it.remove();
+                phase="actions";
+                gainCard("gold",activePlayer,"topcard");
+              }
+            }
+          }//loop through hand
+        }//loop through players
+      } 
 
       //play reactions
       OptionData o;     
@@ -361,9 +427,14 @@ public class Dominion{
       }
     }
     
+    //specific cards stuff
+    if(supplyDecks.containsKey("grandmarket")) supplyDecks.get("grandmarket").contraband=false;
+    
     //put remaining matcards on discard pile and clear the mat
     players.get(activePlayer).disc.put(matcards);
     matcards.clear();
+    players.get(activePlayer).disc.put(durationHolder);
+    durationHolder.clear();
     
     if(gameOver) endGame();
     
@@ -408,7 +479,7 @@ public class Dominion{
       card2.throneroomed=1;
 //      matcards.add(card2);
     }
-    players.get(newPlayer).disc.put(players.get(newPlayer).duration);
+    durationHolder=new ArrayList<>(players.get(newPlayer).duration);
     players.get(newPlayer).duration.clear();
 
     updateSharedFields();
@@ -498,6 +569,7 @@ public class Dominion{
     OptionData o;
     DominionPlayer player=players.get(activePlayer);
     String input;
+    server.displayComment(activePlayer,"Put the cards back in any order");
     
     while(cards.size()>1){
       options=new String[0];
@@ -518,6 +590,7 @@ public class Dominion{
     }
     player.deck.put(cards.get(0));
     displayPlayer(activePlayer);
+    server.displayComment(activePlayer,"");
   }
   //"gain a card costing exactly"
   public void controlledGain(int activePlayer){
@@ -539,7 +612,7 @@ public class Dominion{
   //a typical request for the player to do something
   public void doWork(String p, int min, int max, int activePlayer){
     minSelection=min;
-    if(max==0) max=1;
+    if(max<=0) max=1;
     maxSelection=max;
     changePhase(p);
     work(activePlayer);
@@ -648,7 +721,17 @@ public class Dominion{
         add(cardFactory(name));
       }
     }
-    public int getCost(){return cost2(card);}
+    public int getCost(){
+      if(name.equals("peddler")){
+        int temp=0;
+        for(DominionCard card : matcards){
+          if(card.isAction) temp+=2;
+        }
+        return cost2(card)-temp;
+      }else{
+        return cost2(card);
+      }
+    }
     public String getName(){return name;}
     public Deck.SupplyData makeData(){
       return new Deck.SupplyData(size(), backImage, getCost(), name, embargo, contraband);

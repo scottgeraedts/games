@@ -6,7 +6,9 @@ public abstract class Expansion{
   public static ArrayList<String> vicTokens;
   
   public static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
-      "talisman","city","contraband","countinghouse","mint","mountebank","rabble"};
+      "talisman","city","contraband","countinghouse","mint","mountebank","rabble","royalseal",
+      "vault","venture","goons","hoard","grandmarket","bank","expand","forge","kingscourt",
+      "peddler"};
   
   public Expansion(Dominion g){
     game=g;
