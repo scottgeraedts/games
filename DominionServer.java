@@ -53,7 +53,7 @@ public class DominionServer{
       boolean playAgain=true;
       while(true){
         for(int i=0;i<input.size();i++){
-          output.get(i).println("playAgain%x");
+          output.get(i).println("playAgain%");
           inputLine=input.get(i).readLine();
           if(inputLine.equals("Quit")){
             playAgain=false;

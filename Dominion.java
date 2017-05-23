@@ -31,9 +31,6 @@ public class Dominion{
   //intrigue
   public int bridgeCounter=0; //counts cost reduction, also does highway and brige troll
   public int conspiratorCounter=0; //counts total actions played, also does peddler
-  public int coppersmithCounter=0;
-  //core
-  public int merchantCounter=0;
   //seaside
   private ArrayList<String> smugglerCards1=new ArrayList<>();
   public ArrayList<String> smugglerCards2=new ArrayList<>();
@@ -50,10 +47,11 @@ public class Dominion{
   //hinterlands
   public boolean crossroadsPlayed=false;
   public boolean foolsGoldPlayed=false;
+  public int hagglerCounter=0;
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
- //**********8STUFF WHICH SETS UP THE GAME*********//
+ //**********STUFF WHICH SETS UP THE GAME*********//
   public Dominion(ArrayList<String> names, DominionServer tserver){  
     server=tserver;   
 
@@ -93,7 +91,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-//      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bishop"));
+      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("merchant"));
     }
     nPlayers=names.size();
 
@@ -101,8 +99,8 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    supplies.add("caravan");
     System.out.println(supplies);
+    supplies.add("inn");
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
       if(s.equals("pirateship")) startingOptions.add("pirateship");
@@ -143,6 +141,7 @@ public class Dominion{
   
     int activePlayer=t;
     String input;
+    String extraInput;
     DominionCard card;
     boolean doneSelection=false;
     if(maxSelection<=0) maxSelection=1;
@@ -178,8 +177,21 @@ public class Dominion{
         if(phase=="actions" && ( card.isMoney || actions==0)){
           changePhase("buys");
         }
-        //discard specific stuff
-        if(phase=="discard") players.get(activePlayer).disc.put(card);
+        // specific stuff for other phases
+        if(phase=="discard"){
+          players.get(activePlayer).disc.put(card);
+
+          //tunnel
+          if(card.getName().equals("tunnel")){
+            String [] options={"Discard for Gold","pass"};
+            OptionData o=new OptionData(options);
+            o.put(card.getImage(),"image");
+            extraInput=optionPane(activePlayer,o);
+            if(extraInput.equals(options[0])){
+              gainCard("gold",activePlayer);
+            }
+          }
+        }
         if(phase=="trash") trash.put(card);
         if(phase=="topdeck") players.get(activePlayer).deck.put(card);
         
@@ -230,14 +242,14 @@ public class Dominion{
       actions+=card.actions;
       buys+=card.buys;
       if(card.getName().equals("silver")){
-        money+=merchantCounter;
-        merchantCounter=0;
+        money+=Core.merchantCounter;
+        Core.merchantCounter=0;
       }
       if(card.getName().equals("copper")){
-        money+=coppersmithCounter;
+        money+=Intrigue.coppersmithCounter;
         if(supplyDecks.containsKey("grandmarket")){
-          displaySupply("grandmarket");
           supplyDecks.get("grandmarket").contraband=true;
+          displaySupply("grandmarket");
         }
       }
       
@@ -245,13 +257,23 @@ public class Dominion{
       if(!throneRoom){
         matcards.add(card);
       }
+      
+      if(supplyDecks.containsKey("peddler") && card.isAction) displaySupply("peddler");
+      
       cardPlayed(activePlayer);
       card.work(activePlayer);
   }
   public boolean gainCard(String supplyName, int activePlayer){
-    return gainCard(supplyName,activePlayer, "discard");
+    return gainCard(supplyName,activePlayer, "discard", false);
   }
   public boolean gainCard(String supplyName, int activePlayer, String where){
+    return gainCard(supplyName,activePlayer,where,false);
+  }
+  //supplyName is type of supply
+  //activeplayers is the player that gets the card
+  //where is "topcard", "discard", "hand": where to put the card
+  //if skipBuy=true, the player will not be changed money or a buy even if its the buy phase
+  public boolean gainCard(String supplyName, int activePlayer, String where, boolean skipBuy){
     DominionPlayer player=players.get(activePlayer);
     SupplyDeck deck=supplyDecks.get(supplyName);
 
@@ -262,10 +284,11 @@ public class Dominion{
     if(deck.size()>0 && ( 
            (phase=="buys" && money>=deck.getCost() && buys>0) 
         || (phase=="gain" && gainLimit>=deck.getCost() && minGain<=deck.getCost()) 
-        || (phase!="gain" && phase != "buys") ) ){
+        || (phase!="gain" && phase != "buys")
+        || skipBuy ) ){
       DominionCard card=deck.topCard();
 
-      if(phase=="buys"){
+      if(phase=="buys" && !skipBuy){
       
         if(deck.contraband) return false;
         buys--;
@@ -274,33 +297,34 @@ public class Dominion{
         //** CARD SPECIFIC BUYING STUFF **//
         //extra gains from talisman
         if(!card.isVictory){
-          phase="actions"; //so buy and money aren't depleted
-          for(int i=0;i<talismanCounter; i++) gainCard(supplyName, activePlayer, where);
-          phase="buys";
+          for(int i=0;i<talismanCounter; i++) gainCard(supplyName, activePlayer, "discard", true);
         }
         //goons
         players.get(activePlayer).vicTokens+=goons;
 
         //hoard
-        phase="actions"; //so that the gain succeeds
         for(int i=0;i<hoard;i++){
-          if(card.isVictory) gainCard("gold",activePlayer);
+          if(card.isVictory) gainCard("gold",activePlayer, "discard", true);
         }
-        phase="buys";
+        //embargo
+        for(int i=0;i<deck.embargo;i++){
+          gainCard("curse",activePlayer, "discard", true);
+        }
+        //treasury
+        if(card.isVictory) victoryBought=true;
+        //haggler
+        for(int i=0;i<hagglerCounter;i++){
+          gainLimit=deck.getCost()-1;
+          doWork("gain",1,1,activePlayer);
+        }       
+        
+       
       }
 
       if(phase=="gain"){
         selectedCards.add(card);
       }
 
-      //check for embargo-type effects
-      if(phase.equals("buys")){
-        phase="actions";
-        for(int i=0;i<deck.embargo;i++){
-          gainCard("curse",activePlayer);
-        }
-        phase="buys";
-      }
       
       System.out.println("End: "+gameOver+" "+emptyPiles);
       if(deck.size()==0){
@@ -314,8 +338,6 @@ public class Dominion{
       DominionCard card2;
       //smuggler
       if(supplyDecks.get(supplyName).getCost()<=6) smugglerCards1.add(supplyName);
-      //treasury
-      if(phase.equals("buys") && card.isVictory) victoryBought=true;
       //traderoute
       if(card.isVictory) tradeRouteCards.add(card.getName());
       //royalseal
@@ -329,9 +351,7 @@ public class Dominion{
         String [] options={"Gain Duchess","Pass"};
         input=optionPane(activePlayer,new OptionData(options));
         if(input.equals(options[0])){
-          phase="actions";
-          gainCard("duchess",activePlayer);
-          phase="buys";
+          gainCard("duchess",activePlayer, "discard", true);
         }
       }
       //fools gold is the worst
@@ -349,8 +369,7 @@ public class Dominion{
                 trash.put(card2);
                 displayTrash();
                 it.remove();
-                phase="actions";
-                gainCard("gold",activePlayer,"topcard");
+                gainCard("gold",activePlayer,"topcard",true);
               }
             }
           }//loop through hand
@@ -359,24 +378,28 @@ public class Dominion{
 
       //play reactions
       OptionData o;     
-      ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,2);
+      ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,2,card);
       for(String r : reactions){
         if(r.equals("watchtower")){
           String [] options = {"Top Deck","trash"};
           o=new OptionData(options);
           o.put(card.getImage(),"image");
           if(optionPane(activePlayer,o).equals(options[0]))
-            player.deck.put(card);
+            where="topcard";
           else{
             trash.put(card);
+            cardGained(activePlayer,supplyName);
             displayTrash();
+            return true;
           }
+        }
+        if(r.equals("trader")){
+          if(supplyDecks.containsKey(card.getName())) supplyDecks.get(card.getName()).put(card);
+          gainCard("silver",activePlayer,"discard",true);
+          return true;
         }
       }
 
-      //resolve ongain effects
-      card.onGain(activePlayer);
-      
       //put card on discard pile or (more rarely) top of deck
       if(where.equals("topcard")) player.deck.put(card);
       else if(where.equals("hand")) player.hand.add(card);
@@ -385,6 +408,9 @@ public class Dominion{
         System.out.println("I don't know where to put this card! "+where);
       }
 
+      //resolve ongain effects
+      card.onGain(activePlayer);
+      
       cardGained(activePlayer,supplyName);
       
       return true;
@@ -410,7 +436,7 @@ public class Dominion{
           playCard(card,activePlayer);
         }
       }
-    }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal")){
+    }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal") || input.equals("gain")){
       return true;
     }
     return false;
@@ -419,22 +445,36 @@ public class Dominion{
     //****end the previous turn***//
     DominionCard card;
 
-    //check if any cards do things at the end of the turn    
+    //check if any cards do things at the end of the turn
+    ArrayList<DominionCard> schemeCards=new ArrayList<>();    
     for(ListIterator<DominionCard> it=matcards.listIterator(); it.hasNext(); ){
       card=it.next();
-      if(card.cleanup(activePlayer,players.get(activePlayer))){
+      if(!card.getName().equals("scheme") && card.cleanup(activePlayer,players.get(activePlayer))){
         it.remove();
+      }else if(card.getName().equals("scheme")){
+        schemeCards.add(card);
       }
     }
-    
-    //specific cards stuff
-    if(supplyDecks.containsKey("grandmarket")) supplyDecks.get("grandmarket").contraband=false;
-    
+    //now use scheme to put a card on top of deck
+    //the reason we put scheme cards in their own list is that scheme removes items from matcards
+    for(DominionCard card2 : schemeCards ){
+      card2.cleanup(activePlayer,players.get(activePlayer));
+    }
+        
     //put remaining matcards on discard pile and clear the mat
     players.get(activePlayer).disc.put(matcards);
     matcards.clear();
     players.get(activePlayer).disc.put(durationHolder);
     durationHolder.clear();
+
+    //specific cards stuff
+    //grandmarket
+    if(supplyDecks.containsKey("grandmarket")){
+      supplyDecks.get("grandmarket").contraband=false;
+      displaySupply("grandmarket");
+    }
+    //peddler
+    if(supplyDecks.containsKey("peddler")) displaySupply("peddler");
     
     if(gameOver) endGame();
     
@@ -496,8 +536,6 @@ public class Dominion{
       displaySupplies();
     } 
     conspiratorCounter=0;  
-    merchantCounter=0;
-    coppersmithCounter=0;
     
     smugglerCards2=new ArrayList<>(smugglerCards1);
     smugglerCards1.clear();
@@ -523,7 +561,7 @@ public class Dominion{
     maxSelection=0;
   }
   
-  public ArrayList<String> reactionReveal(Collection<DominionCard> hand, int activePlayer, int type){
+  public ArrayList<String> reactionReveal(Collection<DominionCard> hand, int activePlayer, int type, DominionCard attackCard){
     DominionCard card;
     String [] options={"Reveal","Pass"};
     OptionData o=new OptionData(options);
@@ -533,6 +571,7 @@ public class Dominion{
       card=it.next();
       if( (type==1 && card.isReaction1) || (type==2 && card.isReaction2)){
         o.put(card.getImage(),"image");
+        o.put(attackCard.getImage(),"image");
         if(optionPane(activePlayer,o).equals("Reveal")){
           out.add(card.getName());
         }
@@ -565,6 +604,8 @@ public class Dominion{
   }
   //puts a bunch of cards on top of the deck in user-specified order
   public void putBack(int activePlayer, ArrayList<DominionCard> cards){
+    if(cards.size()==0) return;
+    
     String [] options;
     OptionData o;
     DominionPlayer player=players.get(activePlayer);
@@ -593,11 +634,11 @@ public class Dominion{
     server.displayComment(activePlayer,"");
   }
   //"gain a card costing exactly"
-  public void controlledGain(int activePlayer){
+  public void controlledGain(int activePlayer, int val){
     //find out if there are any cards in the supply that we can gain
     boolean canGain=false;
     for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
-      if(entry.getValue().getCost()>=minGain && entry.getValue().getCost()<=gainLimit){
+      if(entry.getValue().getCost()==val){
         canGain=true;
         break; 
       }     
@@ -605,13 +646,15 @@ public class Dominion{
     if(!canGain) return;
     
     //if so, let the player pick one
-    changePhase("gain");
-    Dominion.this.work(activePlayer);
+    gainLimit=val;
+    minGain=val;
+    doWork("gain",1,1,activePlayer);
     minGain=0;     
   }
   //a typical request for the player to do something
   public void doWork(String p, int min, int max, int activePlayer){
     minSelection=min;
+    if(!p.equals("gain") && players.get(activePlayer).hand.size()==0) return;
     if(max<=0) max=1;
     maxSelection=max;
     changePhase(p);
@@ -619,8 +662,11 @@ public class Dominion{
     displayPlayer(activePlayer);
     if(p.equals("trash")) displayTrash();
   }
-//  //***SETTING PRIVATE VARIABLES***///
-
+//  //***PRIVATE VARIABLES***///
+  public String getPhase(){
+    return phase;
+  }
+  
 //  //***STUFF WHICH GETS STATUS OF GAME***///
   public ArrayList<Deck.SupplyData> supplyData(){
     ArrayList<Deck.SupplyData> out=new ArrayList<>(supplyDecks.size());
@@ -637,7 +683,7 @@ public class Dominion{
     return out;
   }
   
-  //some simple wrappers for server functions 
+  //***some simple wrappers for server functions ***///
   public void displayPlayer(int i){
     for( DominionServer.HumanPlayer connection : server.connections){
       connection.displayPlayer(i,players.get(i).makeData(),mask);
@@ -724,10 +770,7 @@ public class Dominion{
     public int getCost(){
       if(name.equals("peddler")){
         int temp=0;
-        for(DominionCard card : matcards){
-          if(card.isAction) temp+=2;
-        }
-        return cost2(card)-temp;
+        return cost2(card)-2*conspiratorCounter;
       }else{
         return cost2(card);
       }

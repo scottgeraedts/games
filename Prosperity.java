@@ -286,6 +286,7 @@ public class Prosperity extends Expansion{
       super("royalseal");
       cost=5;
       value=2;
+      isMoney=true;
     }
     @Override
     public void work(int ap){
@@ -353,12 +354,13 @@ public class Prosperity extends Expansion{
       super("goons");
       cost=6;
       value=2;
+      buys=1;
     }
     @Override
     public void subStep(int activePlayer, int attacker){
       game.server.displayComment(activePlayer,"Discard down to three cards");
       int n=game.players.get(activePlayer).hand.size()-3;
-      if(n>1) game.doWork("discard",n,n,activePlayer);
+      if(n>=1) game.doWork("discard",n,n,activePlayer);
     }
     @Override
     public void subWork(int ap){
@@ -420,7 +422,7 @@ public class Prosperity extends Expansion{
       game.displayTrash();
 
       game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
-      game.doWork("gain",0,1,activePlayer);      
+      game.doWork("gain",1,1,activePlayer);      
     }    
   }
   private class Forge extends RegularCard{
@@ -433,13 +435,11 @@ public class Prosperity extends Expansion{
       game.doWork("trash",0,100,ap);
       int temp=0;
       for(DominionCard card : game.selectedCards){
-        temp+=card.cost;
+        temp+=game.cost2(card);
       }
       game.server.displayComment(ap,"Gain a card costing exactly "+temp);
       game.selectedCards.clear();
-      game.gainLimit=temp;
-      game.minGain=temp;
-      game.controlledGain(ap);
+      game.controlledGain(ap,temp);
     }
   }
   private class Kingscourt extends DominionCard{

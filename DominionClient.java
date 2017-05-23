@@ -5,7 +5,7 @@ import javax.swing.*;    // Using Swing components and containers
 import java.awt.event.WindowEvent;
 
 public class DominionClient{
-  public static final boolean DEBUG=false;
+  public static final boolean DEBUG=true;
   private BufferedReader input;
   private PrintWriter output;
   private DominionBoard board;
@@ -121,6 +121,7 @@ public class DominionClient{
     
   }
   public void playAgain(String input){
+    board.lock=false;
     board.playAgain();
   }
   public void reset(String input){

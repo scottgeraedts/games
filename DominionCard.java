@@ -9,6 +9,8 @@ public class DominionCard extends Card{
   
   public boolean isReaction1=false;
   public boolean isReaction2=false;
+  public boolean isReaction3=false;
+  public boolean isReactionX=false;
   
 	public int value=0;
 	public int cost=0;
@@ -134,6 +136,11 @@ public class DominionCard extends Card{
       cards=1;
       value=1;
       isAction=true;
+    }else if(name.equals("tunnel")){
+      cost=3;
+      isVictory=true;
+      isReactionX=true;
+      vicPoints=2;
 		}else{
 		}
   }
@@ -183,7 +190,7 @@ public class DominionCard extends Card{
     return vicPoints;
   }
   public boolean isReaction(){
-    return isReaction1 || isReaction2;
+    return isReaction1 || isReaction2 || isReactionX;
   }
   public String toString(){
     return isAction+"!"+isMoney+"!"+imagename;

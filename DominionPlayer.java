@@ -87,6 +87,7 @@ public class DominionPlayer{
         else cards.put(temp,1);
       }
     }
+    total+=vicTokens;
     String out="";
     if(total<10) out+=" ";
     out+=total+"  (";

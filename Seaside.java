@@ -161,7 +161,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void work(int ap){
-      ArrayList<DominionCard> options=new ArrayList<>(3);
+      LinkedList<DominionCard> options=new LinkedList<>();
       DominionPlayer player=game.players.get(ap);
       for(int i=0;i<3;i++){
         try{
@@ -177,9 +177,11 @@ public class Seaside extends Expansion{
         o.put(card.getImage(), "imagebutton");
       }
       String input=game.optionPane(ap,o);
-      for(DominionCard card : options){
+      DominionCard card;
+      for(ListIterator<DominionCard> it=options.listIterator(); it.hasNext(); ){
+        card=it.next();
         if(card.getImage().equals(input)){
-          options.remove(card);
+          it.remove();
           game.trash.put(card);
           break;
         }
@@ -187,13 +189,14 @@ public class Seaside extends Expansion{
       o.clear();
       if(options.size()==0) return;
       o.put("Choose a card to discard:","text");
-      for(DominionCard card : options){
-        o.put(card.getImage(), "imagebutton");
+      for(DominionCard card2 : options){
+        o.put(card2.getImage(), "imagebutton");
       }
       input=game.optionPane(ap,o);
-      for(DominionCard card : options){
+      for(ListIterator<DominionCard> it=options.listIterator(); it.hasNext(); ){
+        card=it.next();
         if(card.getImage().equals(input)){
-          options.remove(card);
+          it.remove();
           player.disc.put(card);
           break;
         }
@@ -209,6 +212,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void work(int ap){
+      if(game.smugglerCards2.size()==0) return;
       OptionData o=new OptionData(new String[0]);
       for(String cardName : game.smugglerCards2){
         o.put(cardName,"imagebutton");

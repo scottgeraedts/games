@@ -2,6 +2,7 @@ import java.util.*;
 
 public class Core extends Expansion{
 
+  public static int merchantCounter=0;
   
   public Core(Dominion g){
     super(g);
@@ -291,7 +292,12 @@ public class Core extends Expansion{
    }
    @Override 
    public void work(int activePlayer){
-    game.merchantCounter++;
+    merchantCounter++;
+   }
+   @Override
+   public boolean cleanup(int ap, DominionPlayer player){
+    merchantCounter=0;
+    return false;
    }
   }
   private class Militia extends Attack{
@@ -305,7 +311,7 @@ public class Core extends Expansion{
     public void subStep(int activePlayer, int attacker){
       game.server.displayComment(activePlayer,"Discard down to three cards");
       int n=game.players.get(activePlayer).hand.size()-3;
-      if(n>1) game.doWork("discard",n,n,activePlayer);
+      if(n>=1) game.doWork("discard",n,n,activePlayer);
     }
   }
   private class Mine extends RegularCard{
@@ -391,7 +397,7 @@ public class Core extends Expansion{
       game.displayTrash();
 
       game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
-      game.doWork("gain",0,1,activePlayer);      
+      game.doWork("gain",1,1,activePlayer);      
     }    
   }
   private class Sentry extends DominionCard{
@@ -589,6 +595,7 @@ public class Core extends Expansion{
         }else{
           player.disc.put(card);
         }
+        game.displayPlayer(activePlayer);
       }catch(OutOfCardsException ex){}
     }
   }

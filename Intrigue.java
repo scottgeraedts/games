@@ -2,6 +2,8 @@ import java.util.*;
 
 public class Intrigue extends Expansion{
 
+  public static int coppersmithCounter=0;
+  
   public Intrigue(Dominion g){
     super(g);
     String [] t={"courtyard","lurker","masquerade","shantytown","pawn",
@@ -193,7 +195,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void work(int activePlayer){
-      String [] options={"trash 2 cards", "+2 cards", "+2 game.money"};
+      String [] options={"trash 2 cards", "+2 cards", "+2 money"};
       String input=game.optionPane(activePlayer,new OptionData(options));
       
       if(input.equals(options[0])){
@@ -560,7 +562,8 @@ public class Intrigue extends Expansion{
       if(card.isAction || card.isMoney){
         curse=false;
         game.players.get(activePlayer).deck.put(game.players.get(activePlayer).disc.topCard());
-      }else{
+      }
+      if(card.isVictory){
         curse=true;
       }
     }  
@@ -616,10 +619,8 @@ public class Intrigue extends Expansion{
       game.doWork("trash",1,1,activePlayer);
       game.displayPlayer(activePlayer);
       game.displayTrash();
-      game.minGain=game.cost2(game.selectedCards.get(0))+1;
-      game.gainLimit=game.minGain;
       game.selectedCards.clear();
-      game.controlledGain(activePlayer);
+      game.controlledGain(activePlayer, game.cost2(game.selectedCards.get(0))+1);
     }
   }
   private class Nobles extends DominionCard{
@@ -667,7 +668,12 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void work(int activePlayer){
-      game.coppersmithCounter++;
+      coppersmithCounter++;
+    }
+    @Override
+    public boolean cleanup(int ap, DominionPlayer player){
+      coppersmithCounter=0;
+      return false;
     }
   }
   private class Scout extends DominionCard{

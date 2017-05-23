@@ -60,21 +60,20 @@ public abstract class Expansion{
 
         //resolve possible reactions
         boolean moat=false;
-        if(isAttack) reactions=game.reactionReveal(victim.hand,i,1);
+        if(isAttack) reactions=game.reactionReveal(victim.hand,i,1,this);
         for(String r: reactions){
           if(r.equals("moat")){ moat=true;
           }else if(r.equals("diplomat")){
-            if(victim.hand.size()>=5){
-              victim.drawToHand(2);
-              game.displayPlayer(i);
-              game.doWork("discard",3,3,i);
-              game.selectedCards.clear();
-              game.changePhase(attackPhase);
-              game.displayPlayer(i);
-            }
+            victim.drawToHand(2);
+            game.displayPlayer(i);
+            game.doWork("discard",3,3,i);
+            game.selectedCards.clear();
+            game.changePhase(attackPhase);
+            game.displayPlayer(i);
           }else if(r.equals("secretchamber")){
             victim.drawToHand(2);
             game.displayPlayer(i);
+            game.server.displayComment(i,"Put 2 cards on top of the deck");
             game.doWork("topdeck",2,2,i);
             game.selectedCards.clear();
             game.changePhase(attackPhase);

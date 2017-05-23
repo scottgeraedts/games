@@ -696,7 +696,7 @@ public class DominionBoard extends JFrame{
       if(SwingUtilities.isRightMouseButton(e) || e.isControlDown()){
         popup.setVisible(true);
       }else{
-        if( (phase.equals("selectDeck") || phase.equals("gain") || (phase.equals("buys") && money>=supply.data.cost && buys>0) ) && supply.data.size>0){
+        if( (phase.equals("selectDeck") || phase.equals("gain") || (phase.equals("buys") && money>=supply.data.cost && buys>0) ) && supply.data.size>0 && !supply.data.contraband){
           if(!lock) output="G"+supply.name;
         }
       }
