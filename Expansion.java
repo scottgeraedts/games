@@ -62,7 +62,8 @@ public abstract class Expansion{
         boolean moat=false;
         if(isAttack) reactions=game.reactionReveal(victim.hand,i,1,this);
         for(String r: reactions){
-          if(r.equals("moat")){ moat=true;
+          if(r.equals("moat")){ 
+            moat=true;
           }else if(r.equals("diplomat")){
             victim.drawToHand(2);
             game.displayPlayer(i);
@@ -78,6 +79,16 @@ public abstract class Expansion{
             game.selectedCards.clear();
             game.changePhase(attackPhase);
             game.displayPlayer(i);            
+          }else if(r.equals("horsetrader")){
+            DominionCard card2;
+            for(ListIterator<DominionCard> it=victim.hand.listIterator(); it.hasNext(); ){
+              card2=it.next();
+              if(card2.getName().equals("horsetrader")){
+                victim.horseTraders.add(card2);
+                it.remove();
+                break;
+              }
+            }
           }
         }
         //check for lighthouse

@@ -1,12 +1,16 @@
 import java.util.*;
 
 public class Hinterlands extends Expansion{
+  public static boolean crossroadsPlayed=false;
+  public static boolean foolsGoldPlayed=false;
+  public static int hagglerCounter=0;
 
   public Hinterlands(Dominion g){
     super(g);
     String [] temp={"crossroads","duchess","foolsgold","develop","oasis","oracle","scheme",
       "jackofalltrades","noblebrigand","nomadcamp","silkroad","spicemerchant","trader",
-      "cache","cartographer","embassy","haggler","highway","illgottengains","inn"};
+      "cache","cartographer","embassy","haggler","highway","illgottengains","inn","mandarin",
+      "margrave","stables","bordervillage","farmland"};
     cards=temp;
   }
   public class Crossroads extends DominionCard{
@@ -24,15 +28,15 @@ public class Hinterlands extends Expansion{
       }
       player.drawToHand(temp);
       game.displayPlayer(ap);
-      if(!game.crossroadsPlayed){
+      if(!crossroadsPlayed){
         game.actions+=3;
         game.updateSharedFields();
-        game.crossroadsPlayed=true;
+        crossroadsPlayed=true;
       }
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
-      game.crossroadsPlayed=false;
+      crossroadsPlayed=false;
       return false;
     }
   }
@@ -78,15 +82,15 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void work(int ap){
-      if(game.foolsGoldPlayed){
+      if(foolsGoldPlayed){
         game.money+=3;
         game.updateSharedFields();          
       }
-      game.foolsGoldPlayed=true;
+      foolsGoldPlayed=true;
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
-      game.foolsGoldPlayed=false;
+      foolsGoldPlayed=false;
       return false;
     }
   }
@@ -429,13 +433,13 @@ public class Hinterlands extends Expansion{
     @Override
     public void work(int ap){
       if(!inPlay){
-        game.hagglerCounter++;
+        hagglerCounter++;
         inPlay=true;
       }
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
-      game.hagglerCounter=0;
+      hagglerCounter=0;
       inPlay=false;
       return false;
     }

@@ -6,9 +6,16 @@ public class DominionPlayer{
 	private String name;
 	public LinkedList<DominionCard> duration=new LinkedList<>();
 	public int vicTokens=0;
+	
+	//****specific card related stuff***///
+	//nativevillage
 	public ArrayList<DominionCard> nativevillage=new ArrayList<>();
+	//island
 	public ArrayList<DominionCard> island=new ArrayList<>();
+	//pirateship
 	public int pirateship=0;
+	//horsetraders
+	public ArrayList<DominionCard> horseTraders=new ArrayList<>();
 	
   public DominionPlayer(String newname){
 		disc=new Deck<DominionCard>();

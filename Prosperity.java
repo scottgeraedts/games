@@ -1,6 +1,13 @@
 import java.util.*;
 
 public class Prosperity extends Expansion{
+  public static int quarryCounter=0; 
+  public static HashSet<String> tradeRouteCards;
+  public static int talismanCounter=0;
+  public static boolean royalSeal=false;
+  public static int goons=0;
+  public static int hoard=0;
+
   public Prosperity(Dominion g){
     super(g);
     cards=prosperityCards;
@@ -47,7 +54,7 @@ public class Prosperity extends Expansion{
     @Override
     public void subWork(int ap){
       game.doWork("trash",1,1,ap);
-      game.money+=game.tradeRouteCards.size();
+      game.money+=tradeRouteCards.size();
       game.updateSharedFields();
     }
   }
@@ -104,7 +111,7 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.quarryCounter+=2;
+      quarryCounter+=2;
       game.displaySupplies();
     }
   }
@@ -117,7 +124,12 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.talismanCounter++;
+      talismanCounter++;
+    }
+    @Override
+    public boolean cleanup(int ap, DominionPlayer player){
+      talismanCounter=0;
+      return false;
     }
   }
   public class City extends DominionCard{
@@ -290,11 +302,11 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.royalSeal=true;
+      royalSeal=true;
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
-      game.royalSeal=false;
+      royalSeal=false;
       return false;
     }
   }
@@ -364,12 +376,12 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      if(!inPlay) game.goons++;
+      if(!inPlay) goons++;
       inPlay=true;
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
-      game.goons--;
+      goons--;
       inPlay=false;
       return false;
     }
@@ -384,13 +396,13 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void work(int ap){
-      if(!inPlay) game.hoard++;
+      if(!inPlay) hoard++;
       inPlay=true;
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
       inPlay=false;
-      game.hoard--;
+      hoard--;
       return false;
     }   
   }  

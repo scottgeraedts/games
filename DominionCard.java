@@ -192,7 +192,9 @@ public class DominionCard extends Card{
   public boolean isReaction(){
     return isReaction1 || isReaction2 || isReactionX;
   }
+  @Override
   public String toString(){
     return isAction+"!"+isMoney+"!"+imagename;
   }
+  
 }

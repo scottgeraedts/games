@@ -1,6 +1,11 @@
 import java.util.*;
 
 public class Seaside extends Expansion{
+  public static ArrayList<String> smugglerCards1=new ArrayList<>();
+  public static ArrayList<String> smugglerCards2=new ArrayList<>();
+  public static boolean outpost;
+  public static boolean victoryBought=false; //did we gain a victory card this turn (for treasury)
+
   public Seaside(Dominion g){
     super(g);
     String [] t={"embargo","haven","lighthouse","nativevillage","pearldiver","ambassador",
@@ -212,9 +217,9 @@ public class Seaside extends Expansion{
     }
     @Override
     public void work(int ap){
-      if(game.smugglerCards2.size()==0) return;
+      if(smugglerCards2.size()==0) return;
       OptionData o=new OptionData(new String[0]);
-      for(String cardName : game.smugglerCards2){
+      for(String cardName : smugglerCards2){
         o.put(cardName,"imagebutton");
       }
       String input=game.optionPane(ap,o);
@@ -500,7 +505,7 @@ public class Seaside extends Expansion{
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
     
-      if(game.victoryBought){
+      if(victoryBought){
         return false;
       }else{
         String input=game.optionPane(ap,o);

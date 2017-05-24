@@ -28,26 +28,10 @@ public class Dominion{
   public ArrayList<Boolean> mask=new ArrayList<>();
 
   //specific card related counters
-  //intrigue
+  //only counters that are relevant to multiple cards in different expansions should go hear
+  //others should the static in the proper expansion
   public int bridgeCounter=0; //counts cost reduction, also does highway and brige troll
   public int conspiratorCounter=0; //counts total actions played, also does peddler
-  //seaside
-  private ArrayList<String> smugglerCards1=new ArrayList<>();
-  public ArrayList<String> smugglerCards2=new ArrayList<>();
-  private boolean outpost;
-  public boolean victoryBought=false; //did we gain a victory card this turn (for treasury)
-  public int quarryCounter=0; 
-  //prosperity
-  public HashSet<String> tradeRouteCards;
-  public int talismanCounter=0;
-  public HashSet<String> contrabandDecks=new HashSet<>();
-  public boolean royalSeal=false;
-  public int goons=0;
-  public int hoard=0;
-  //hinterlands
-  public boolean crossroadsPlayed=false;
-  public boolean foolsGoldPlayed=false;
-  public int hagglerCounter=0;
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
@@ -60,6 +44,7 @@ public class Dominion{
     expansions.put("Seaside",new Seaside(this));
     expansions.put("Prosperity",new Prosperity(this));
     expansions.put("Hinterlands",new Hinterlands(this));
+    expansions.put("Cornucopia",new Cornucopia(this));
     int startingPlayer=startGame(names);      
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
@@ -91,7 +76,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("merchant"));
+      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("menagerie"));
     }
     nPlayers=names.size();
 
@@ -129,7 +114,7 @@ public class Dominion{
     trash.faceup=true;  
     
     //specific card related stuff
-    tradeRouteCards=new HashSet<>();
+    Prosperity.tradeRouteCards=new HashSet<>();
     
     Random ran=new Random();
     int startingPlayer=ran.nextInt(players.size());  
@@ -297,13 +282,13 @@ public class Dominion{
         //** CARD SPECIFIC BUYING STUFF **//
         //extra gains from talisman
         if(!card.isVictory){
-          for(int i=0;i<talismanCounter; i++) gainCard(supplyName, activePlayer, "discard", true);
+          for(int i=0;i<Prosperity.talismanCounter; i++) gainCard(supplyName, activePlayer, "discard", true);
         }
         //goons
-        players.get(activePlayer).vicTokens+=goons;
+        players.get(activePlayer).vicTokens+=Prosperity.goons;
 
         //hoard
-        for(int i=0;i<hoard;i++){
+        for(int i=0;i<Prosperity.hoard;i++){
           if(card.isVictory) gainCard("gold",activePlayer, "discard", true);
         }
         //embargo
@@ -311,9 +296,9 @@ public class Dominion{
           gainCard("curse",activePlayer, "discard", true);
         }
         //treasury
-        if(card.isVictory) victoryBought=true;
+        if(card.isVictory) Seaside.victoryBought=true;
         //haggler
-        for(int i=0;i<hagglerCounter;i++){
+        for(int i=0;i<Hinterlands.hagglerCounter;i++){
           gainLimit=deck.getCost()-1;
           doWork("gain",1,1,activePlayer);
         }       
@@ -337,11 +322,11 @@ public class Dominion{
       String input;
       DominionCard card2;
       //smuggler
-      if(supplyDecks.get(supplyName).getCost()<=6) smugglerCards1.add(supplyName);
+      if(supplyDecks.get(supplyName).getCost()<=6) Seaside.smugglerCards1.add(supplyName);
       //traderoute
-      if(card.isVictory) tradeRouteCards.add(card.getName());
+      if(card.isVictory) Prosperity.tradeRouteCards.add(card.getName());
       //royalseal
-      if(royalSeal){
+      if(Prosperity.royalSeal){
         String [] options={"Deck","Discard"};
         input=optionPane(activePlayer,new OptionData(options));
         if(input.equals(options[0])) where="topcard";
@@ -417,6 +402,12 @@ public class Dominion{
     }
     return false;
   }
+  //gain cards that aren't in the supply
+  public void gainCardNoSupply(DominionCard card, int ap){
+    DominionPlayer player=players.get(ap); 
+  }
+
+  //handles what happens if the player clicks on a button
   public boolean buttonManager(String input, int activePlayer){
     DominionCard card;
     DominionPlayer player;
@@ -479,20 +470,21 @@ public class Dominion{
     if(gameOver) endGame();
     
 
-    int newPlayer;
     //check if the player put an outpost on their duration mat, and didn't play an outpost last time
-    if(outpost){
-      outpost=false;
+    if(Seaside.outpost){
+      Seaside.outpost=false;
     }else{
       for(DominionCard card2 : players.get(activePlayer).duration){
         if(card2.getName().equals("outpost")){
-          outpost=true;
+          Seaside.outpost=true;
           break;
         }
       }
     }
+    int newPlayer;
+
     //if there is an outpost on the duration mat, that player gets to go again
-    if(outpost){
+    if(Seaside.outpost){
       newPlayer=activePlayer;
       players.get(activePlayer).disc.put(players.get(activePlayer).hand);
       players.get(activePlayer).hand.clear();
@@ -502,7 +494,7 @@ public class Dominion{
       newPlayer=(activePlayer+1)%players.size();
     }
     
-    //start the next turn
+    //****start the next turn ***///
     changePhase("actions");
     money=0;
     buys=1;
@@ -522,6 +514,12 @@ public class Dominion{
     durationHolder=new ArrayList<>(players.get(newPlayer).duration);
     players.get(newPlayer).duration.clear();
 
+    //play horse traders
+    if(players.get(newPlayer).horseTraders.size()>0){
+      players.get(newPlayer).hand.addAll(players.get(newPlayer).horseTraders);
+      players.get(newPlayer).drawToHand(players.get(newPlayer).horseTraders.size());
+      displayPlayer(newPlayer);
+    }
     updateSharedFields();
 
     
@@ -530,19 +528,18 @@ public class Dominion{
   }
   //resets specific card-related stuff
   public void resetCardCounters(){
-    if(bridgeCounter>0 || quarryCounter>0){
+    if(bridgeCounter>0 || Prosperity.quarryCounter>0){
       bridgeCounter=0;
-      quarryCounter=0;
+      //quarryCounter isn't zerod in its card because I don't want to call displaysupplies too many times
+      Prosperity.quarryCounter=0;
       displaySupplies();
     } 
     conspiratorCounter=0;  
     
-    smugglerCards2=new ArrayList<>(smugglerCards1);
-    smugglerCards1.clear();
+    Seaside.smugglerCards2=new ArrayList<>(Seaside.smugglerCards1);
+    Seaside.smugglerCards1.clear();
     
-    victoryBought=false;
-    talismanCounter=0;
-    contrabandDecks.clear();
+    Seaside.victoryBought=false;
   }
   public void endGame(){
     String temp;
@@ -588,7 +585,7 @@ public class Dominion{
   }
   //always use this to get the cost of cards
   public int cost2(DominionCard card){
-    if(card.isAction) return Math.max(card.cost-bridgeCounter-quarryCounter,0);
+    if(card.isAction) return Math.max(card.cost-bridgeCounter-Prosperity.quarryCounter,0);
     else return Math.max(card.cost-bridgeCounter,0);
   }
   //puts a card anywhere in the deck
@@ -696,7 +693,7 @@ public class Dominion{
   }
   public void updateSharedFields(){
     for( DominionServer.HumanPlayer connection : server.connections){  
-      connection.updateSharedFields(actions,money,buys,tradeRouteCards.size(),potions);
+      connection.updateSharedFields(actions,money,buys,Prosperity.tradeRouteCards.size(),potions);
     }
   }
   public void changePhase(String newPhase){
