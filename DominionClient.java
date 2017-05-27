@@ -5,18 +5,35 @@ import javax.swing.*;    // Using Swing components and containers
 import java.awt.event.WindowEvent;
 
 public class DominionClient{
-  public static final boolean DEBUG=true;
+  public static boolean DEBUG=false;
   private BufferedReader input;
   private PrintWriter output;
   private DominionBoard board;
   
   public static void main(String [] args) throws IOException{
   
+    String IP="";
+    
+    //read config file
+    BufferedReader fr=null;
+    try{
+      fr=new BufferedReader(new FileReader("config.txt"));
+      DEBUG=Boolean.parseBoolean(fr.readLine().split(" ")[0]);
+      IP=fr.readLine().split(" ")[0];
+      System.out.println(IP);
+    }catch(FileNotFoundException ex){
+      System.out.println("No config file found, going with defaults");
+      DEBUG=false;
+      IP="None";
+    }
+    
     BufferedReader stdin=new BufferedReader(new InputStreamReader(System.in));
     Socket socket=new Socket();
     if(!DEBUG){
-      System.out.println("enter IP of the server");
-      String IP=stdin.readLine(); 
+      if(IP.equals("None")){
+        System.out.println("enter IP of the server");
+        IP=stdin.readLine(); 
+      }
       try{
         socket=new Socket(IP,4444);
       }catch(ConnectException e){

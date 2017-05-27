@@ -6,8 +6,20 @@ public class DominionServer{
 
   public ArrayList<HumanPlayer> connections;
   private int [] player;
+  public static boolean DEBUG;
 
   public static void main(String [] args) throws IOException{
+  
+    //read config file
+    BufferedReader fr=null;
+    try{
+      fr=new BufferedReader(new FileReader("server_config.txt"));
+      DEBUG=Boolean.parseBoolean(fr.readLine().split(" ")[0]);
+    }catch(FileNotFoundException ex){
+      System.out.println("No config file found, going with defaults");
+      DEBUG=false;
+    }    
+
     int portNumber=4444;
 
     BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
@@ -43,9 +55,13 @@ public class DominionServer{
 
         if(!inputLine.equals("yes")) break;
       }
+      output.get(0).println("!How many computer players?");
+      inputLine=input.get(0).readLine();
+      int x=Integer.parseInt(inputLine);
+      for(int i=0;i<x;i++) playerNames.add("Bot"+i);
       for(int i=0;i<nPlayers;i++) output.get(i).println("break");
         
-      if(DominionClient.DEBUG) playerNames.add("bot");
+//      if(DominionClient.DEBUG) playerNames.add("bot");
       
       Dominion game=new Dominion(playerNames, new DominionServer(input,output));
       System.out.println("game over");
@@ -117,7 +133,7 @@ public class DominionServer{
     System.out.println("requesting input from player "+player[i]);
     return connections.get(player[i]).getUserInput();
   }
-  public static class HumanPlayer{
+  public static class HumanPlayer implements PlayerInterface{
     private BufferedReader input;
     private PrintWriter output;
     public HumanPlayer(BufferedReader br,PrintWriter pw){

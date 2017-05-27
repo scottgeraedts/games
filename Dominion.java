@@ -76,7 +76,8 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("menagerie"));
+      if(DominionServer.DEBUG)
+        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("courtier"));
     }
     nPlayers=names.size();
 
@@ -85,7 +86,6 @@ public class Dominion{
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
     System.out.println(supplies);
-    supplies.add("inn");
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
       if(s.equals("pirateship")) startingOptions.add("pirateship");
@@ -259,7 +259,11 @@ public class Dominion{
   //where is "topcard", "discard", "hand": where to put the card
   //if skipBuy=true, the player will not be changed money or a buy even if its the buy phase
   public boolean gainCard(String supplyName, int activePlayer, String where, boolean skipBuy){
-    DominionPlayer player=players.get(activePlayer);
+    DominionPlayer player=players.get(activePlayer); 
+    //we might try to gain a card that isn't in the supply(e.g. if jester reveals a knight)
+    //so if this happens just fail quietly
+    if(!supplyDecks.containsKey(supplyName)) return false;
+
     SupplyDeck deck=supplyDecks.get(supplyName);
 
     //can never gain a card if the supply is empty
@@ -325,12 +329,7 @@ public class Dominion{
       if(supplyDecks.get(supplyName).getCost()<=6) Seaside.smugglerCards1.add(supplyName);
       //traderoute
       if(card.isVictory) Prosperity.tradeRouteCards.add(card.getName());
-      //royalseal
-      if(Prosperity.royalSeal){
-        String [] options={"Deck","Discard"};
-        input=optionPane(activePlayer,new OptionData(options));
-        if(input.equals(options[0])) where="topcard";
-      }
+
       //duchess
       if(card.getName().equals("duchy") && supplyDecks.containsKey("duchess")){
         String [] options={"Gain Duchess","Pass"};
@@ -361,54 +360,71 @@ public class Dominion{
         }//loop through players
       } 
 
-      //play reactions
-      OptionData o;     
-      ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,2,card);
-      for(String r : reactions){
-        if(r.equals("watchtower")){
-          String [] options = {"Top Deck","trash"};
-          o=new OptionData(options);
-          o.put(card.getImage(),"image");
-          if(optionPane(activePlayer,o).equals(options[0]))
-            where="topcard";
-          else{
-            trash.put(card);
-            cardGained(activePlayer,supplyName);
-            displayTrash();
-            return true;
-          }
-        }
-        if(r.equals("trader")){
-          if(supplyDecks.containsKey(card.getName())) supplyDecks.get(card.getName()).put(card);
-          gainCard("silver",activePlayer,"discard",true);
-          return true;
-        }
-      }
-
-      //put card on discard pile or (more rarely) top of deck
-      if(where.equals("topcard")) player.deck.put(card);
-      else if(where.equals("hand")) player.hand.add(card);
-      else if(where.equals("discard")) player.disc.put(card);      
-      else{
-        System.out.println("I don't know where to put this card! "+where);
-      }
-
-      //resolve ongain effects
-      card.onGain(activePlayer);
+      gainCardNoSupply(card, activePlayer, where);
       
-      cardGained(activePlayer,supplyName);
+      updateSharedFields();
+      displaySupply(supplyName);
       
       return true;
     }
     return false;
   }
   //gain cards that aren't in the supply
-  public void gainCardNoSupply(DominionCard card, int ap){
-    DominionPlayer player=players.get(ap); 
+  public void gainCardNoSupply(DominionCard card, int activePlayer, String where){
+    DominionPlayer player=players.get(activePlayer); 
+
+    //royalseal
+    if(Prosperity.royalSeal){
+      String [] options={"Deck","Discard"};
+      String input=optionPane(activePlayer,new OptionData(options));
+      if(input.equals(options[0])) where="topcard";
+    }
+
+    //play reactions
+    OptionData o;     
+    ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,2,card);
+    for(String r : reactions){
+      if(r.equals("watchtower")){
+        String [] options = {"Top Deck","trash"};
+        o=new OptionData(options);
+        o.put(card.getImage(),"image");
+        if(optionPane(activePlayer,o).equals(options[0]))
+          where="topcard";
+        else{
+          trash.put(card);          
+          displayTrash();
+          return;
+        }
+      }
+      if(r.equals("trader")){
+        if(supplyDecks.containsKey(card.getName())){
+          supplyDecks.get(card.getName()).put(card);
+        }else{
+          trash.put(card);
+          displayTrash();
+        }
+        gainCard("silver",activePlayer,"discard",true);
+        return;
+      }
+    }
+
+    //put card on discard pile or (more rarely) top of deck
+    if(where.equals("topcard")) player.deck.put(card);
+    else if(where.equals("hand")) player.hand.add(card);
+    else if(where.equals("discard")) player.disc.put(card);      
+    else{
+      System.out.println("I don't know where to put this card! "+where);
+    }
+
+    //resolve ongain effects
+    card.onGain(activePlayer);
+      
+    displayPlayer(activePlayer);
+    
   }
 
   //handles what happens if the player clicks on a button
-  public boolean buttonManager(String input, int activePlayer){
+  private boolean buttonManager(String input, int activePlayer){
     DominionCard card;
     DominionPlayer player;
 
@@ -432,7 +448,7 @@ public class Dominion{
     }
     return false;
   }
-  public int endTurn(int activePlayer){
+  private int endTurn(int activePlayer){
     //****end the previous turn***//
     DominionCard card;
 
@@ -527,7 +543,7 @@ public class Dominion{
     
   }
   //resets specific card-related stuff
-  public void resetCardCounters(){
+  private void resetCardCounters(){
     if(bridgeCounter>0 || Prosperity.quarryCounter>0){
       bridgeCounter=0;
       //quarryCounter isn't zerod in its card because I don't want to call displaysupplies too many times
@@ -541,7 +557,7 @@ public class Dominion{
     
     Seaside.victoryBought=false;
   }
-  public void endGame(){
+  private void endGame(){
     String temp;
     PairList<String,String> points=new PairList<>();
     String name;
@@ -724,11 +740,6 @@ public class Dominion{
     }
     updateSharedFields();
   }
-  public void cardGained(int activePlayer, String supplyDeck){
-    displayPlayer(activePlayer);
-    displaySupply(supplyDeck);
-    updateSharedFields();
-  }
   public void displayTrash(){
     for( DominionServer.HumanPlayer connection : server.connections){
       connection.displayTrash(trash.makeData());
@@ -780,7 +791,7 @@ public class Dominion{
   }
 
     //****CARD STUFF***//
-  public ArrayList<String> randomSupply(){
+  private ArrayList<String> randomSupply(){
     ArrayList<String> allCards=new ArrayList<>();
     
     for(Map.Entry<String,Expansion> entry : expansions.entrySet()){
@@ -800,6 +811,23 @@ public class Dominion{
         out.add(allCards.get(i));
       }
     }
+    //add the bane card from young witch
+    int cost;
+    if(out.contains("youngwitch")){
+      while(true){
+        i=ran.nextInt(allCards.size());
+        if(!included[i]){
+          cost=cost2(cardFactory(allCards.get(i)));
+          if(cost>=2 && cost<=3){
+            included[i]=true;
+            out.add(allCards.get(i));
+            Cornucopia.bane=allCards.get(i);
+            break;
+          }
+        }
+      }
+    }      
+      
     Collections.sort(out, new Comparator<String>(){
         public int compare(String x, String y){
           return cost2(cardFactory(x))-cost2(cardFactory(y));
@@ -807,21 +835,28 @@ public class Dominion{
     });
     return out;
   }
-  
-  public DominionCard cardFactory(String cardname){
+
+  //a card factory for when the expansion is already known
+  public DominionCard cardFactory(String cardname, String expansion){
     Class c=null;
     
+    try{
+      c=Class.forName(expansion+"$"+cardname.substring(0,1).toUpperCase()+cardname.substring(1));
+      return (DominionCard) c.getConstructors()[0].newInstance(expansions.get(expansion));      
+    }
+    catch(ClassNotFoundException e){
+      return new DominionCard(cardname);
+    }catch(Exception e){
+      e.printStackTrace();
+    }
+    return new DominionCard(cardname);
+  }
+
+  //looks up the expansion in the expansion table
+  public DominionCard cardFactory(String cardname){
     for(Map.Entry<String,Expansion> entry : expansions.entrySet()){
       if(entry.getValue().hasCard(cardname)){
-        try{
-          c=Class.forName(entry.getKey()+"$"+cardname.substring(0,1).toUpperCase()+cardname.substring(1));
-          return (DominionCard) c.getConstructors()[0].newInstance(entry.getValue());      
-        }
-        catch(ClassNotFoundException e){
-          return new DominionCard(cardname);
-        }catch(Exception e){
-          e.printStackTrace();
-        }
+        return cardFactory(cardname,entry.getKey());
       }
     }
     return new DominionCard(cardname);

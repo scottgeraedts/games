@@ -562,7 +562,9 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subStep(int ap, int atk){
+      game.server.displayComment(ap,"Discard down to 3 cards");
       game.players.get(ap).drawToHand(1);
+      game.displayPlayer(ap);
       int temp=game.players.get(ap).hand.size()-3;
       if(temp>0)
         game.doWork("discard",temp,temp,ap);

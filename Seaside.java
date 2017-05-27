@@ -434,6 +434,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subStep(int vic, int ap){
+      game.server.displayComment(ap,"Put cards on your deck until you only have three");
       int diff=game.players.get(vic).hand.size()-3;
       if(diff>=2)
         game.doWork("topdeck",diff,diff,vic);
