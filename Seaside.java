@@ -374,7 +374,7 @@ public class Seaside extends Expansion{
     @Override
     public void subWork(int ap){
       game.doWork("trash",1,1,ap);
-      game.money+=game.selectedCards.get(0).cost;
+      game.money+=game.cost2(game.selectedCards.get(0));
       game.updateSharedFields();
     }
   }

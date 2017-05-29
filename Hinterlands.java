@@ -581,7 +581,7 @@ public class Hinterlands extends Expansion{
       game.doWork("discard",0,1,ap);
       if(game.selectedCards.size()>0){
         game.players.get(ap).drawToHand(3);
-        game.displayPlayer(3);
+        game.displayPlayer(ap);
         game.actions++;
         game.updateSharedFields();
       }

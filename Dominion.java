@@ -36,7 +36,7 @@ public class Dominion{
   private HashMap<String,Expansion> expansions=new HashMap<>();
   
  //**********STUFF WHICH SETS UP THE GAME*********//
-  public Dominion(ArrayList<String> names, DominionServer tserver){  
+  public Dominion(DominionServer tserver){  
     server=tserver;   
 
     expansions.put("Core",new Core(this));
@@ -45,14 +45,14 @@ public class Dominion{
     expansions.put("Prosperity",new Prosperity(this));
     expansions.put("Hinterlands",new Hinterlands(this));
     expansions.put("Cornucopia",new Cornucopia(this));
-    int startingPlayer=startGame(names);      
+    int startingPlayer=startGame(server.playerNames);      
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
     
   }
   
-  public void reset(ArrayList<String> names){
-    int startingPlayer=startGame(names);
+  public void reset(){
+    int startingPlayer=startGame(server.playerNames);
     trash.clear();
     resetCardCounters();
     server.reset(supplyData(), playerData(), startingPlayer, startingOptions);
@@ -698,33 +698,33 @@ public class Dominion{
   
   //***some simple wrappers for server functions ***///
   public void displayPlayer(int i){
-    for( DominionServer.HumanPlayer connection : server.connections){
+    for( PlayerInterface connection : server.connections){
       connection.displayPlayer(i,players.get(i).makeData(),mask);
     }
   }
   public void changePlayer(int oldP, int newP){
-    for( DominionServer.HumanPlayer connection : server.connections){
+    for( PlayerInterface connection : server.connections){
       connection.changePlayer(oldP,players.get(oldP).makeData(),newP,players.get(newP).makeData(),mask);
     }    
   }
   public void updateSharedFields(){
-    for( DominionServer.HumanPlayer connection : server.connections){  
+    for( PlayerInterface connection : server.connections){  
       connection.updateSharedFields(actions,money,buys,Prosperity.tradeRouteCards.size(),potions);
     }
   }
   public void changePhase(String newPhase){
-    for( DominionServer.HumanPlayer connection : server.connections){  
+    for( PlayerInterface connection : server.connections){  
       connection.changePhase(phase,newPhase,mask);
     }
     phase=newPhase;
   }
   public void displaySupply(Deck.SupplyData data){
-    for( DominionServer.HumanPlayer connection : server.connections){  
+    for( PlayerInterface connection : server.connections){  
       connection.displaySupply(data);
     }
   }
   public void displaySupply(String name){
-    for( DominionServer.HumanPlayer connection : server.connections){  
+    for( PlayerInterface connection : server.connections){  
       connection.displaySupply(supplyDecks.get(name).makeData());
     }
   }
@@ -735,13 +735,13 @@ public class Dominion{
   }
   public void cardPlayed(int activePlayer){
     displayPlayer(activePlayer);
-    for( DominionServer.HumanPlayer connection : server.connections){
+    for( PlayerInterface connection : server.connections){
       connection.displayMatCards(matcards);      
     }
     updateSharedFields();
   }
   public void displayTrash(){
-    for( DominionServer.HumanPlayer connection : server.connections){
+    for( PlayerInterface connection : server.connections){
       connection.displayTrash(trash.makeData());
     }
   }  

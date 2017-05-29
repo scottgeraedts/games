@@ -40,7 +40,7 @@ public class DominionBoard extends JFrame{
   private HashMap<String,ImageIcon> giantImageTable=new HashMap<>();
   
   public DominionBoard(ArrayList<DominionPlayer.Data> playersData, 
-      ArrayList<Deck.SupplyData> supplyData, int playerNum, int startingPlayer, ArrayList<String> o){
+      ArrayList<Deck.SupplyData> supplyData, ArrayList<Integer> controlled, int startingPlayer, ArrayList<String> o){
 
 		setTitle("Dominion");
 
@@ -66,7 +66,7 @@ public class DominionBoard extends JFrame{
   	setSize(1500,800);
 		cp = getContentPane();
 		cp.setLayout(new GridLayout(0,2));  // The content-pane sets its layout
-    cp.add(setupPlayerPanel(playersData,playerNum,startingPlayer));
+    cp.add(setupPlayerPanel(playersData, controlled, startingPlayer));
     cp.add(setupSharedPanel(supplyData));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  // Exit program if close-window button clicked      
     setVisible(true);
@@ -102,17 +102,16 @@ public class DominionBoard extends JFrame{
     setVisible(false);
     dispose();
   }
-  private JPanel setupPlayerPanel(ArrayList<DominionPlayer.Data> playersData, int playerNum, int startingPlayer){
+  private JPanel setupPlayerPanel(ArrayList<DominionPlayer.Data> playersData, ArrayList<Integer> controlled, int startingPlayer){
     
     JPanel panel=new JPanel();
     panel.setLayout(new GridLayout(playersData.size(),1));
     for(int i=0;i<playersData.size();i++){
       players.add( new PlayerDisplay(playersData.get(i)) );
       panel.add(players.get(i).getPanel());
-      if(DominionClient.DEBUG) players.get(i).controlled=true;
     }
-    players.get(playerNum).controlled=true;
-    System.out.println("this client controls player "+playerNum);
+    for(Integer i : controlled) players.get(i).controlled=true;
+
     activePlayer=startingPlayer;
     players.get(startingPlayer).active=true;
     players.get(startingPlayer).display(playersData.get(startingPlayer),new ArrayList<Boolean>());

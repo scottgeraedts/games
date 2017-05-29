@@ -2,14 +2,22 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 
-public class DominionServer{
+public class DominionServer{ 
 
-  public ArrayList<HumanPlayer> connections;
-  private int [] player;
+  //an interface is something that can return an instruction, like 'buy a card', 'play a card', etc
+  //there are two kinds: clients which provide a display interface so humans can play
+  //and robots which just return a value
+  public ArrayList<PlayerInterface> connections=new ArrayList<>();
+  //there may be more players than interfaces (if we are testing or doing hotseat)
+  //this is a map from player to interface
+  private HashMap<Integer,Integer> controllers=new HashMap<>();
   public static boolean DEBUG;
+  public ArrayList<String> playerNames=new ArrayList<>();
 
   public static void main(String [] args) throws IOException{
   
+    DominionServer server=new DominionServer();
+    
     //read config file
     BufferedReader fr=null;
     try{
@@ -24,8 +32,10 @@ public class DominionServer{
 
     BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
     ArrayList<Socket> clients=new ArrayList<>();
-    ArrayList<PrintWriter> output=new ArrayList<>();
-    ArrayList<BufferedReader> input=new ArrayList<>();
+    PrintWriter output;
+    PrintWriter output0=null;
+    BufferedReader input;
+    BufferedReader input0=null;
     ArrayList<String> playerNames=new ArrayList<>();
 
     String inputLine;
@@ -38,54 +48,57 @@ public class DominionServer{
       //get the connections and all the player names
       while(true){
         clients.add(connectionSocket.accept());
-        input.add(new BufferedReader(new InputStreamReader(clients.get(nPlayers).getInputStream())));
-        output.add(new PrintWriter(clients.get(nPlayers).getOutputStream(), true));
+        input=new BufferedReader(new InputStreamReader(clients.get(nPlayers).getInputStream()));
+        output=new PrintWriter(clients.get(nPlayers).getOutputStream(), true);
+        if(input0==null){
+          input0=input;
+          output0=output;
+        }
         
-        output.get(nPlayers).println("!Please enter your name:");
-        inputLine=input.get(nPlayers).readLine();
+        output.println("!Please enter your name:");
+        inputLine=input.readLine();
         playerNames.add(inputLine);
-        output.get(nPlayers).println("Welcome "+inputLine);
+        output.println("Welcome "+inputLine);
         System.out.println(inputLine+" has joined the game");
-        output.get(0).println(inputLine+" has joined the game");
-        
+        output0.println(inputLine+" has joined the game");
+
+        server.addHuman(input,output,inputLine);
+
+        //if this isn't the first player they are done with the text UI
+        if(output!=output0) output.println("break");
         nPlayers++;
         
-        output.get(0).println("!Are there more players coming? (yes/no)");
-        inputLine=input.get(0).readLine();
+        output0.println("!Are there more players coming? (yes/no)");
+        inputLine=input0.readLine();
 
         if(!inputLine.equals("yes")) break;
       }
-      output.get(0).println("!How many computer players?");
-      inputLine=input.get(0).readLine();
+      output0.println("!How many computer players?");
+      inputLine=input0.readLine();
       int x=Integer.parseInt(inputLine);
-      for(int i=0;i<x;i++) playerNames.add("Bot"+i);
-      for(int i=0;i<nPlayers;i++) output.get(i).println("break");
+      for(int i=0;i<x;i++) server.addRobot();
+      output0.println("break");
         
-//      if(DominionClient.DEBUG) playerNames.add("bot");
+      //add a second human controlled by the first interface for testing purposes
+      if(DEBUG) server.addHuman("tester",0);
       
-      Dominion game=new Dominion(playerNames, new DominionServer(input,output));
+      Dominion game=new Dominion(server);
       System.out.println("game over");
       //asking for new games
       boolean playAgain=true;
       while(true){
-        for(int i=0;i<input.size();i++){
-          output.get(i).println("playAgain%");
-          inputLine=input.get(i).readLine();
-          if(inputLine.equals("Quit")){
-            playAgain=false;
-            output.get(i).println("Terminate");
-            break;
-          }
+        for(PlayerInterface c : server.connections){
+          playAgain= playAgain && c.playAgain();
         }
         if(playAgain){
-          game.reset(playerNames);
+          game.reset();
         }else{
           break;
         }
       }
-      for(int i=0;i<output.size();i++){
-        output.get(i).println("Terminate");
-      }
+      for(PlayerInterface c : server.connections)
+        c.terminate();
+        
       System.out.println("Application ended normally");
     }catch(NullPointerException e){
       e.printStackTrace();
@@ -94,22 +107,37 @@ public class DominionServer{
       e.printStackTrace();
     }
   }
-  public DominionServer(ArrayList<BufferedReader> br, ArrayList<PrintWriter> pw){
-    int size=br.size();
-    if(size!=pw.size()) System.out.println("size mismatch");
-    player=new int[2];
-    player[0]=0;
-    if(DominionClient.DEBUG) player[1]=0;
-    else player[1]=1;
-    connections=new ArrayList<HumanPlayer>(size);
-    for(int i=0;i<size;i++)
-      connections.add( new HumanPlayer(br.get(i),pw.get(i)));
+  public DominionServer(){
+    
   }
+  //add a human player with a new input stream
+  public void addHuman(BufferedReader br, PrintWriter pw, String name){
+    controllers.put(playerNames.size(),connections.size());
+    connections.add( new HumanPlayer(br,pw));
+    playerNames.add(name);
+  }
+  //add a human player in hotest
+  public void addHuman(String name, int display){
+    controllers.put(playerNames.size(), display);
+    playerNames.add(name);
+  }
+  //add a Robot player
+  public void addRobot(){
+    controllers.put(playerNames.size(),connections.size());
+    connections.add(new BasicRobot());
+    playerNames.add("Robot");
+  }
+  
   //pass initial string to all players
   public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
+    ArrayList<Integer> isControlled=new ArrayList<>();
     for(int i=0;i<connections.size();i++){
-      connections.get(i).initialize(supplyData,playerData,startingPlayer,player[i],o);
-    }
+      for(Map.Entry<Integer,Integer> entry : controllers.entrySet()){
+        if(entry.getValue()==i) isControlled.add(entry.getKey());
+      }
+      connections.get(i).initialize(supplyData,playerData,startingPlayer,isControlled,o);
+      isControlled.clear();
+    }    
   }
   public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
     for(int i=0;i<connections.size();i++){
@@ -117,21 +145,20 @@ public class DominionServer{
     }
   }
   public void showScores(PairList<String,String> scores){
-    for(Iterator<HumanPlayer> it=connections.iterator(); it.hasNext(); ){
+    for(Iterator<PlayerInterface> it=connections.iterator(); it.hasNext(); ){
       it.next().showScores(scores);
     }
   }
   public void optionPane(int playerNum, OptionData o){
-    connections.get(player[playerNum]).optionPane(o);
+    connections.get(controllers.get(playerNum)).optionPane(o);
   }  
   public void displayComment(int playerNum, String text){
     System.out.println("displayed "+text);
-    connections.get(player[playerNum]).displayComment(text);
+    connections.get(controllers.get(playerNum)).displayComment(text);
   }
 
   public String getUserInput(int i){
-    System.out.println("requesting input from player "+player[i]);
-    return connections.get(player[i]).getUserInput();
+    return connections.get(controllers.get(i)).getUserInput();
   }
   public static class HumanPlayer implements PlayerInterface{
     private BufferedReader input;
@@ -142,14 +169,14 @@ public class DominionServer{
     }
     //make initial string
     //pass initial string to all players
-    public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, int num, HashSet<String> o){
+    public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, ArrayList<Integer> controlled, HashSet<String> o){
      String out="initialize%";
      out+=toArray(playerData);
      out+="%"+supplyData.size();
      for(int i=0;i<supplyData.size();i++){
       out+="#"+supplyData.get(i).toString();
      }
-     out+="%"+startingPlayer+"%"+num;
+     out+="%"+startingPlayer+"%"+toArray(controlled);
      out+="%"+toArray(o);
      output.println(out);
      output.flush();
@@ -203,6 +230,22 @@ public class DominionServer{
     public void updateSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
       output.println("updateSharedFields%"+actions+"%"+money+"%"+buys+"%"+tradeRoute+"%"+potions);
     }
+    public boolean playAgain(){
+      output.println("playAgain%");
+      try{
+        String inputLine=input.readLine();
+        if(inputLine.equals("Quit")){
+          output.println("Terminate");
+          return false;
+        }else return true;
+      }catch(IOException ex){
+        return false;
+      }
+    }    
+    public void terminate(){
+      output.println("Terminate");
+    }
+    
     public String getUserInput(){
       output.println("unlock%");
       try{

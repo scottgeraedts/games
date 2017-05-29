@@ -134,7 +134,7 @@ public class DominionClient{
     //initialize supply
     ArrayList<Deck.SupplyData> supplyData=readArray(parts[1],new Deck.SupplyData());
     ArrayList<String> options=readArray(parts[4],"");
-    board=new DominionBoard(playerData,supplyData,Integer.parseInt(parts[3]),Integer.parseInt(parts[2]),options); // Let the constructor do the job
+    board=new DominionBoard(playerData,supplyData,readArray(parts[3],new Integer(0)),Integer.parseInt(parts[2]),options); // Let the constructor do the job
     
   }
   public void playAgain(String input){
@@ -274,7 +274,15 @@ public class DominionClient{
     }
     return x;  
   }
-    
+  public static ArrayList<Integer> readArray(String parts, Integer temp){
+    String [] playerParts=parts.split("#");
+    int size=Integer.parseInt(playerParts[0]);
+    ArrayList<Integer> x=new ArrayList<>(size);
+    for(int i=0;i<size;i++){
+      x.add(Integer.parseInt(playerParts[i+1]));
+    }
+    return x;  
+  }    
   /////**SERVER WATCHER***///
   //constantly checks to see if there's more information from the server
   //needs to be in its own thread so we don't block if no new information is coming
