@@ -75,7 +75,6 @@ public class Cornucopia extends Expansion{
       super("menagerie");
       cost=3;
       actions=1;
-      cards=1;
       isAction=true;
     }
     @Override
@@ -84,9 +83,12 @@ public class Cornucopia extends Expansion{
       HashSet<DominionCard> handset=new HashSet<>(player.hand);
       System.out.println(handset);
       if(handset.size()==player.hand.size()){
-        player.drawToHand(2);
+        player.drawToHand(3);
         game.displayPlayer(ap);
-      }
+      }else{
+        player.drawToHand(3);
+        game.displayPlayer(ap);
+      }     
     }
   }
   public class Farmingvillage extends DominionCard{

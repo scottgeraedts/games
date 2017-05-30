@@ -336,6 +336,10 @@ public class Hinterlands extends Expansion{
       }
       game.updateSharedFields();      
     }
+    @Override
+    public boolean maskCondition(DominionCard card){
+      return card.isMoney;
+    }
   }
   public class Trader extends RegularCard{
     public Trader(){
@@ -601,9 +605,10 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void onGain(int ap){
-      game.gainLimit=game.cost2(this);
+      game.gainLimit=game.cost2(this)-1;
       game.server.displayComment(ap,"gain a card costing up to "+game.gainLimit);
       game.doWork("gain",1,1,ap);
+      game.changePhase("buys");
       game.selectedCards.clear();
       game.server.displayComment(ap,"");
     }

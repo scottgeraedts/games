@@ -100,6 +100,7 @@ public class DominionPlayer{
     out+=total+"  (";
     for(Map.Entry<String,Integer> entry : cards.entrySet())
       out+=entry.getKey()+": "+entry.getValue()+", ";
+    out+="Victory tokens: "+vicTokens;
     return out+")";
   }
   public String getName(){ return name;}

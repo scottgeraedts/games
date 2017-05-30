@@ -619,8 +619,8 @@ public class Intrigue extends Expansion{
       game.doWork("trash",1,1,activePlayer);
       game.displayPlayer(activePlayer);
       game.displayTrash();
-      game.selectedCards.clear();
       game.controlledGain(activePlayer, game.cost2(game.selectedCards.get(0))+1);
+      game.selectedCards.clear();
     }
   }
   private class Nobles extends DominionCard{

@@ -16,6 +16,8 @@ public class DominionBoard extends JFrame{
   //player panel
   private ArrayList<PlayerDisplay> players=new ArrayList<PlayerDisplay>();
   private ArrayList<String> gameOptions=new ArrayList<>();
+  private JPanel playerPanel;
+  private ArrayList<Integer> controlled;
 
   //supply panel
   private LinkedHashMap<String,SupplyDisplay> supplyDecks=new LinkedHashMap<>();
@@ -55,6 +57,7 @@ public class DominionBoard extends JFrame{
     
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
     gameOptions=o;
+    this.controlled=controlled;
     
     //images that will be used later to mark supply piles
     embargoToken=new ImageIcon(this.getClass().getResource("DominionCards/embargotoken.png"));
@@ -66,7 +69,8 @@ public class DominionBoard extends JFrame{
   	setSize(1500,800);
 		cp = getContentPane();
 		cp.setLayout(new GridLayout(0,2));  // The content-pane sets its layout
-    cp.add(setupPlayerPanel(playersData, controlled, startingPlayer));
+		playerPanel=setupPlayerPanel(playersData, controlled, startingPlayer);
+    cp.add(playerPanel);
     cp.add(setupSharedPanel(supplyData));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  // Exit program if close-window button clicked      
     setVisible(true);
@@ -75,6 +79,7 @@ public class DominionBoard extends JFrame{
       ArrayList<Deck.SupplyData> supplyData, int startingPlayer, ArrayList<String> o){
 
     gameOptions=o;
+    //playerPanel=setupPlayerPanel(playersData, controlled, startingPlayer);
     
     //reset supplies
     supplyPanel.removeAll();
@@ -92,6 +97,8 @@ public class DominionBoard extends JFrame{
     changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer),new ArrayList<Boolean>());
     activePlayer=startingPlayer;
     changePhase(phase,"actions",new ArrayList<Boolean>());
+    repaint();
+    revalidate();
   }
   public void playAgain(){
     String [] options={"Play again","Quit"};
@@ -104,6 +111,7 @@ public class DominionBoard extends JFrame{
   }
   private JPanel setupPlayerPanel(ArrayList<DominionPlayer.Data> playersData, ArrayList<Integer> controlled, int startingPlayer){
     
+    players.clear();
     JPanel panel=new JPanel();
     panel.setLayout(new GridLayout(playersData.size(),1));
     for(int i=0;i<playersData.size();i++){

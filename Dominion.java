@@ -55,6 +55,8 @@ public class Dominion{
     int startingPlayer=startGame(server.playerNames);
     trash.clear();
     resetCardCounters();
+    durationHolder.clear();
+    for(DominionPlayer player : players) player.duration.clear();
     server.reset(supplyData(), playerData(), startingPlayer, startingOptions);
     work(startingPlayer);
   }
@@ -77,7 +79,7 @@ public class Dominion{
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
       if(DominionServer.DEBUG)
-        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("courtier"));
+        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bordervillage"));
     }
     nPlayers=names.size();
 
@@ -85,6 +87,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
+    supplies.add("bordervillage");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -765,7 +768,7 @@ public class Dominion{
       if(card.getName()=="copper" || card.getName()=="silver" || card.getName()=="gold" || card.getName()=="platinum"){
         nCards=30;
       }else if(card.isVictory){
-        nCards=Math.min(4*players.size(),12);
+        nCards=1;//Math.min(4*players.size(),12);
       }else if(card.getName()=="curse"){
         nCards=10*(players.size()-1);
       }else{
