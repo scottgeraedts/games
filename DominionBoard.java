@@ -16,7 +16,6 @@ public class DominionBoard extends JFrame{
   //player panel
   private ArrayList<PlayerDisplay> players=new ArrayList<PlayerDisplay>();
   private ArrayList<String> gameOptions=new ArrayList<>();
-  private JPanel playerPanel;
   private ArrayList<Integer> controlled;
 
   //supply panel
@@ -69,8 +68,7 @@ public class DominionBoard extends JFrame{
   	setSize(1500,800);
 		cp = getContentPane();
 		cp.setLayout(new GridLayout(0,2));  // The content-pane sets its layout
-		playerPanel=setupPlayerPanel(playersData, controlled, startingPlayer);
-    cp.add(playerPanel);
+    cp.add(setupPlayerPanel(playersData, controlled, startingPlayer));
     cp.add(setupSharedPanel(supplyData));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  // Exit program if close-window button clicked      
     setVisible(true);
@@ -79,7 +77,6 @@ public class DominionBoard extends JFrame{
       ArrayList<Deck.SupplyData> supplyData, int startingPlayer, ArrayList<String> o){
 
     gameOptions=o;
-    //playerPanel=setupPlayerPanel(playersData, controlled, startingPlayer);
     
     //reset supplies
     supplyPanel.removeAll();
@@ -92,11 +89,13 @@ public class DominionBoard extends JFrame{
     
     //reset players
     for(int i=0;i<playersData.size();i++){
+      players.get(i).setupOptional();
       displayPlayer(i,playersData.get(i),new ArrayList<Boolean>());
     }
     changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer),new ArrayList<Boolean>());
     activePlayer=startingPlayer;
     changePhase(phase,"actions",new ArrayList<Boolean>());
+    displayTrash(new Deck.Data(0,Deck.blankBack));
     repaint();
     revalidate();
   }
@@ -363,6 +362,7 @@ public class DominionBoard extends JFrame{
     private JButton treasuresButton=new JButton("Play All Treasures");
     
     //stuff for special cards
+    private JPanel optionPanel=new JPanel();
     private JTextField pirateship=new JTextField();
     private JButton islandButton=new JButton("Island");
     private ArrayList<String> islandCards;
@@ -376,6 +376,7 @@ public class DominionBoard extends JFrame{
     public PlayerDisplay(DominionPlayer.Data tplayer){
 
       player=tplayer;
+      
       panel.setLayout(new GridLayout(2,0));
       panel.setBorder(BorderFactory.createLineBorder(Color.black));
       infoPanel.setLayout(new FlowLayout());
@@ -400,12 +401,22 @@ public class DominionBoard extends JFrame{
          }
       });
       
+      setupOptional();
+      
+      infoPanel.add(optionPanel);   
+      panel.add(infoPanel);
+      panel.add(handPanel);
+      
+      display(player,new ArrayList<Boolean>());
+    }
+    public void setupOptional(){
+
       //stuff that isn't always displayed
       islandCards=player.islandCards;
       durationCards=player.durationCards;
       nativeVillageCards=player.nativeVillage;
       vicTokens=player.vicTokens;
-      JPanel optionPanel=new JPanel();
+      optionPanel.removeAll();
       optionPanel.setLayout(new GridLayout(gameOptions.size(),1));
       for(String s : gameOptions){
         if(s.equals("pirateship")){
@@ -439,11 +450,6 @@ public class DominionBoard extends JFrame{
           optionPanel.add(nativevillageButton);                
         }
       }
-      infoPanel.add(optionPanel);   
-      panel.add(infoPanel);
-      panel.add(handPanel);
-      
-      display(player,new ArrayList<Boolean>());
     }
     //use last times data to display
     public void display(){

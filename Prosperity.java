@@ -476,7 +476,7 @@ public class Prosperity extends Expansion{
         game.server.displayComment(activePlayer,"");
         
         game.playCard(card,activePlayer,true);
-        game.playCard(card,activePlayer,false);
+        game.playCard(card,activePlayer,true);
         game.playCard(card,activePlayer,false);
 
         //if you throne room a duration card, send this to the duration mat also

@@ -625,7 +625,8 @@ public class Hinterlands extends Expansion{
       game.doWork("trash",1,1,ap);
       if(game.selectedCards.size()==0) return;
       game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
-      game.doWork("gain",1,1,ap);      
+      game.doWork("gain",1,1,ap);    
+      game.selectedCards.clear();  
     }
   }
 }

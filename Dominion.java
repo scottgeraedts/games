@@ -56,6 +56,7 @@ public class Dominion{
     trash.clear();
     resetCardCounters();
     durationHolder.clear();
+    selectedCards.clear();
     for(DominionPlayer player : players) player.duration.clear();
     server.reset(supplyData(), playerData(), startingPlayer, startingOptions);
     work(startingPlayer);
@@ -78,8 +79,8 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
-      if(DominionServer.DEBUG)
-        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bordervillage"));
+//      if(DominionServer.DEBUG)
+//        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bordervillage"));
     }
     nPlayers=names.size();
 
@@ -87,7 +88,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    supplies.add("bordervillage");
+    //supplies.add("bordervillage");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -154,7 +155,6 @@ public class Dominion{
         //action specific stuff
         if(phase=="actions" && card.isAction){
           actions--; 
-          conspiratorCounter++;
         }
 
         //if the card is going to go to matcard
@@ -241,6 +241,8 @@ public class Dominion{
         }
       }
       
+      if(phase.equals("actions") && card.isAction) conspiratorCounter++;
+      
       players.get(activePlayer).drawToHand(card.cards);
       if(!throneRoom){
         matcards.add(card);
@@ -308,6 +310,7 @@ public class Dominion{
         for(int i=0;i<Hinterlands.hagglerCounter;i++){
           gainLimit=deck.getCost()-1;
           doWork("gain",1,1,activePlayer);
+          selectedCards.clear();
         }       
         
        
@@ -768,7 +771,7 @@ public class Dominion{
       if(card.getName()=="copper" || card.getName()=="silver" || card.getName()=="gold" || card.getName()=="platinum"){
         nCards=30;
       }else if(card.isVictory){
-        nCards=1;//Math.min(4*players.size(),12);
+        nCards=Math.min(4*players.size(),12);
       }else if(card.getName()=="curse"){
         nCards=10*(players.size()-1);
       }else{

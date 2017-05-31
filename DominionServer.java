@@ -158,6 +158,7 @@ public class DominionServer{
   }
 
   public String getUserInput(int i){
+    System.out.println("requesting input from player "+i);
     return connections.get(controllers.get(i)).getUserInput();
   }
   public static class HumanPlayer implements PlayerInterface{
