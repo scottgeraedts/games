@@ -92,12 +92,11 @@ public class Core extends Expansion{
       for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
         card=it.next();
         if(input.equals(card.getName())){
-          game.trash.put(card);
+          game.trashCard(card, victim);
           it.remove();
           break;
         }
       }
-      game.displayTrash();
       player.disc.put(cards);
     }
     private boolean test(DominionCard card){
@@ -178,7 +177,6 @@ public class Core extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.doWork("trash",0,4,activePlayer);
-      game.displayTrash();
       game.displayPlayer(activePlayer);
     }
   }
@@ -241,8 +239,7 @@ public class Core extends Expansion{
     public void subWork(int activePlayer){
       game.gainLimit=5;
       game.doWork("gain",0,1,activePlayer);
-      game.trash.put(game.matcards.remove(game.matcards.size()-1));
-      game.displayTrash();
+      game.trashCard(game.matcards.remove(game.matcards.size()-1), activePlayer);
     }
     
   }
@@ -394,7 +391,6 @@ public class Core extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
-      game.displayTrash();
 
       game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
       game.doWork("gain",1,1,activePlayer);      
@@ -423,8 +419,7 @@ public class Core extends Expansion{
           o.put(card.getImage(),"image");
           input=game.optionPane(activePlayer,o);
           if(input.equals(options[0])){
-            game.trash.put(card);
-            game.displayTrash();
+            game.trashCard(card, activePlayer);
           }else if(input.equals(options[1])){
             player.disc.put(card);
           }else{
@@ -522,8 +517,7 @@ public class Core extends Expansion{
       if(out.equals("Keep")){
         game.players.get(attacker).disc.put(card);
       }else{
-        game.trash.put(card);
-        game.displayTrash();       
+        game.trashCard(card, victim);
       }
       o.clear();
     }

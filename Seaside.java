@@ -26,8 +26,7 @@ public class Seaside extends Expansion{
       game.doWork("selectDeck",0,1,activePlayer);
       game.supplyDecks.get(game.selectedDeck).embargo++;
       game.matcards.remove(this);
-      game.trash.put(this);
-      game.displayTrash();
+      game.trashCard(this, activePlayer);
       game.displaySupply(game.selectedDeck);
     }
   }
@@ -122,6 +121,11 @@ public class Seaside extends Expansion{
     @Override 
     public void subWork(int ap){
       game.server.displayComment(ap,"choose the type of card");
+
+      //subtle issue: prevent cards not in the supply from being selected
+      game.mask=makeMask(game.players.get(ap).hand, c -> game.supplyDecks.containsKey(c.getName()));
+      if(Collections.frequency(game.mask,true)==0) return;
+
       game.doWork("reveal",1,1,ap);
       card=game.selectedCards.get(0);
       game.server.displayComment(ap,"trash up to two of those cards");
@@ -187,7 +191,7 @@ public class Seaside extends Expansion{
         card=it.next();
         if(card.getImage().equals(input)){
           it.remove();
-          game.trash.put(card);
+          game.trashCard(card, ap);
           break;
         }
       }
@@ -355,14 +359,13 @@ public class Seaside extends Expansion{
       for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
         card=it.next();
         if(card.getImage().equals(choice)){
-          game.trash.put(card);
+          game.trashCard(card, ap);
           it.remove();
           game.players.get(ap).pirateship++;
           break;
         }
       }
-      game.displayTrash();
-      victim.disc.put(cards);      
+      victim.disc.put(cards);
     }
   }
   public class Salvager extends RegularCard{
@@ -404,9 +407,8 @@ public class Seaside extends Expansion{
       if(game.selectedCards.size()>0){
         for(int i=0;i<4;i++) game.gainCard("gold",ap,"topcard");
       }
-      game.trash.put(this);
+      game.trashCard(this, ap);
       game.matcards.remove(this);
-      game.displayTrash();
     }
   }
   public class Explorer extends RegularCard{

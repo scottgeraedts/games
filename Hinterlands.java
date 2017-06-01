@@ -79,6 +79,7 @@ public class Hinterlands extends Expansion{
       cost=2;
       value=1;
       isMoney=true;
+      isReactionX=true;
     }
     @Override
     public void work(int ap){

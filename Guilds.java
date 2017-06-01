@@ -100,8 +100,7 @@ public class Guilds extends Expansion{
         card=it.next();
         if(card.getName().equals(name)){
           it.remove();
-          game.trash.put(card);
-          game.displayTrash();
+          game.trashCard(card, ap);
         }
       }
       game.putBack(ap, cards);
@@ -124,8 +123,7 @@ public class Guilds extends Expansion{
         o.put(card.getImage(), "image");
         input=game.optionPane(ap, o);
         if(input.equals(options[0])){
-          game.trash.put(card);
-          game.displayTrash();
+          game.trashCard(card, ap);
         }else if(input.equals(options[0])){
           player.disc.put(card);
           game.displayPlayer(ap);

@@ -5,14 +5,15 @@ public class DominionCard extends Card{
 	public  boolean isMoney=false;
 	public  boolean isVictory=false;
 	public boolean isAction=false;
-  public boolean isAttack=false;
-  public boolean isDuration=false;
-  
-  public boolean isReaction1=false;
-  public boolean isReaction2=false;
-  public boolean isReaction3=false;
-  public boolean isReactionX=false;
-  
+  boolean isAttack=false;
+  boolean isDuration=false;
+  boolean isShelter=false;
+  boolean isLooter=false;
+
+  boolean isReaction1=false; //when attack is played
+  boolean isReaction2=false; //when ANY card is gained
+  boolean isReactionX=false; //just want courtier to know its a reaction
+
 	public int value=0;
 	public int cost=0;
 	protected int vicPoints=0;
@@ -174,6 +175,7 @@ public class DominionCard extends Card{
     }
   }
   public void onGain(int x){}
+  public void onTrash(int x){}
   
   public ArrayList<Boolean> makeMask(Collection<DominionCard> hand){
       ArrayList<Boolean> mask=new ArrayList<Boolean>(hand.size());

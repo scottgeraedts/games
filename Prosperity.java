@@ -37,8 +37,7 @@ public class Prosperity extends Expansion{
       o.put(card.getImage(),"image");
       String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
-        game.trash.put(card);
-        game.displayTrash();
+        game.trashCard(card, ap);
       }else{
         player.disc.put(card);
       }
@@ -244,11 +243,10 @@ public class Prosperity extends Expansion{
       for(ListIterator<DominionCard> it=game.matcards.listIterator(); it.hasNext(); ){
         card=it.next();
         if(card.isMoney){
-          game.trash.put(card);
+          game.trashCard(card, ap);
           it.remove();
         }
       }
-      game.displayTrash();
     }
   }
   public class Mountebank extends Attack{
@@ -431,7 +429,6 @@ public class Prosperity extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
-      game.displayTrash();
 
       game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
       game.doWork("gain",1,1,activePlayer);      

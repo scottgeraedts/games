@@ -6,24 +6,23 @@ public class Dominion{
 
   public DominionServer server;
   public ArrayList<DominionPlayer> players;
-  public LinkedHashMap<String, SupplyDeck> supplyDecks;
+  LinkedHashMap<String, SupplyDeck> supplyDecks;
   public ArrayList<DominionCard> matcards;
-  public ArrayList<DominionCard> durationHolder=new ArrayList<>();
-  public Deck<DominionCard> trash;
+  private ArrayList<DominionCard> durationHolder=new ArrayList<>();
+  private Deck<DominionCard> trash;
   public HashSet<String> startingOptions;
 
   public int money,actions,buys,potions;
-  private int nPlayers;
-  public int emptyPiles;
+  int emptyPiles;
   private boolean gameOver;
   private String phase;
 
-  public int gainLimit;
-  public int minGain=0;
+  int gainLimit;
+  private int minGain=0;
 
   //stuff for selections
   //cards that have been selected for trashing/discarding etc go here in case they need to be looked at by e.g. a forge
-  public String selectedDeck;
+  String selectedDeck;
   private int maxSelection=10,minSelection=10;
   public ArrayList<DominionCard> selectedCards=new ArrayList<>(); 
   public ArrayList<Boolean> mask=new ArrayList<>();
@@ -47,7 +46,8 @@ public class Dominion{
     expansions.put("Hinterlands",new Hinterlands(this));
     expansions.put("Cornucopia",new Cornucopia(this));
     expansions.put("Guilds",new Guilds(this));
-    int startingPlayer=startGame(server.playerNames);      
+    expansions.put("DarkAges",new DarkAges(this));
+    int startingPlayer=startGame(server.playerNames);
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
     
@@ -85,13 +85,12 @@ public class Dominion{
 //      if(DominionServer.DEBUG)
 //        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bordervillage"));
     }
-    nPlayers=names.size();
 
     //supplies
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-  //  supplies.add("stonemason");
+//    supplies.add("hovel");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     //some cards need special behavior on setup, I deal with this here
@@ -136,7 +135,7 @@ public class Dominion{
       player.deck.shuffle();
       player.drawToHand(5);
     }
-    
+
     //trash
     trash=new Deck<>();
     trash.backImage=Deck.blankBack;
@@ -208,7 +207,7 @@ public class Dominion{
             }
           }
         }
-        if(phase=="trash") trash.put(card);
+        if(phase=="trash") trashCard(card, activePlayer);
         if(phase=="topdeck") players.get(activePlayer).deck.put(card);
         
         //generic selection behavour
@@ -395,15 +394,31 @@ public class Dominion{
             if(card2.getName().equals("foolsgold")){
               input=optionPane(i,o);
               if(input.equals(options2[0])){
-                trash.put(card2);
-                displayTrash();
+                trashCard(card2, activePlayer);
                 it.remove();
                 gainCard("gold",activePlayer,"topcard",true);
               }
             }
           }//loop through hand
         }//loop through players
-      } 
+      }
+      //hovel is also kind of a pain
+      if(phase.equals("buys") && card.isVictory){
+        String [] options2={"Trash Hovel","Pass"};
+        OptionData o=new OptionData(options2);
+
+        for(ListIterator<DominionCard> it=players.get(activePlayer).hand.listIterator(); it.hasNext(); ){
+          card2=it.next();
+          if(card2.getName().equals("hovel")){
+            input=optionPane(activePlayer, o);
+            if(input.equals(options2[0])){
+              trashCard(card2, activePlayer);
+              it.remove();
+            }
+          }
+        }//loop through hand
+
+      }
 
       gainCardNoSupply(card, activePlayer, where);
       
@@ -436,8 +451,7 @@ public class Dominion{
         if(optionPane(activePlayer,o).equals(options[0]))
           where="topcard";
         else{
-          trash.put(card);          
-          displayTrash();
+          trashCard(card, activePlayer);
           return;
         }
       }
@@ -445,8 +459,7 @@ public class Dominion{
         if(supplyDecks.containsKey(card.getName())){
           supplyDecks.get(card.getName()).put(card);
         }else{
-          trash.put(card);
-          displayTrash();
+          trashCard(card, activePlayer);
         }
         gainCard("silver",activePlayer,"discard",true);
         return;
@@ -466,6 +479,47 @@ public class Dominion{
       
     displayPlayer(activePlayer);
     
+  }
+  //is a card which satisfies the condition tester in the trash
+  public boolean cardInTrash(Predicate<DominionCard> tester){
+    for(DominionCard card : trash){
+      if(tester.test(card)) return true;
+    }
+    return false;
+  }
+  public void gainFromTrash(int ap, String where, Predicate<DominionCard> tester){
+    OptionData o=new OptionData();
+    for(DominionCard card : trash){
+      if(tester.test(card)){
+        o.put(card.getName(), "imagebutton");
+      }else{
+        o.put(card.getName(), "image");
+      }
+    }
+
+    String input=optionPane(ap,o);
+    DominionCard card;
+    for(ListIterator<DominionCard> it=trash.listIterator(); it.hasNext(); ){
+      card=it.next();
+      if(card.getName().equals(input)){
+        if(where.equals("discard")) players.get(ap).disc.put(card);
+        else if(where.equals("topcard")) players.get(ap).disc.put(card);
+        else{
+          System.out.println("a card vanished "+where);
+          System.exit(0);
+        }
+        it.remove();
+        break;
+      }
+    }
+    displayTrash();
+    displayPlayer(ap);
+
+  }
+  public void trashCard(DominionCard card, int ap){
+    card.onTrash(ap);
+    trash.put(card);
+    displayTrash();
   }
 
   //handles what happens if the player clicks on a button
@@ -734,7 +788,6 @@ public class Dominion{
     changePhase(p);
     work(activePlayer, card);
     displayPlayer(activePlayer);
-    if(p.equals("trash")) displayTrash();
   }
 //  //***PRIVATE VARIABLES***///
   public String getPhase(){
@@ -801,7 +854,7 @@ public class Dominion{
     }
     updateSharedFields();
   }
-  public void displayTrash(){
+  private void displayTrash(){
     for( PlayerInterface connection : server.connections){
       connection.displayTrash(trash.makeData());
     }

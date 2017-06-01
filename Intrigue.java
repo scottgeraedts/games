@@ -35,18 +35,11 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      boolean actionInTrash=false;
-      for(Iterator<DominionCard> it=game.trash.iterator(); it.hasNext(); ){
-        if(it.next().isAction){
-          actionInTrash=true;
-          break;
-        }
-      }
 
       String [] options={"trash from supply"};
       OptionData o=new OptionData(options);
       
-      if(actionInTrash){
+      if(game.cardInTrash(c -> c.isAction)){
         o.put("Gain from Trash","textbutton");
       }else{
         o.put("No actions in trash","text");
@@ -64,33 +57,14 @@ public class Intrigue extends Expansion{
           if(deck.size()==0) continue;
           card=deck.peek();
           if(card.isAction){
-            game.trash.put(deck.topCard());
+            game.trashCard(deck.topCard(), activePlayer);
             break;
           }
         }
-        game.displayTrash();
-        game.displaySupply(deck.makeData()); 
+        game.displaySupply(deck.makeData());
       //if they are gaining an action from supply  
       }else{
-        options=new String[0];
-        o=new OptionData(options);
-        for(Iterator<DominionCard> it=game.trash.iterator(); it.hasNext(); ){
-          o.put(it.next().getName(), "imagebutton");
-        }
-        while(true){
-          input=game.optionPane(activePlayer,o);
-          if(game.cardFactory(input).isAction) break;
-        }
-        for(Iterator<DominionCard> it=game.trash.iterator(); it.hasNext(); ){
-          card=it.next();
-          if(card.getName().equals(input)){
-            game.players.get(activePlayer).disc.put(card);
-            game.trash.remove(card);
-            break;
-          }
-        }
-        game.displayTrash();
-        game.displayPlayer(activePlayer);
+        game.gainFromTrash(activePlayer, "discard", c -> c.isAction);
       }
     }
   }
@@ -146,7 +120,6 @@ public class Intrigue extends Expansion{
       }
 
       game.doWork("trash",1,1,activePlayer);
-      game.displayTrash();
     }
     @Override
     public void subWork(int activePlayer){
@@ -224,8 +197,7 @@ public class Intrigue extends Expansion{
         DominionCard card=game.players.get(victim).getCard();
         System.out.println("swindler trashed "+card.getName());
         int value=game.cost2(card);
-        game.trash.put(card);
-        game.displayTrash();
+        game.trashCard(card, victim);
         game.server.displayComment(attacker,"Trashed a "+card.getName()+", choose a card costing "+value);
         Dominion.SupplyDeck deck;
         while(true){
@@ -403,8 +375,7 @@ public class Intrigue extends Expansion{
       String [] options={"trash for +2","Done"};
       if(game.optionPane(activePlayer,new OptionData(options)).equals(options[0])){
         if(game.matcards.remove(this)){
-          game.trash.put(this);
-          game.displayTrash();
+          game.trashCard(this, activePlayer);
           game.money+=2;
           game.cardPlayed(activePlayer);
         }
@@ -442,7 +413,9 @@ public class Intrigue extends Expansion{
       if(card.isAttack) picks++;
       if(card.isReaction()) picks++;
       if(card.isDuration) picks++;
-      
+      if(card.isShelter) picks++;
+      if(card.isLooter) picks++;
+
       ArrayList<String> options=new ArrayList<>(4);
       ArrayList<String> choices=new ArrayList<>(picks);
       options.add("+1 Action");
@@ -552,7 +525,6 @@ public class Intrigue extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
-      game.displayTrash();
 
       game.changePhase("gain");
       game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
@@ -618,7 +590,6 @@ public class Intrigue extends Expansion{
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
       game.displayPlayer(activePlayer);
-      game.displayTrash();
       game.controlledGain(activePlayer, game.cost2(game.selectedCards.get(0))+1);
       game.selectedCards.clear();
     }
@@ -715,8 +686,7 @@ public class Intrigue extends Expansion{
         }
         if(game.cost2(card)<3) game.players.get(victim).disc.put(card);
         else{
-          game.trash.put(card);
-          game.displayTrash();
+          game.trashCard(card, victim);
           game.gainLimit=game.cost2(card)-2;
           game.server.displayComment(victim,"Gain a card costing up to"+game.gainLimit);
           if(game.gainLimit>=0) game.doWork("gain",0,1,victim);
