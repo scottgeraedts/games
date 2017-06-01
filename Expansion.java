@@ -10,7 +10,8 @@ public abstract class Expansion{
       "talisman","city","contraband","countinghouse","mint","mountebank","rabble","royalseal",
       "vault","venture","goons","hoard","grandmarket","bank","expand","forge","kingscourt",
       "peddler"};
-  
+  public static String [] darkAgesCards={"poorhouse"};
+
   public Expansion(Dominion g){
     game=g;
     String [] vic={"bishop","goons","monument"};
@@ -32,7 +33,20 @@ public abstract class Expansion{
     if(ran.nextDouble()<weight) return true;
     else return false;
   }
-  
+  public static boolean useShelters(ArrayList<String> supplyCards){
+    return true;
+/*
+    Random ran=new Random();
+    double weight=0.05;
+
+    ArrayList<String> pCards=new ArrayList<>(Arrays.asList(darkAgesCards));
+    for(String card : supplyCards){
+      if(pCards.contains(card)) weight+=0.15;
+    }
+    if(ran.nextDouble()<weight) return true;
+    else return false;
+*/
+  }
   protected abstract class Attack extends DominionCard{
     protected String attackPhase="other";
     protected String comment="";

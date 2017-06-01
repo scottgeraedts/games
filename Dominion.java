@@ -81,6 +81,7 @@ public class Dominion{
     //make players
     for(int i=0;i<names.size();i++){
       players.add(new DominionPlayer(names.get(i)));
+
 //      if(DominionServer.DEBUG)
 //        for(int j=0;j<3;j++) players.get(i).deck.put(cardFactory("bordervillage"));
     }
@@ -90,9 +91,10 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    supplies.add("stonemason");
+  //  supplies.add("stonemason");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
+    //some cards need special behavior on setup, I deal with this here
     for(String s : supplies){
       if(s.equals("pirateship")) startingOptions.add("pirateship");
       if(s.equals("island")) startingOptions.add("island");
@@ -101,6 +103,11 @@ public class Dominion{
       if(s.equals("traderoute")) startingOptions.add("traderoute");
       if(Expansion.vicTokens.contains(s)) startingOptions.add("victorytokens");
       if(Expansion.coinTokens.contains(s)) startingOptions.add("cointokens");
+      if(s.equals("baker")){
+        for(DominionPlayer player : players){
+          player.coinTokens=1;
+        }
+      }
     }
     String [] tcards={"copper","silver","gold","estate","duchy","province","curse"};
     ArrayList<String> cards=new ArrayList<String>(Arrays.asList(tcards));
@@ -114,6 +121,21 @@ public class Dominion{
     for(int i=0;i<cards.size();i++){
       supplyDecks.put(cards.get(i), new SupplyDeck( cards.get(i) ));
     } 
+
+    //based on what's in the supply, give each play estates or shelters
+    //and then shuffle and draw 5 cards
+    boolean shelters=Expansion.useShelters(supplies);
+    for(DominionPlayer player : players){
+      if(shelters){
+        player.deck.put(cardFactory("hovel", "DarkAges"));
+        player.deck.put(cardFactory("necropolis", "DarkAges"));
+        player.deck.put(cardFactory("overgrownestate", "DarkAges"));
+      }else{
+        for(int i=0; i<3; i++) player.deck.put(cardFactory("estate"));
+      }
+      player.deck.shuffle();
+      player.drawToHand(5);
+    }
     
     //trash
     trash=new Deck<>();
@@ -326,7 +348,9 @@ public class Dominion{
           }
           changePhase("buys");
           server.displayComment(activePlayer, "");
-        }       
+        }
+        //merchantguild
+        players.get(activePlayer).coinTokens+=Guilds.merchantguildCounter;
         
        
       }
@@ -704,7 +728,7 @@ public class Dominion{
   }
   public void doWork(String p, int min, int max, int activePlayer, DominionCard card){
     minSelection=min;
-    if(!p.equals("gain") && players.get(activePlayer).hand.size()==0) return;
+    if(!p.equals("gain") && !p.equals("selectDeck") && players.get(activePlayer).hand.size()==0) return;
     if(max<=0) max=1;
     maxSelection=max;
     changePhase(p);

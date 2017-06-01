@@ -2,12 +2,14 @@ import java.util.*;
 
 public class Cornucopia extends Expansion{
   
-  public static ArrayList<DominionCard> prizes=new ArrayList<>(5);
-  public static String bane;
+  private static ArrayList<DominionCard> prizes=new ArrayList<>(5);
+  static String bane;
   
-  public Cornucopia(Dominion g){
+  Cornucopia(Dominion g){
     super(g);
-    String [] temp={"hamlet","fortuneteller","menagerie"};
+    String [] temp={"hamlet","fortuneteller","menagerie", "fairgrounds" , "farmingvillage",
+        "tournament", "harvest", "remake", "huntingparty", "hornofplenty", "horsetraders",
+        "jester", "youngwitch"};
     cards=temp;
     String [] prizeNames={"diadem","bagofgold","followers","princess","trustysteed"};
     for(String name : prizeNames){
@@ -425,7 +427,7 @@ public class Cornucopia extends Expansion{
       game.displayPlayer(ap);
       game.updateSharedFields();
     }
-    public void resolve(String input,int ap){  
+    void resolve(String input,int ap){
       DominionPlayer player=game.players.get(ap);
       if(input.equals("+2 Cards")) player.drawToHand(2);
       if(input.equals("+2 Actions")) game.actions+=2;

@@ -25,12 +25,10 @@ public class DominionPlayer{
     disc.faceup=true;
     
     ArrayList<DominionCard> starting=new ArrayList<>();
-    for(int i=0;i<3;i++) starting.add( new DominionCard("estate"));
+//    for(int i=0;i<3;i++) starting.add( new DominionCard("estate"));
     for(int i=0;i<7;i++) starting.add( new DominionCard("copper"));
     deck=new Deck<DominionCard>(starting,Deck.dominionBack);
-    deck.shuffle();    
-    drawToHand(5);
-    
+
   }
 
   public void endTurn(){

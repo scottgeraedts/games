@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.function.Predicate;
 
 public class DominionCard extends Card{
 	public  boolean isMoney=false;
@@ -182,6 +183,15 @@ public class DominionCard extends Card{
         i++;
       }
       return mask;
+  }
+  public ArrayList<Boolean> makeMask(Collection<DominionCard> hand, Predicate<DominionCard> tester){
+    ArrayList<Boolean> mask=new ArrayList<Boolean>(hand.size());
+    int i=0;
+    for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
+        mask.add(tester.test(it.next()));
+        i++;
+    }
+    return mask;
   }
   public boolean maskCondition(DominionCard card){
     return true;
