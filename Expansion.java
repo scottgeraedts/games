@@ -4,6 +4,7 @@ public abstract class Expansion{
   String name;
   Dominion game;
   public static ArrayList<String> vicTokens;
+  public static ArrayList<String> coinTokens;
   
   public static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
       "talisman","city","contraband","countinghouse","mint","mountebank","rabble","royalseal",
@@ -14,6 +15,8 @@ public abstract class Expansion{
     game=g;
     String [] vic={"bishop","goons","monument"};
     vicTokens=new ArrayList<>(Arrays.asList(vic));
+    String [] coin={"candlestickmaker","plaza","baker","butcher","merchantguild"};
+    coinTokens=new ArrayList<>(Arrays.asList(coin));
   }
   public boolean hasCard(String cardName){
     return Arrays.asList(cards).contains(cardName);

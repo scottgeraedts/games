@@ -73,9 +73,19 @@ public class DominionServer{
 
         if(!inputLine.equals("yes")) break;
       }
-      output0.println("!How many computer players?");
-      inputLine=input0.readLine();
-      int x=Integer.parseInt(inputLine);
+      int x;
+      while(true){
+        try{
+          output0.println("!How many computer players?");
+          inputLine=input0.readLine();
+          x=Integer.parseInt(inputLine);
+          break;
+        }catch(NumberFormatException ex){
+          System.out.println("please enter an integer");
+        }
+      }
+        
+       
       for(int i=0;i<x;i++) server.addRobot();
       output0.println("break");
         
@@ -157,9 +167,9 @@ public class DominionServer{
     connections.get(controllers.get(playerNum)).displayComment(text);
   }
 
-  public String getUserInput(int i){
+  public String getUserInput(int i, DominionCard card){
     System.out.println("requesting input from player "+i);
-    return connections.get(controllers.get(i)).getUserInput();
+    return connections.get(controllers.get(i)).getUserInput(card);
   }
   public static class HumanPlayer implements PlayerInterface{
     private BufferedReader input;
@@ -247,7 +257,7 @@ public class DominionServer{
       output.println("Terminate");
     }
     
-    public String getUserInput(){
+    public String getUserInput(DominionCard card){
       output.println("unlock%");
       try{
         return input.readLine();

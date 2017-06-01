@@ -27,6 +27,7 @@ public class DominionBoard extends JFrame{
   private JPanel dataPanel;
   private JPanel supplyPanel;
   private HashMap<String,JButton> doneButtons=new HashMap<>();
+  private JButton coinTokenButton=new JButton("Play Coin Token");
   private JTextField moneyField,buysField,actionsField;
   private JTextField potionsField, tradeRouteField;
   private JTextField helpField;
@@ -164,6 +165,8 @@ public class DominionBoard extends JFrame{
       doneButtons.get(phases[i]).addActionListener(listener);
       doneButtons.get(phases[i]).setActionCommand("B"+phases[i]);
     }
+    coinTokenButton.addActionListener(listener);
+    coinTokenButton.setActionCommand("Bcoin");
     
     JPanel fieldsPanel=new JPanel();
     fieldsPanel.setLayout(new GridLayout(5,2));
@@ -262,12 +265,16 @@ public class DominionBoard extends JFrame{
 
     phase=newPhase;
     try{
+      //remove this every time, only sometimes readd it
+      //if the button isn't there nothing bad will happen
+      dataPanel.remove(coinTokenButton); 
       dataPanel.remove(doneButtons.get(oldPhase)); 
     }catch(NullPointerException e){
     }
    
     try{
       dataPanel.add(doneButtons.get(newPhase)); 
+      if(newPhase.equals("buys") && players.get(activePlayer).coinTokens>0) dataPanel.add(coinTokenButton);
     }catch(NullPointerException e){
     }
  
@@ -370,8 +377,9 @@ public class DominionBoard extends JFrame{
     public ArrayList<String> durationCards;
     private JButton nativevillageButton=new JButton("Native Village");
     private ArrayList<String> nativeVillageCards;
-    private int vicTokens;
+    public int coinTokens=0;
     private JTextField vicfield=new JTextField();    
+    private JTextField coinfield=new JTextField();    
     
     public PlayerDisplay(DominionPlayer.Data tplayer){
 
@@ -415,7 +423,7 @@ public class DominionBoard extends JFrame{
       islandCards=player.islandCards;
       durationCards=player.durationCards;
       nativeVillageCards=player.nativeVillage;
-      vicTokens=player.vicTokens;
+      coinTokens=player.coinTokens;
       optionPanel.removeAll();
       optionPanel.setLayout(new GridLayout(gameOptions.size(),1));
       for(String s : gameOptions){
@@ -436,6 +444,15 @@ public class DominionBoard extends JFrame{
           vicfield.setText(player.vicTokens+"");
           vicpanel.add(vicfield);
           optionPanel.add(vicpanel);
+        }
+        if(s.equals("cointokens")){
+          JPanel coinpanel=new JPanel();
+          coinpanel.setLayout(new FlowLayout());
+          coinpanel.add(new JLabel("Coin Tokens"));
+          coinfield.setEditable(false);
+          coinfield.setText(player.coinTokens+"");
+          coinpanel.add(coinfield);
+          optionPanel.add(coinpanel);
         }
         if(s.equals("island")){
           islandButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,islandCards));        
@@ -458,7 +475,7 @@ public class DominionBoard extends JFrame{
     public void display(DominionPlayer.Data tplayer, ArrayList<Boolean> mask){
       player=tplayer;
       handPanel.removeAll();
-      
+      coinTokens=player.coinTokens;
       Iterator<DominionCard> it=player.hand.iterator();
       int i=0;
 
@@ -509,6 +526,7 @@ public class DominionBoard extends JFrame{
       nativeVillageCards.addAll(player.nativeVillage);
       pirateship.setText(player.pirateship+"");
       vicfield.setText(player.vicTokens+"");
+      coinfield.setText(player.coinTokens+"");
       
       repaint();
       revalidate();

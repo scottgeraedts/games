@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Dominion">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Dominion.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

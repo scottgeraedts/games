@@ -10,6 +10,8 @@ class BasicRobot implements PlayerInterface{
   protected ArrayList<Boolean> mask;
   protected boolean optionPane=false;
   protected ArrayList<DominionCard> hand;
+  protected OptionData options;
+  protected String comment;
   
   public BasicRobot(){
   
@@ -46,12 +48,14 @@ class BasicRobot implements PlayerInterface{
   }
   public void optionPane(OptionData o){
     optionPane=true;
+    options=o;
   }
   public void displayTrash(Deck.Data dat){
   }
   public void displaySupply(Deck.SupplyData dat){
   }
   public void displayComment(String text){
+    comment=text;
   }
   public void updateSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
     this.money=money;
@@ -62,10 +66,27 @@ class BasicRobot implements PlayerInterface{
   }
   public void terminate(){
   }
-  public String getUserInput(){
+  public String getUserInput(DominionCard card){
+    if(card==null) return defaultResponse();
+    
+    String response=card.AIResponse();
+    
+    if(response.equals("default")) return defaultResponse();
+    else return response;
+  }
+  private String defaultResponse(){
     if(optionPane){
       optionPane=false;
-      return "Done";
+      if(options.containsKey("Done")){
+        return "Done";
+      }else{
+        for(int i=0;i<options.size();i++){
+          if(options.getValue(i).equals("textbutton") || options.getValue(i).equals("imagebutton")){
+            return options.getKey(i);
+          }
+        }
+        return "";
+      }
     }else if(phase.equals("actions")){
       //never play actions
       return "Btreasures";
@@ -75,16 +96,17 @@ class BasicRobot implements PlayerInterface{
       else if(money>=6) return "Ggold";
       else if(money>=3) return "Gsilver";
       else return "Gcopper";
-    }else if(phase.equals("discard") || phase.equals("topdeck")){
+    }else if(phase.equals("discard") || phase.equals("topdeck") || phase.equals("select")){
       //always discard or topdeck victories if possible
       for(int i=0;i<hand.size();i++){     
         if(hand.get(i).isVictory) return ""+i;
       }
       return 0+"";
     }else{
-      //never trash, reveal or select cards
+      //never trash, reveal cards
       return "B"+phase;
     }
+  
   }
   
   

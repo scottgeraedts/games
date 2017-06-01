@@ -25,6 +25,9 @@ public class PairList<K extends Comparable,V extends Comparable>{
     types.clear();
     names.clear();
   }
+  public boolean containsKey(K key){
+    return names.contains(key);
+  }
   public K getKey(int i){
     return names.get(i);
   }

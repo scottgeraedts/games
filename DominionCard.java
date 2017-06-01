@@ -192,6 +192,12 @@ public class DominionCard extends Card{
   public boolean isReaction(){
     return isReaction1 || isReaction2 || isReactionX;
   }
+  //what the AI should do if this card makes it trash/discard/etc
+  //if this returns default there is some default behavior
+  //but individual cards can override this
+  public String AIResponse(){
+    return "default";
+  }
   @Override
   public String toString(){
     return isAction+"!"+isMoney+"!"+imagename;

@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.function.Predicate;
 
 
 public class Dominion{
@@ -45,6 +46,7 @@ public class Dominion{
     expansions.put("Prosperity",new Prosperity(this));
     expansions.put("Hinterlands",new Hinterlands(this));
     expansions.put("Cornucopia",new Cornucopia(this));
+    expansions.put("Guilds",new Guilds(this));
     int startingPlayer=startGame(server.playerNames);      
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
@@ -88,7 +90,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-    //supplies.add("bordervillage");
+    supplies.add("stonemason");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     for(String s : supplies){
@@ -98,6 +100,7 @@ public class Dominion{
       if(cardFactory(s).isDuration) startingOptions.add("duration");
       if(s.equals("traderoute")) startingOptions.add("traderoute");
       if(Expansion.vicTokens.contains(s)) startingOptions.add("victorytokens");
+      if(Expansion.coinTokens.contains(s)) startingOptions.add("cointokens");
     }
     String [] tcards={"copper","silver","gold","estate","duchy","province","curse"};
     ArrayList<String> cards=new ArrayList<String>(Arrays.asList(tcards));
@@ -127,6 +130,9 @@ public class Dominion{
   
   ///***STUFF WHICH PROGRESSES THE GAME***///
   public void work(int t){
+    work(t,null);
+  }
+  public void work(int t, DominionCard activeCard){
   
     int activePlayer=t;
     String input;
@@ -138,7 +144,7 @@ public class Dominion{
 
     while(true){
 
-      input=server.getUserInput(activePlayer);
+      input=server.getUserInput(activePlayer, activeCard);
       
       System.out.println(input);
       
@@ -307,10 +313,19 @@ public class Dominion{
         //treasury
         if(card.isVictory) Seaside.victoryBought=true;
         //haggler
+        DominionCard hagglerCard;
         for(int i=0;i<Hinterlands.hagglerCounter;i++){
           gainLimit=deck.getCost()-1;
-          doWork("gain",1,1,activePlayer);
-          selectedCards.clear();
+          server.displayComment(activePlayer, "gain a non-Victory card costing up to "+gainLimit);
+          while(true){
+            doWork("selectDeck",1,1,activePlayer,null);
+            if(supplyDecks.get(selectedDeck).getCost()<=gainLimit && !supplyDecks.get(selectedDeck).card.isVictory){
+              gainCard(selectedDeck,activePlayer);
+              break;
+            }
+          }
+          changePhase("buys");
+          server.displayComment(activePlayer, "");
         }       
         
        
@@ -448,6 +463,15 @@ public class Dominion{
           it.remove();
           playCard(card,activePlayer);
         }
+      }
+    }else if(input.equals("coin")){
+      if(players.get(activePlayer).coinTokens>0){
+        players.get(activePlayer).coinTokens--;
+        money++;
+        displayPlayer(activePlayer);
+        updateSharedFields();
+      }else{
+        System.out.println("Tried to play a coin token but there are none");
       }
     }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal") || input.equals("gain")){
       return true;
@@ -603,7 +627,7 @@ public class Dominion{
   //give user a choice
   public String optionPane(int activePlayer, OptionData o){
     server.optionPane(activePlayer,o);
-    return server.getUserInput(activePlayer);
+    return server.getUserInput(activePlayer, null);
   }
   //always use this to get the cost of cards
   public int cost2(DominionCard card){
@@ -637,8 +661,8 @@ public class Dominion{
       for(int i=0;i<cards.size();i++){
         o.put(cards.get(i).getImage(),"imagebutton");          
       }
-      server.optionPane(activePlayer,o);
-      input=server.getUserInput(activePlayer);
+      input=optionPane(activePlayer,o);
+//      input=server.getUserInput(activePlayer, null);
       for(int i=0;i<cards.size();i++){
         if(input.equals(cards.get(i).getName())){
           player.deck.put(cards.remove(i));
@@ -654,15 +678,8 @@ public class Dominion{
   }
   //"gain a card costing exactly"
   public void controlledGain(int activePlayer, int val){
-    //find out if there are any cards in the supply that we can gain
-    boolean canGain=false;
-    for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
-      if(entry.getValue().getCost()==val){
-        canGain=true;
-        break; 
-      }     
-    }
-    if(!canGain) return;
+    //if theres no card we can gain, quit
+    if(!isValidSupply(activePlayer, val, (DominionCard c) -> true)) return;
     
     //if so, let the player pick one
     gainLimit=val;
@@ -670,14 +687,28 @@ public class Dominion{
     doWork("gain",1,1,activePlayer);
     minGain=0;     
   }
+  //find out if there are any cards in the supply that we can gain
+  public boolean isValidSupply(int activePlayer, int val, Predicate<DominionCard> tester){
+    boolean canGain=false;
+    for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
+      if(entry.getValue().getCost()==val && entry.getValue().size()>0 && tester.test(entry.getValue().card)){
+        canGain=true;
+        break; 
+      }     
+    }
+    return canGain;  
+  }
   //a typical request for the player to do something
   public void doWork(String p, int min, int max, int activePlayer){
+    doWork(p,min,max,activePlayer, null);
+  }
+  public void doWork(String p, int min, int max, int activePlayer, DominionCard card){
     minSelection=min;
     if(!p.equals("gain") && players.get(activePlayer).hand.size()==0) return;
     if(max<=0) max=1;
     maxSelection=max;
     changePhase(p);
-    work(activePlayer);
+    work(activePlayer, card);
     displayPlayer(activePlayer);
     if(p.equals("trash")) displayTrash();
   }

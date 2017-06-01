@@ -543,6 +543,7 @@ public class Core extends Expansion{
       
       if(game.mask.contains(true)){
         game.doWork("select",1,1,activePlayer);
+        game.mask.clear();
         DominionCard card=game.selectedCards.get(0);
 
         game.selectedCards.clear();

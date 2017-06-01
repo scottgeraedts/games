@@ -17,6 +17,6 @@ public interface PlayerInterface{
   public void updateSharedFields(int actions, int money, int buys, int tradeRoute, int potions);
   public boolean playAgain();
   public void terminate();
-  public String getUserInput();
+  public String getUserInput(DominionCard card);
   
 }

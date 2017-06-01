@@ -6,6 +6,7 @@ public class DominionPlayer{
 	private String name;
 	public LinkedList<DominionCard> duration=new LinkedList<>();
 	public int vicTokens=0;
+	public int coinTokens=0;
 	
 	//****specific card related stuff***///
 	//nativevillage
@@ -111,6 +112,7 @@ public class DominionPlayer{
     public Deck.Data deck, disc;
     public String name;
     public int vicTokens;
+    public int coinTokens;
     public ArrayList<String> islandCards=new ArrayList<>();
     public ArrayList<String> durationCards=new ArrayList<>();
     public ArrayList<String> nativeVillage=new ArrayList<>();
@@ -132,6 +134,7 @@ public class DominionPlayer{
       nativeVillage=DominionClient.readArray(parts[handSize+6],"");
       pirateship=Integer.parseInt(parts[handSize+7]);
       vicTokens=Integer.parseInt(parts[handSize+8]);
+      coinTokens=Integer.parseInt(parts[handSize+9]);
     }
     public String toString(){
       String out=""+hand.size();
@@ -144,6 +147,7 @@ public class DominionPlayer{
       out+="@"+DominionServer.toArray(nativeVillage);
       out+="@"+pirateship;
       out+="@"+vicTokens;
+      out+="@"+coinTokens;
       return out;
     }
   }
@@ -168,6 +172,7 @@ public class DominionPlayer{
     }
     out.pirateship=pirateship;
     out.vicTokens=vicTokens;
+    out.coinTokens=coinTokens;
     return out;
   }
 }
