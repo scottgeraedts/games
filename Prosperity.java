@@ -21,17 +21,20 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void work(int ap){
-      DominionCard card;
+      DominionCard card=null;
+      ArrayList<DominionCard> cards=new ArrayList<>();
       DominionPlayer player=game.players.get(ap);
       while(true){
         try{
           card=player.getCard();
         }catch(OutOfCardsException ex){
-          return;
+          break;
         }
         if(card.isMoney) break;
-        else player.disc.put(card);
+        else cards.add(card);
       }
+      player.disc.put(cards);
+      if(card==null) return;
       String [] options={"Trash","Discard"};
       OptionData o=new OptionData(options);
       o.put(card.getImage(),"image");
@@ -325,7 +328,9 @@ public class Prosperity extends Expansion{
     public void subStep(int ap, int atk){
       game.selectedCards.clear();
       String [] options={"Discard 2 cards","pass"};
-      String input=game.optionPane(ap,new OptionData(options));
+      OptionData o=new OptionData(options);
+      o.put(this.getImage(), "image");
+      String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
         game.doWork("discard",2,2,ap);
         game.players.get(ap).drawToHand(1);

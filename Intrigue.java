@@ -222,7 +222,7 @@ public class Intrigue extends Expansion{
     @Override
     public void subWork(int activePlayer){
       try{
-        game.changePhase("selectDeck");
+        game.changePhase("selectDeck2");
         game.work(activePlayer);
         String card1=game.supplyDecks.get(game.selectedDeck).getName();
         DominionCard card2=game.players.get(activePlayer).getCard();
@@ -415,6 +415,8 @@ public class Intrigue extends Expansion{
       if(card.isDuration) picks++;
       if(card.isShelter) picks++;
       if(card.isLooter) picks++;
+      if(card.isRuins) picks++;
+      if(card.isKnight) picks++;
 
       ArrayList<String> options=new ArrayList<>(4);
       ArrayList<String> choices=new ArrayList<>(picks);
@@ -688,7 +690,6 @@ public class Intrigue extends Expansion{
         else{
           game.trashCard(card, victim);
           game.gainLimit=game.cost2(card)-2;
-          game.server.displayComment(victim,"Gain a card costing up to"+game.gainLimit);
           if(game.gainLimit>=0) game.doWork("gain",0,1,victim);
           break;
         }

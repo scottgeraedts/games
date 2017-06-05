@@ -3,14 +3,20 @@ public abstract class Expansion{
   String [] cards;
   String name;
   Dominion game;
-  public static ArrayList<String> vicTokens;
-  public static ArrayList<String> coinTokens;
+  static ArrayList<String> vicTokens;
+  static ArrayList<String> coinTokens;
+  static ArrayList<String> looters;
   
-  public static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
+  static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
       "talisman","city","contraband","countinghouse","mint","mountebank","rabble","royalseal",
       "vault","venture","goons","hoard","grandmarket","bank","expand","forge","kingscourt",
       "peddler"};
-  public static String [] darkAgesCards={"poorhouse"};
+  static String [] darkAgesCards={"altar", "armory", "banditcamp", "bandofmisfits", "beggar",
+          "catacombs", "count", "counterfeit", "cultist", "deathcart", "feodum", "forager", "fortress",
+          "graverobber", "hermit", "huntinggrounds",
+          "ironmonger","junkdealer", "knight", "marauder", "marketsquare", "mystic", "pillage",
+          "poorhouse", "procession", "rats", "rebuild", "rogue", "sage", "scavenger",
+          "squire","storeroom","urchin", "vagrant", "wanderingminstrel"};
 
   public Expansion(Dominion g){
     game=g;
@@ -18,6 +24,8 @@ public abstract class Expansion{
     vicTokens=new ArrayList<>(Arrays.asList(vic));
     String [] coin={"candlestickmaker","plaza","baker","butcher","merchantguild"};
     coinTokens=new ArrayList<>(Arrays.asList(coin));
+    String [] ruins={"deathcart","marauder","cultist"};
+    looters=new ArrayList<>(Arrays.asList(ruins));
   }
   public boolean hasCard(String cardName){
     return Arrays.asList(cards).contains(cardName);
@@ -34,8 +42,6 @@ public abstract class Expansion{
     else return false;
   }
   public static boolean useShelters(ArrayList<String> supplyCards){
-    return true;
-/*
     Random ran=new Random();
     double weight=0.05;
 
@@ -45,7 +51,6 @@ public abstract class Expansion{
     }
     if(ran.nextDouble()<weight) return true;
     else return false;
-*/
   }
   protected abstract class Attack extends DominionCard{
     protected String attackPhase="other";
@@ -58,6 +63,27 @@ public abstract class Expansion{
     @Override
     public final void work(int activePlayer){
       subWork(activePlayer);
+
+      //see if we can trash an urchin
+      DominionCard card;
+      String [] urchinOptions={"Trash Urchin", "Done"};
+      if(DarkAges.urchinSwitch) {
+        OptionData o = new OptionData(urchinOptions);
+        String urchinInput;
+        for (ListIterator<DominionCard> it = game.matcards.listIterator(); it.hasNext(); ) {
+          card = it.next();
+          if (card.getName().equals("urchin")) {
+            urchinInput = game.optionPane(activePlayer, o);
+            if (urchinInput.equals(urchinOptions[0])) {
+              it.remove();
+              game.trashCard(card, activePlayer);
+              game.gainCardNoSupply(game.cardFactory("mercenary", "DarkAges"), activePlayer, "discard");
+            }
+          }
+        }
+      }else{
+        if(isAttack) DarkAges.urchinSwitch=true;
+      }
       game.changePhase(attackPhase);
 
       ArrayList<DominionCard> oldMat=new ArrayList<>(game.matcards);
@@ -75,9 +101,11 @@ public abstract class Expansion{
         victim=game.players.get(i);
         game.changePlayer(oldPlayer,i%game.players.size());
 
+        DominionCard card2;
+
         //resolve possible reactions
         boolean moat=false;
-        if(isAttack) reactions=game.reactionReveal(victim.hand,i,1,this);
+        if(isAttack) reactions=game.reactionReveal(victim.hand,i,this, c -> c.isReaction1);
         for(String r: reactions){
           if(r.equals("moat")){ 
             moat=true;
@@ -97,7 +125,6 @@ public abstract class Expansion{
             game.changePhase(attackPhase);
             game.displayPlayer(i);            
           }else if(r.equals("horsetrader")){
-            DominionCard card2;
             for(ListIterator<DominionCard> it=victim.hand.listIterator(); it.hasNext(); ){
               card2=it.next();
               if(card2.getName().equals("horsetrader")){
@@ -106,12 +133,26 @@ public abstract class Expansion{
                 break;
               }
             }
+          }else if(r.equals("beggar")){
+            String [] options={"Discard Beggar", "Done"};
+            String input=game.optionPane(i, new OptionData(options));
+            if(input.equals(options[0])){
+              for(ListIterator<DominionCard> it=victim.hand.listIterator(); it.hasNext(); ){
+                card2=it.next();
+                if(card2.getName().equals("beggar")){
+                  victim.disc.put(card2);
+                  it.remove();
+                  game.gainCard("silver", i, "topcard", true);
+                  game.gainCard("silver", i);
+                }
+              }
+            }
           }
         }
         //check for lighthouse
         if(isAttack){
-          for(DominionCard card : victim.duration){
-            if(card.getName().equals("lighthouse")) moat=true;
+          for(DominionCard card3 : victim.duration){
+            if(card3.getName().equals("lighthouse")) moat=true;
           }
         }
         
@@ -121,7 +162,7 @@ public abstract class Expansion{
         }
         
         game.mask.clear();
-        game.server.displayComment(i,comment);
+        if(comment.length()>0) game.server.displayComment(i,comment);
         subStep(i,activePlayer);
         game.selectedCards.clear();
         game.server.displayComment(i,"");
@@ -153,7 +194,7 @@ public abstract class Expansion{
     }
     @Override
     public final void work(int activePlayer){
-      game.server.displayComment(activePlayer,comment);
+      if(comment.length()>0) game.server.displayComment(activePlayer,comment);
 
       subWork(activePlayer);
 

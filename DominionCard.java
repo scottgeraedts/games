@@ -9,6 +9,8 @@ public class DominionCard extends Card{
   boolean isDuration=false;
   boolean isShelter=false;
   boolean isLooter=false;
+  boolean isRuins=false;
+  boolean isKnight=false;
 
   boolean isReaction1=false; //when attack is played
   boolean isReaction2=false; //when ANY card is gained

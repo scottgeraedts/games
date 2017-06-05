@@ -1,3 +1,4 @@
+
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -9,7 +10,7 @@ public class Dominion{
   LinkedHashMap<String, SupplyDeck> supplyDecks;
   public ArrayList<DominionCard> matcards;
   private ArrayList<DominionCard> durationHolder=new ArrayList<>();
-  private Deck<DominionCard> trash;
+  Deck<DominionCard> trash;
   public HashSet<String> startingOptions;
 
   public int money,actions,buys,potions;
@@ -90,10 +91,11 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-//    supplies.add("hovel");
+//    supplies.add("vault");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     //some cards need special behavior on setup, I deal with this here
+    boolean addRuins=false;
     for(String s : supplies){
       if(s.equals("pirateship")) startingOptions.add("pirateship");
       if(s.equals("island")) startingOptions.add("island");
@@ -102,12 +104,15 @@ public class Dominion{
       if(s.equals("traderoute")) startingOptions.add("traderoute");
       if(Expansion.vicTokens.contains(s)) startingOptions.add("victorytokens");
       if(Expansion.coinTokens.contains(s)) startingOptions.add("cointokens");
+      if(Expansion.looters.contains(s)) addRuins=true;
       if(s.equals("baker")){
         for(DominionPlayer player : players){
           player.coinTokens=1;
         }
       }
     }
+    if(addRuins) supplies.add("ruins");
+
     String [] tcards={"copper","silver","gold","estate","duchy","province","curse"};
     ArrayList<String> cards=new ArrayList<String>(Arrays.asList(tcards));
     if(usePlatinums){
@@ -132,6 +137,7 @@ public class Dominion{
       }else{
         for(int i=0; i<3; i++) player.deck.put(cardFactory("estate"));
       }
+      for(int i=0; i<3; i++) player.deck.put(cardFactory("remake"));
       player.deck.shuffle();
       player.drawToHand(5);
     }
@@ -219,7 +225,7 @@ public class Dominion{
       }else if(input.charAt(0)=='G'){
       //if first character is G, we gained a card
         if(phase=="buys" || phase=="gain") gainCard(input.substring(1),activePlayer);
-        else if(phase=="selectDeck"){
+        else if(phase=="selectDeck" || phase=="selectDeck2"){
           selectedDeck=input.substring(1);
           break;
         }
@@ -350,7 +356,8 @@ public class Dominion{
         }
         //merchantguild
         players.get(activePlayer).coinTokens+=Guilds.merchantguildCounter;
-        
+        //hermit
+        DarkAges.hermitSwitch=false;
        
       }
 
@@ -442,7 +449,7 @@ public class Dominion{
 
     //play reactions
     OptionData o;     
-    ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,2,card);
+    ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,card, c -> c.isReaction2);
     for(String r : reactions){
       if(r.equals("watchtower")){
         String [] options = {"Top Deck","trash"};
@@ -488,6 +495,9 @@ public class Dominion{
     return false;
   }
   public void gainFromTrash(int ap, String where, Predicate<DominionCard> tester){
+    if(!cardInTrash(tester)){
+      return;
+    }
     OptionData o=new OptionData();
     for(DominionCard card : trash){
       if(tester.test(card)){
@@ -517,8 +527,23 @@ public class Dominion{
 
   }
   public void trashCard(DominionCard card, int ap){
-    card.onTrash(ap);
     trash.put(card);
+    card.onTrash(ap);
+
+    ArrayList<String> cards=reactionReveal(players.get(ap).hand, ap, null,
+            c -> c.getName().equals("marketsquare"));
+    DominionCard card2;
+    int counter=0;
+    for(ListIterator<DominionCard> it=players.get(ap).hand.listIterator(); it.hasNext(); ){
+      card2=it.next();
+      if(card2.getName().equals("marketsquare")){
+        players.get(ap).disc.put(card2);
+        it.remove();
+        counter++;
+        gainCard("gold", ap);
+        if(counter==cards.size()) break;
+      }
+    }
     displayTrash();
   }
 
@@ -664,6 +689,9 @@ public class Dominion{
     Seaside.smugglerCards1.clear();
     
     Seaside.victoryBought=false;
+
+    DarkAges.hermitSwitch=true;
+    DarkAges.urchinSwitch=false;
   }
   private void endGame(){
     String temp;
@@ -682,7 +710,8 @@ public class Dominion{
     maxSelection=0;
   }
   
-  public ArrayList<String> reactionReveal(Collection<DominionCard> hand, int activePlayer, int type, DominionCard attackCard){
+  public ArrayList<String> reactionReveal(Collection<DominionCard> hand, int activePlayer, DominionCard attackCard,
+                                          Predicate<DominionCard> tester){
     DominionCard card;
     String [] options={"Reveal","Pass"};
     OptionData o=new OptionData(options);
@@ -690,9 +719,9 @@ public class Dominion{
 
     for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
       card=it.next();
-      if( (type==1 && card.isReaction1) || (type==2 && card.isReaction2)){
+      if(tester.test(card)){
         o.put(card.getImage(),"image");
-        o.put(attackCard.getImage(),"image");
+        if(attackCard != null) o.put(attackCard.getImage(),"image");
         if(optionPane(activePlayer,o).equals("Reveal")){
           out.add(card.getName());
         }
@@ -762,6 +791,7 @@ public class Dominion{
     //if so, let the player pick one
     gainLimit=val;
     minGain=val;
+    server.displayComment(activePlayer, "gain a card costing exactly "+val);
     doWork("gain",1,1,activePlayer);
     minGain=0;     
   }
@@ -769,7 +799,7 @@ public class Dominion{
   public boolean isValidSupply(int activePlayer, int val, Predicate<DominionCard> tester){
     boolean canGain=false;
     for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
-      if(entry.getValue().getCost()==val && entry.getValue().size()>0 && tester.test(entry.getValue().card)){
+      if( (val == -100 || entry.getValue().getCost()==val) && entry.getValue().size()>0 && tester.test(entry.getValue().card)){
         canGain=true;
         break; 
       }     
@@ -782,7 +812,11 @@ public class Dominion{
   }
   public void doWork(String p, int min, int max, int activePlayer, DominionCard card){
     minSelection=min;
-    if(!p.equals("gain") && !p.equals("selectDeck") && players.get(activePlayer).hand.size()==0) return;
+    if(!p.equals("gain") && !p.equals("selectDeck") && !p.equals("selectDeck2")
+            && players.get(activePlayer).hand.size()==0) return;
+    if(p.equals("gain")){
+      server.displayComment(activePlayer, "gain a card costing up to "+gainLimit);
+    }
     if(max<=0) max=1;
     maxSelection=max;
     changePhase(p);
@@ -863,31 +897,56 @@ public class Dominion{
   //****INNER CLASSES***///
   //can't be static because it uses cardFactory
   class SupplyDeck extends Deck<DominionCard>{
-    private int cost;
     private String name;
-    public int embargo=0;
-    public boolean contraband=false;
+    int embargo=0;
+    boolean contraband=false;
     public DominionCard card;
+    private boolean varied;
     
     public SupplyDeck(String name){
       this.name=name;
-      card=cardFactory(name);
-      cost=card.cost;
-      backImage=card.getImage();
-      
-      int nCards;
-      if(card.getName()=="copper" || card.getName()=="silver" || card.getName()=="gold" || card.getName()=="platinum"){
-        nCards=30;
-      }else if(card.isVictory){
-        nCards=Math.min(4*players.size(),12);
-      }else if(card.getName()=="curse"){
-        nCards=10*(players.size()-1);
+
+      if(name.equals("ruins") || name.equals("knights")) varied=true;
+      else varied=false;
+
+      //decks that are all made of the same card
+      if(!varied) {
+        card=cardFactory(name);
+        int nCards;
+        if (name.equals("copper") || name.equals("silver") || name.equals("gold") || name.equals("platinum")) {
+          nCards = 30;
+        } else if (card.isVictory) {
+          nCards = Math.min(4 * players.size(), 12);
+        } else if (name.equals("curse")) {
+          nCards = 10 * (players.size() - 1);
+        } else if (name.equals("rats")){
+          nCards=20;
+        } else {
+          nCards = 10;
+        }
+        for (int i = 0; i < nCards; i++) {
+          add(cardFactory(name));
+        }
       }else{
-        nCards=10;
+        //decks that are made of different cards
+        if(name.equals("ruins")) {
+          Deck<DominionCard> bigdeck = new Deck<>();
+          for (int i = 0; i < 10; i++) {
+            for(String ruinName : DarkAges.ruinNames)
+              bigdeck.put(cardFactory(ruinName, "DarkAges"));
+          }
+          bigdeck.shuffle();
+          addAll(bigdeck.deal(10 * (players.size() - 1)));
+        }else if(name.equals("knight")){
+          for(String s : DarkAges.knightNames)
+            put(cardFactory(s, "DarkAges"));
+          shuffle();
+        }
+        if(size()>0) card = get(0);
+        else card=null;
       }
-      for(int i=0;i<nCards;i++){
-        add(cardFactory(name));
-      }
+      if(card==null) backImage=Deck.blankBack;
+      else backImage=card.getImage();
     }
     public int getCost(){
       if(name.equals("peddler")){
@@ -900,6 +959,15 @@ public class Dominion{
     public String getName(){return name;}
     public Deck.SupplyData makeData(){
       return new Deck.SupplyData(size(), backImage, getCost(), name, embargo, contraband);
+    }
+    @Override
+    public DominionCard topCard(){
+      DominionCard out=removeFirst();
+      if(varied){
+        card=get(0);
+        backImage=card.getImage();
+      }
+      return out;
     }
     
   }

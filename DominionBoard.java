@@ -9,14 +9,12 @@ import java.io.IOException;
 
 public class DominionBoard extends JFrame{
 
-  private Container cp;
   private String output="";
-  public boolean lock=true;
+  boolean lock=true;
 
   //player panel
   private ArrayList<PlayerDisplay> players=new ArrayList<PlayerDisplay>();
   private ArrayList<String> gameOptions=new ArrayList<>();
-  private ArrayList<Integer> controlled;
 
   //supply panel
   private LinkedHashMap<String,SupplyDisplay> supplyDecks=new LinkedHashMap<>();
@@ -26,15 +24,17 @@ public class DominionBoard extends JFrame{
   private JPanel cardPanel;
   private JPanel dataPanel;
   private JPanel supplyPanel;
+  private JPanel fieldsPanel; //global so it can be reset
   private HashMap<String,JButton> doneButtons=new HashMap<>();
   private JButton coinTokenButton=new JButton("Play Coin Token");
   private JTextField moneyField,buysField,actionsField;
   private JTextField potionsField, tradeRouteField;
+  private JLabel potionsLabel, tradeRouteLabel;
   private JTextField helpField;
   private DeckDisplay trash;
   
   private String phase="actions";
-  private int actions, money, buys, potions, tradeRoute;
+  private int money, buys;
   private ArrayList<String> playedDuration=new ArrayList<>();
   private int activePlayer=0;
   
@@ -57,8 +57,7 @@ public class DominionBoard extends JFrame{
     
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
     gameOptions=o;
-    this.controlled=controlled;
-    
+
     //images that will be used later to mark supply piles
     embargoToken=new ImageIcon(this.getClass().getResource("DominionCards/embargotoken.png"));
     embargoToken=new ImageIcon(resize(embargoToken.getImage(),35,25));
@@ -67,6 +66,7 @@ public class DominionBoard extends JFrame{
 
     //some graphics setup
   	setSize(1500,800);
+  	Container cp;
 		cp = getContentPane();
 		cp.setLayout(new GridLayout(0,2));  // The content-pane sets its layout
     cp.add(setupPlayerPanel(playersData, controlled, startingPlayer));
@@ -168,7 +168,7 @@ public class DominionBoard extends JFrame{
     coinTokenButton.addActionListener(listener);
     coinTokenButton.setActionCommand("Bcoin");
     
-    JPanel fieldsPanel=new JPanel();
+    fieldsPanel=new JPanel();
     fieldsPanel.setLayout(new GridLayout(5,2));
     
     JLabel actionsLabel=new JLabel("Actions: ");
@@ -190,14 +190,15 @@ public class DominionBoard extends JFrame{
     fieldsPanel.add(buysField);
 
     //optional additions to the fields panel
-    JLabel tradeRouteLabel=new JLabel("Trade Route: ");
+    tradeRouteLabel=new JLabel("Trade Route: ");
     tradeRouteField=new JTextField(2);
     tradeRouteField.setEditable(false);
     
-    JLabel potionsLabel=new JLabel("Potions: ");
+    potionsLabel=new JLabel("Potions: ");
     potionsField=new JTextField(2);
     potionsField.setEditable(false);
-    
+
+
     for(String option : gameOptions){
       if(option.equals("traderoute")){
         fieldsPanel.add(tradeRouteLabel);
@@ -231,6 +232,23 @@ public class DominionBoard extends JFrame{
     public void actionPerformed(ActionEvent evt){
       if(players.get(activePlayer).controlled)
         if(!lock) output=evt.getActionCommand();
+    }
+  }
+  private void resetSharedPanel(){
+    //try to remove options
+    fieldsPanel.remove(tradeRouteField);
+    fieldsPanel.remove(tradeRouteLabel);
+    fieldsPanel.remove(potionsField);
+    fieldsPanel.remove(potionsLabel);
+    for(String option : gameOptions){
+      if(option.equals("traderoute")){
+        fieldsPanel.add(tradeRouteLabel);
+        fieldsPanel.add(tradeRouteField);
+      }
+      if(option.equals("potions")){
+        fieldsPanel.add(potionsLabel);
+        fieldsPanel.add(potionsField);
+      }
     }
   }
   public void changePlayer(int oldPlayer, DominionPlayer.Data oldData, int newPlayer, DominionPlayer.Data newData, ArrayList<Boolean> mask){
@@ -283,11 +301,8 @@ public class DominionBoard extends JFrame{
     revalidate();
   }
   public void refreshSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
-    this.actions=actions;
     this.money=money;
     this.buys=buys;
-    this.tradeRoute=tradeRoute;
-    this.potions=potions;
     moneyField.setText(money+"");
     buysField.setText(buys+"");
     actionsField.setText(actions+"");  
@@ -362,8 +377,8 @@ public class DominionBoard extends JFrame{
     private JPanel panel=new JPanel();
     private JPanel handPanel=new JPanel();
     private JPanel infoPanel=new JPanel();
-    public boolean active=false;
-    public boolean controlled=false;
+    boolean active=false;
+    boolean controlled=false;
     public DominionPlayer.Data player;
     private DeckDisplay deck,disc;
     private JButton treasuresButton=new JButton("Play All Treasures");
@@ -727,7 +742,10 @@ public class DominionBoard extends JFrame{
       if(SwingUtilities.isRightMouseButton(e) || e.isControlDown()){
         popup.setVisible(true);
       }else{
-        if( (phase.equals("selectDeck") || phase.equals("gain") || (phase.equals("buys") && money>=supply.data.cost && buys>0) ) && supply.data.size>0 && !supply.data.contraband){
+        if( phase.equals("selectDeck2") ||
+                (phase.equals("selectDeck") || phase.equals("gain") ||
+                        (phase.equals("buys") && money>=supply.data.cost && buys>0) )
+                        && supply.data.size>0 && !supply.data.contraband){
           if(!lock) output="G"+supply.name;
         }
       }

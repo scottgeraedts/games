@@ -46,7 +46,6 @@ public class Core extends Expansion{
     public Artisan(){
       super("artisan");
       cost=6;
-      comment="Gain a card costing up to 5, then put a card on top of your deck";          
     }
     @Override
     public void subWork(int activePlayer){
@@ -610,7 +609,6 @@ public class Core extends Expansion{
     public Workshop(){
       super("workshop");
       cost=3;
-      comment="Gain a card costing up to 4";
     }
     @Override
     public void subWork(int activePlayer){

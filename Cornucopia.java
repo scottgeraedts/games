@@ -13,7 +13,7 @@ public class Cornucopia extends Expansion{
     cards=temp;
     String [] prizeNames={"diadem","bagofgold","followers","princess","trustysteed"};
     for(String name : prizeNames){
-      prizes.add(game.cardFactory(name,"cornucopia"));
+      prizes.add(game.cardFactory(name,"Cornucopia"));
     }
   }
   public class Hamlet extends RegularCard{
@@ -88,7 +88,7 @@ public class Cornucopia extends Expansion{
         player.drawToHand(3);
         game.displayPlayer(ap);
       }else{
-        player.drawToHand(3);
+        player.drawToHand(1);
         game.displayPlayer(ap);
       }     
     }
@@ -98,6 +98,7 @@ public class Cornucopia extends Expansion{
       super("farmingvillage");
       cost=4;
       actions=2;
+      isAction=true;
     }
     @Override
     public void work(int ap){
@@ -153,7 +154,7 @@ public class Cornucopia extends Expansion{
       for(int i=0;i<2;i++){
         game.doWork("trash",1,1,ap);
         if(game.selectedCards.size()==0) break;
-        game.controlledGain(ap, game.cost2(game.selectedCards.get(0)));
+        game.controlledGain(ap, game.cost2(game.selectedCards.get(0))+1);
         game.selectedCards.clear();
       }
     }
@@ -169,7 +170,8 @@ public class Cornucopia extends Expansion{
     @Override
     public void subWork(int ap){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("discard",0,1,ap);
+      if(game.mask.contains(true))
+        game.doWork("discard",0,1,ap);
       if(game.selectedCards.size()==0) return;
       
       OptionData o=new OptionData();
@@ -197,7 +199,8 @@ public class Cornucopia extends Expansion{
     @Override
     public void subStep(int ap, int atk){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("reveal",0,1,ap);
+      if(game.mask.contains(true))
+        game.doWork("reveal",0,1,ap);
       if(game.selectedCards.size()>0) winning=false;
     }
     @Override
@@ -271,6 +274,7 @@ public class Cornucopia extends Expansion{
       HashSet<DominionCard> cardSet=new HashSet<>(game.matcards);
       game.gainLimit=cardSet.size();
       game.doWork("gain",1,1,ap);
+      game.selectedCards.clear();
     }
   }
   public class Huntingparty extends DominionCard{

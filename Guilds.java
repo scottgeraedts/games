@@ -91,7 +91,7 @@ public class Guilds extends Expansion{
     @Override
     public void subWork(int ap){
       game.server.displayComment(ap, "click on a supply pile to trash matches");
-      game.doWork("selectDeck",1,1,ap);
+      game.doWork("selectDeck2",1,1,ap);
       String name=game.supplyDecks.get(game.selectedDeck).getName();
       DominionPlayer player=game.players.get(ap);
       ArrayList<DominionCard> cards=player.draw(3);
@@ -324,7 +324,6 @@ public class Guilds extends Expansion{
         }//while coin tokens
 
         //gain card
-        game.server.displayComment(ap, "gain a card costing up to "+game.gainLimit);
         game.gainLimit=game.cost2(game.selectedCards.get(0))+extra;
         game.selectedCards.clear();
         game.doWork("gain", 1, 1, ap);
