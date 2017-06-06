@@ -7,6 +7,7 @@ public class DominionPlayer{
 	public LinkedList<DominionCard> duration=new LinkedList<>();
 	public int vicTokens=0;
 	public int coinTokens=0;
+	public int debt=0;
 	
 	//****specific card related stuff***///
 	//nativevillage
@@ -109,12 +110,13 @@ public class DominionPlayer{
     public ArrayList<DominionCard> hand=new ArrayList<>();
     public Deck.Data deck, disc;
     public String name;
-    public int vicTokens;
-    public int coinTokens;
-    public ArrayList<String> islandCards=new ArrayList<>();
-    public ArrayList<String> durationCards=new ArrayList<>();
-    public ArrayList<String> nativeVillage=new ArrayList<>();
-    public int pirateship=0;
+    int vicTokens;
+    int coinTokens;
+    ArrayList<String> islandCards=new ArrayList<>();
+    ArrayList<String> durationCards=new ArrayList<>();
+    ArrayList<String> nativeVillage=new ArrayList<>();
+    int pirateship=0;
+    int debt;
     
     public Data(){}
     public Data (String in){
@@ -133,11 +135,12 @@ public class DominionPlayer{
       pirateship=Integer.parseInt(parts[handSize+7]);
       vicTokens=Integer.parseInt(parts[handSize+8]);
       coinTokens=Integer.parseInt(parts[handSize+9]);
+      debt=Integer.parseInt(parts[handSize+10]);
     }
     public String toString(){
       String out=""+hand.size();
-      for(int i=0;i<hand.size();i++){
-        out+="@"+hand.get(i).toString();
+      for (DominionCard aHand : hand) {
+        out += "@" + aHand.toString();
       }
       out+="@"+deck.toString()+"@"+disc.toString()+"@"+name;
       out+="@"+DominionServer.toArray(durationCards);
@@ -146,6 +149,7 @@ public class DominionPlayer{
       out+="@"+pirateship;
       out+="@"+vicTokens;
       out+="@"+coinTokens;
+      out+="@"+debt;
       return out;
     }
   }
@@ -171,6 +175,7 @@ public class DominionPlayer{
     out.pirateship=pirateship;
     out.vicTokens=vicTokens;
     out.coinTokens=coinTokens;
+    out.debt=debt;
     return out;
   }
 }

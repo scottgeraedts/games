@@ -122,18 +122,16 @@ public class Seaside extends Expansion{
     public void subWork(int ap){
       game.server.displayComment(ap,"choose the type of card");
 
-      //subtle issue: prevent cards not in the supply from being selected
-      game.mask=makeMask(game.players.get(ap).hand, c -> game.supplyDecks.containsKey(c.getName()));
-      if(Collections.frequency(game.mask,true)==0) return;
-
       game.doWork("reveal",1,1,ap);
       card=game.selectedCards.get(0);
-      game.server.displayComment(ap,"trash up to two of those cards");
+      game.server.displayComment(ap,"Return up to two of those cards");
       game.displayPlayer(ap);
       game.selectedCards.clear();
       game.mask=makeMask(game.players.get(ap).hand);
       game.doWork("select",0,2,ap);
-      game.supplyDecks.get(card.getName()).put(game.selectedCards);
+      for(DominionCard card : game.selectedCards){
+        game.returnToSupply(card, ap);
+      }
       game.displaySupply(card.getName());
     }
     @Override

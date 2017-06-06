@@ -65,22 +65,8 @@ public class Guilds extends Expansion{
       game.server.displayComment(ap, "Gain 2 cards costing "+over);
       int counter=0;
 
-      while(counter<2){
-
-        if(!game.isValidSupply(ap,over, (DominionCard c) -> c.isAction)) break;
-        
-        game.doWork("selectDeck",1,1,ap);
-        System.out.println("cost: "+game.supplyDecks.get(game.selectedDeck).getCost());
-        if(game.supplyDecks.get(game.selectedDeck).card.isAction && 
-            game.supplyDecks.get(game.selectedDeck).getCost()==over){
-          
-          counter++;
-          game.gainCard(game.selectedDeck,ap);
-        }
-      }
-      game.changePhase("buys");
-      game.selectedCards.clear();
-      game.server.displayComment(ap, "");
+      for(int i=0; i<2; i++)
+        game.gainSpecial(ap, c -> c.isAction && game.cost2(c)==over);
     }
   }
   class Doctor extends RegularCard{
@@ -92,7 +78,7 @@ public class Guilds extends Expansion{
     public void subWork(int ap){
       game.server.displayComment(ap, "click on a supply pile to trash matches");
       game.doWork("selectDeck2",1,1,ap);
-      String name=game.supplyDecks.get(game.selectedDeck).getName();
+      String name=game.supplyDecks.get(game.selectedDeck).card.getName();
       DominionPlayer player=game.players.get(ap);
       ArrayList<DominionCard> cards=player.draw(3);
       DominionCard card;
@@ -211,16 +197,9 @@ public class Guilds extends Expansion{
       cardName=game.selectedCards.get(0).getName();
       int gainLimit=game.cost2(game.selectedCards.get(0))+3;
       game.selectedCards.clear();
-      Dominion.SupplyDeck deck;
+
       game.server.displayComment(ap, "gain a treasure costing up to "+gainLimit);
-      while(true){
-        game.doWork("selectDeck", 1, 1, ap);
-        deck=game.supplyDecks.get(game.selectedDeck);
-        if(deck.size()>0 && deck.getCost()<=gainLimit && deck.card.isMoney){
-          game.gainCard(game.selectedDeck, ap, "topcard", true);
-          break;
-        }
-      }
+      game.gainSpecial(ap, c -> isMoney && game.cost2(c)<=gainLimit);
     }
     @Override
     public void subStep(int ap, int atk){
@@ -337,7 +316,7 @@ public class Guilds extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("selectDeck", 1, 1, ap);
+      game.doWork("selectDeck2", 1, 1, ap);
       int counter=0;
       DominionPlayer player=game.players.get(ap);
       DominionCard card;

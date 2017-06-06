@@ -199,6 +199,7 @@ public class Intrigue extends Expansion{
         int value=game.cost2(card);
         game.trashCard(card, victim);
         game.server.displayComment(attacker,"Trashed a "+card.getName()+", choose a card costing "+value);
+
         Dominion.SupplyDeck deck;
         while(true){
           game.work(attacker);
@@ -224,7 +225,7 @@ public class Intrigue extends Expansion{
       try{
         game.changePhase("selectDeck2");
         game.work(activePlayer);
-        String card1=game.supplyDecks.get(game.selectedDeck).getName();
+        String card1=game.supplyDecks.get(game.selectedDeck).card.getName();
         DominionCard card2=game.players.get(activePlayer).getCard();
         
         //show the drawn card
@@ -417,6 +418,8 @@ public class Intrigue extends Expansion{
       if(card.isLooter) picks++;
       if(card.isRuins) picks++;
       if(card.isKnight) picks++;
+      if(card.isCastle) picks++;
+      if(card.isGathering) picks++;
 
       ArrayList<String> options=new ArrayList<>(4);
       ArrayList<String> choices=new ArrayList<>(picks);

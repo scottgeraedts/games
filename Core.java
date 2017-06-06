@@ -320,25 +320,10 @@ public class Core extends Expansion{
     public void subWork(int activePlayer){
       game.mask=makeMask(game.players.get(activePlayer).hand);
       game.doWork("trash",0,1,activePlayer);
+      if(game.selectedCards.size()<0) return;
       int cost=game.selectedCards.get(0).cost;
 
-      game.changePhase("selectDeck");
-      
-      DominionCard card;
-      Dominion.SupplyDeck deck;
-      while(true){
-        game.work(activePlayer);
-        deck=game.supplyDecks.get(game.selectedDeck);
-        if(deck.size()==0) continue;
-        
-        card=deck.peek();
-        if(card.isMoney && deck.getCost()<=game.cost2(game.selectedCards.get(0))+3){
-          game.gainCard(deck.getName(),activePlayer,"hand");
-//          game.players.get(activePlayer).hand.add(deck.topCard());
-//          game.server.cardGained(actions,game.money,buys,activePlayer,game.players.get(activePlayer).makeData(),deck.makeData());          
-          break;
-        }   
-      }
+      game.gainSpecial(activePlayer, c -> c.isMoney && game.cost2(c)<=cost+3, "hand");
     }
     @Override
     public boolean maskCondition(DominionCard card){

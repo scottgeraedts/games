@@ -19,7 +19,6 @@ public class Dominion{
   private String phase;
 
   int gainLimit;
-  private int minGain=0;
 
   //stuff for selections
   //cards that have been selected for trashing/discarding etc go here in case they need to be looked at by e.g. a forge
@@ -41,13 +40,14 @@ public class Dominion{
     server=tserver;   
 
     expansions.put("Core",new Core(this));
-    expansions.put("Intrigue",new Intrigue(this));
-    expansions.put("Seaside",new Seaside(this));
-    expansions.put("Prosperity",new Prosperity(this));
-    expansions.put("Hinterlands",new Hinterlands(this));
-    expansions.put("Cornucopia",new Cornucopia(this));
-    expansions.put("Guilds",new Guilds(this));
-    expansions.put("DarkAges",new DarkAges(this));
+//    expansions.put("Intrigue",new Intrigue(this));
+//    expansions.put("Seaside",new Seaside(this));
+//    expansions.put("Prosperity",new Prosperity(this));
+//    expansions.put("Hinterlands",new Hinterlands(this));
+//    expansions.put("Cornucopia",new Cornucopia(this));
+//    expansions.put("Guilds",new Guilds(this));
+//    expansions.put("DarkAges",new DarkAges(this));
+    expansions.put("Empires", new Empires(this));
     int startingPlayer=startGame(server.playerNames);
     server.initialize(supplyData(), playerData(),startingPlayer, startingOptions);    
     work(startingPlayer);
@@ -91,7 +91,7 @@ public class Dominion{
     startingOptions=new HashSet<>(); 
     supplyDecks=new LinkedHashMap<>();    
     ArrayList<String> supplies=randomSupply();
-//    supplies.add("vault");
+ //   supplies.add("engineer");
     System.out.println(supplies);
     boolean usePlatinums=Expansion.usePlatinums(supplies);
     //some cards need special behavior on setup, I deal with this here
@@ -102,9 +102,11 @@ public class Dominion{
       if(s.equals("nativevillage")) startingOptions.add("nativevillage");
       if(cardFactory(s).isDuration) startingOptions.add("duration");
       if(s.equals("traderoute")) startingOptions.add("traderoute");
+      if(cardFactory(s).isGathering) startingOptions.add(s);
       if(Expansion.vicTokens.contains(s)) startingOptions.add("victorytokens");
       if(Expansion.coinTokens.contains(s)) startingOptions.add("cointokens");
-      if(Expansion.looters.contains(s)) addRuins=true;
+      if(cardFactory(s).isRuins) addRuins=true;
+      if(Expansion.debtCards.contains(s)) startingOptions.add("debt");
       if(s.equals("baker")){
         for(DominionPlayer player : players){
           player.coinTokens=1;
@@ -137,7 +139,7 @@ public class Dominion{
       }else{
         for(int i=0; i<3; i++) player.deck.put(cardFactory("estate"));
       }
-      for(int i=0; i<3; i++) player.deck.put(cardFactory("remake"));
+      //for(int i=0; i<3; i++) player.deck.put(cardFactory("remake"));
       player.deck.shuffle();
       player.drawToHand(5);
     }
@@ -237,7 +239,7 @@ public class Dominion{
       }
       
       //check if the turn is over
-      if(phase=="buys" && (doneSelection || buys==0)){
+      if(phase=="buys" && (doneSelection || (buys==0 && players.get(activePlayer).debt==0))){
         activePlayer=endTurn(activePlayer);
         doneSelection=false;
       }
@@ -258,32 +260,40 @@ public class Dominion{
     playCard(card,activePlayer,false);
   }
   public void playCard(DominionCard card, int activePlayer, boolean throneRoom){
-      System.out.println("played "+card.getName());
-      money+=card.value;
-      actions+=card.actions;
-      buys+=card.buys;
-      if(card.getName().equals("silver")){
-        money+=Core.merchantCounter;
-        Core.merchantCounter=0;
-      }
-      if(card.getName().equals("copper")){
-        money+=Intrigue.coppersmithCounter;
-        if(supplyDecks.containsKey("grandmarket")){
-          supplyDecks.get("grandmarket").contraband=true;
-          displaySupply("grandmarket");
-        }
-      }
-      
-      if(phase.equals("actions") && card.isAction) conspiratorCounter++;
-      
+    System.out.println("played "+card.getName());
+
+    if(phase.equals("actions") && card.isAction) conspiratorCounter++;
+    if(supplyDecks.containsKey("peddler") && card.isAction) displaySupply("peddler");
+
+    if(Empires.enchantressSwitch[activePlayer] && card.isAction){
+      actions+=1;
+      players.get(activePlayer).drawToHand(1);
+    }else {
+      money += card.value;
+      actions += card.actions;
+      buys += card.buys;
       players.get(activePlayer).drawToHand(card.cards);
-      if(!throneRoom){
-        matcards.add(card);
+    }
+    if(card.getName().equals("silver")){
+      money+=Core.merchantCounter;
+      Core.merchantCounter=0;
+    }
+    if(card.getName().equals("copper")){
+      money+=Intrigue.coppersmithCounter;
+      if(supplyDecks.containsKey("grandmarket")){
+        supplyDecks.get("grandmarket").contraband=true;
+        displaySupply("grandmarket");
       }
-      
-      if(supplyDecks.containsKey("peddler") && card.isAction) displaySupply("peddler");
-      
-      cardPlayed(activePlayer);
+    }
+
+
+    if(!throneRoom){
+      matcards.add(card);
+    }
+
+
+    cardPlayed(activePlayer);
+    if(!Empires.enchantressSwitch[activePlayer] || !card.isAction)
       card.work(activePlayer);
   }
   public boolean gainCard(String supplyName, int activePlayer){
@@ -309,8 +319,8 @@ public class Dominion{
     //if phase is gain you need the "gainLimit" set by the card you played to be big
     //if phase is something else there are no conditions since an action card got you here
     if(deck.size()>0 && ( 
-           (phase=="buys" && money>=deck.getCost() && buys>0) 
-        || (phase=="gain" && gainLimit>=deck.getCost() && minGain<=deck.getCost()) 
+           (phase=="buys" && money>=deck.getCost() && buys>0 && players.get(activePlayer).debt==0)
+        || (phase=="gain" && gainLimit>=deck.getCost() && deck.card.debt==0)
         || (phase!="gain" && phase != "buys")
         || skipBuy ) ){
       DominionCard card=deck.topCard();
@@ -320,6 +330,7 @@ public class Dominion{
         if(deck.contraband) return false;
         buys--;
         money-=deck.getCost();
+        players.get(activePlayer).debt+=deck.card.debt;
         
         //** CARD SPECIFIC BUYING STUFF **//
         //extra gains from talisman
@@ -546,6 +557,30 @@ public class Dominion{
     }
     displayTrash();
   }
+  public void returnToSupply(DominionCard card, int ap){
+    String supplyName="";
+    if(supplyDecks.containsKey(card.getName())){
+      supplyName=card.getName();
+    }else if(card.isKnight){
+      supplyName="knight";
+    }else if(card.isRuins) {
+      supplyName = "ruins";
+    }else if(card.isCastle){
+      supplyName="castle";
+    }else if(card.getName().equals("plunder")){
+      supplyName="encampment";
+    }else if(card.getName().equals("emporium")){
+      supplyName="patrician";
+    }else if(card.getName().equals("bustlingvillage")){
+      supplyName="settlers";
+    }else if(card.getName().equals("rocks")){
+      supplyName="catapult";
+    }else{
+      trashCard(card, ap);
+      return;
+    }
+    supplyDecks.get(supplyName).put(card);
+  }
 
   //handles what happens if the player clicks on a button
   private boolean buttonManager(String input, int activePlayer){
@@ -567,14 +602,26 @@ public class Dominion{
           playCard(card,activePlayer);
         }
       }
-    }else if(input.equals("coin")){
-      if(players.get(activePlayer).coinTokens>0){
+    }else if(input.equals("coin")) {
+      if (players.get(activePlayer).coinTokens > 0) {
         players.get(activePlayer).coinTokens--;
         money++;
         displayPlayer(activePlayer);
         updateSharedFields();
-      }else{
+      } else {
         System.out.println("Tried to play a coin token but there are none");
+      }
+    }else if(input.equals("debt")){
+      if(money>0 && players.get(activePlayer).debt>0){
+        if(players.get(activePlayer).debt>money){
+          players.get(activePlayer).debt-=money;
+          money=0;
+        }else{
+          money-=players.get(activePlayer).debt;
+          players.get(activePlayer).debt=0;
+        }
+        updateSharedFields();
+        displayPlayer(activePlayer);
       }
     }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal") || input.equals("gain")){
       return true;
@@ -784,27 +831,38 @@ public class Dominion{
     server.displayComment(activePlayer,"");
   }
   //"gain a card costing exactly"
-  public void controlledGain(int activePlayer, int val){
-    //if theres no card we can gain, quit
-    if(!isValidSupply(activePlayer, val, (DominionCard c) -> true)) return;
-    
-    //if so, let the player pick one
-    gainLimit=val;
-    minGain=val;
+  void controlledGain(int activePlayer, int val){
     server.displayComment(activePlayer, "gain a card costing exactly "+val);
-    doWork("gain",1,1,activePlayer);
-    minGain=0;     
+    gainSpecial(activePlayer, c -> cost2(c)==val && c.debt==0);
+
   }
   //find out if there are any cards in the supply that we can gain
-  public boolean isValidSupply(int activePlayer, int val, Predicate<DominionCard> tester){
+  boolean isValidSupply(int activePlayer, Predicate<DominionCard> tester){
     boolean canGain=false;
     for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
-      if( (val == -100 || entry.getValue().getCost()==val) && entry.getValue().size()>0 && tester.test(entry.getValue().card)){
+      if( entry.getValue().size()>0 && tester.test(entry.getValue().card)){
         canGain=true;
         break; 
       }     
     }
     return canGain;  
+  }
+  //gain a card subject to some conditions
+  void gainSpecial(int ap, Predicate<DominionCard> tester){
+    gainSpecial(ap, tester, "discard");
+  }
+  void gainSpecial(int ap, Predicate<DominionCard> tester, String where){
+    //quit if no valid card to gain
+    if (!isValidSupply(ap, tester)) return;
+    while (true) {
+      doWork("selectDeck", 1, 1, ap);
+      Dominion.SupplyDeck deck = supplyDecks.get(selectedDeck);
+      if (tester.test(deck.card) && deck.size() > 0){
+        gainCard(selectedDeck, ap, where, true);
+        break;
+      }
+      selectedCards.clear();
+    }
   }
   //a typical request for the player to do something
   public void doWork(String p, int min, int max, int activePlayer){
@@ -906,7 +964,9 @@ public class Dominion{
     public SupplyDeck(String name){
       this.name=name;
 
-      if(name.equals("ruins") || name.equals("knights")) varied=true;
+      if(name.equals("ruins") || name.equals("knight") || name.equals("encampment")
+              || name.equals("patrician") || name.equals("settlers") || name.equals("castle")
+              || name.equals("catapult")) varied=true;
       else varied=false;
 
       //decks that are all made of the same card
@@ -941,17 +1001,48 @@ public class Dominion{
           for(String s : DarkAges.knightNames)
             put(cardFactory(s, "DarkAges"));
           shuffle();
+        }else if(name.equals("encampment")){
+          for(int i=0; i<5; i++) put(cardFactory("plunder", "Empires"));
+          for(int i=0; i<5; i++) put(cardFactory("encampment"));
+        }else if(name.equals("patrician")){
+          for(int i=0; i<5; i++) put(cardFactory("emporium", "Empires"));
+          for(int i=0; i<5; i++) put(cardFactory("patrician"));
+        }else if(name.equals("settlers")){
+          for(int i=0; i<5; i++) put(cardFactory("bustlingvillage", "Empires"));
+          for(int i=0; i<5; i++) put(cardFactory("settlers"));
+        }else if(name.equals("catapult")){
+          for(int i=0; i<5; i++) put(cardFactory("rocks", "Empires"));
+          for(int i=0; i<5; i++) put(cardFactory("catapult"));
+        }else if(name.equals("castle")){
+          for(int i=0; i<players.size()/3+1; i++)
+            put(cardFactory("kingscastle", "Empires"));
+          put(cardFactory("grandcastle", "Empires"));
+          put(cardFactory("sprawlingcastle", "Empires"));
+          for(int i=0; i<players.size()/3+1; i++)
+            put(cardFactory("opulentcastle", "Empires"));
+          put(cardFactory("hauntedcastle", "Empires"));
+          for(int i=0; i<players.size()/3+1; i++)
+            put(cardFactory("smallcastle", "Empires"));
+          put(cardFactory("crumblingcastle", "Empires"));
+          for(int i=0; i<players.size()/3+1; i++)
+            put(cardFactory("humblecastle", "Empires"));
+
         }
+
         if(size()>0) card = get(0);
         else card=null;
+
       }
       if(card==null) backImage=Deck.blankBack;
       else backImage=card.getImage();
+
     }
     public int getCost(){
-      if(name.equals("peddler")){
-        int temp=0;
-        return cost2(card)-2*conspiratorCounter;
+      if(name.equals("peddler")) {
+        int temp = 0;
+        return cost2(card) - 2 * conspiratorCounter;
+      }else if(card==null){
+        return 0;
       }else{
         return cost2(card);
       }

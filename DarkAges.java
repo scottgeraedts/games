@@ -1,7 +1,4 @@
 
-import com.sun.org.apache.regexp.internal.RE;
-import com.sun.org.apache.xalan.internal.xsltc.DOM;
-
 import java.util.*;
 
 public class DarkAges extends Expansion{
@@ -174,16 +171,8 @@ public class DarkAges extends Expansion{
 
     @Override
     public void onTrash(int ap) {
-      if (!game.isValidSupply(ap, -100, c -> c.isAttack)) return;
-      while (true) {
-        game.server.displayComment(ap, "Gain an attack");
-        game.doWork("selectDeck", 1, 1, ap);
-        Dominion.SupplyDeck deck = game.supplyDecks.get(game.selectedDeck);
-        if (deck.card.isAttack && deck.size() > 0){
-          game.gainCard(game.selectedDeck, ap);
-          break;
-        }
-      }
+      game.server.displayComment(ap, "Gain an attack");
+      game.gainSpecial(ap, c -> c.isAttack);
     }
   }
   class Vagrant extends DominionCard{
@@ -253,9 +242,14 @@ public class DarkAges extends Expansion{
           }
         }
       }else if(input.equals(options[1])){
-        game.mask=makeMask(game.players.get(ap).hand, c -> !isMoney);
+        game.mask=makeMask(game.players.get(ap).hand, c -> !c.isMoney);
         game.doWork("trash",0,1,ap);
+        game.selectedCards.clear();
       }
+
+      //gain a card costuing up to 3
+      game.gainLimit=3;
+      game.doWork("gain", 1, 1, ap);
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
@@ -298,6 +292,7 @@ public class DarkAges extends Expansion{
       super("sage");
       cost=3;
       isAction=true;
+      actions=1;
     }
     @Override
     public void work(int ap){
@@ -377,6 +372,7 @@ public class DarkAges extends Expansion{
     public void subStep(int ap, int atk) {
       if (trashed) {
         int x = game.players.get(ap).hand.size() - 3;
+        System.out.println("mercenary: "+x);
         if (x > 0) game.doWork("discard", x, x, ap);
       }
     }
@@ -527,19 +523,9 @@ public class DarkAges extends Expansion{
 
         //now try to gain a card costing one more than this card
         game.trashCard(card, ap);
-        int val=game.cost2(card)-1;
-        if(game.isValidSupply(ap, val, c -> isAction)){
-          game.server.displayComment(ap, "Gain an action costing exactly "+val);
-          Dominion.SupplyDeck deck;
-          while(true){
-            game.doWork("selectDeck",1,1,ap);
-            deck=game.supplyDecks.get(game.selectedDeck);
-            if(deck.getCost()==val && deck.card.isAction){
-              game.gainCard(game.selectedDeck, ap);
-              break;
-            }
-          }//while loop
-        }//can gain
+        int val=game.cost2(card)+1;
+        game.server.displayComment(ap, "Gain an action costing exactly "+val);
+        game.gainSpecial(ap, c -> game.cost2(c)==val && c.isAction);
       }//there is a card to pick
     }//subWork
   }
@@ -637,8 +623,8 @@ public class DarkAges extends Expansion{
       while(true){
         game.doWork("selectDeck", 1, 1, ap);
         deck=game.supplyDecks.get(game.selectedDeck);
-        if(deck.getCost()<=game.cost2(this) && deck.card.isAction){
-          card=game.cardFactory(game.selectedDeck);
+        if(deck.getCost()<=game.cost2(this) && deck.card.isAction && deck.card.debt==0){
+          card=game.cardFactory(deck.card.getName());
           game.playCard(card, ap, true);
           break;
         }
@@ -687,10 +673,16 @@ public class DarkAges extends Expansion{
       if(input.equals(options[0])){
         player.disc.put(cards);
       }else{
-        player.deck.put(cards);
+        game.putBack(ap, cards);
       }
       player.drawToHand(3);
       game.displayPlayer(ap);
+    }
+    @Override
+    public void onTrash(int ap){
+      game.gainLimit=game.cost2(this);
+      game.doWork("gain", 1, 1, ap);
+      game.selectedCards.clear();
     }
   }
   class Count extends RegularCard{
@@ -792,6 +784,7 @@ public class DarkAges extends Expansion{
         game.gainFromTrash(ap, "topcard", c -> game.cost2(c)<=6 && game.cost2(c)>=3);
       }else{
         game.mask=makeMask(game.players.get(ap).hand, c -> c.isAction);
+        game.doWork("trash", 1, 1, ap);
         if(game.selectedCards.size()>0){
           game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
           game.doWork("gain", 1, 1, ap);
@@ -953,7 +946,7 @@ public class DarkAges extends Expansion{
       DominionPlayer player=game.players.get(ap);
       try {
         DominionCard card = player.getCard();
-        if(card.getName().equals(game.selectedDeck)){
+        if(card.getName().equals(game.supplyDecks.get(game.selectedDeck).card.getName())){
           player.hand.add(card);
           game.displayPlayer(ap);
         }else{
@@ -1003,6 +996,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
+      game.server.displayComment(ap, "gain a card to not trash"+game.gainLimit);
       game.doWork("selectDeck2", 1, 1, ap);
       ArrayList<DominionCard> cards=new ArrayList<>();
       DominionCard card=null;
@@ -1012,8 +1006,9 @@ public class DarkAges extends Expansion{
           card=player.getCard();
         }catch(OutOfCardsException ex){
           player.disc.put(cards);
+          return;
         }
-        if(card.isVictory && !card.getName().equals(game.selectedDeck)){
+        if(card.isVictory && !card.getName().equals(game.supplyDecks.get(game.selectedDeck).card.getName())){
           break;
         }else{
           cards.add(card);
@@ -1021,17 +1016,9 @@ public class DarkAges extends Expansion{
       }
       player.disc.put(cards);
       game.trashCard(card, ap);
-      game.gainLimit=game.cost2(card)+3;
-      Dominion.SupplyDeck deck;
-      while(true){
-        game.server.displayComment(ap, "gain a victory costing up to "+game.gainLimit);
-        game.doWork("selectDeck", 1, 1, ap);
-        deck=game.supplyDecks.get(game.selectedDeck);
-        if(deck.getCost()<=game.gainLimit && deck.card.isVictory){
-          game.gainCard(game.selectedDeck, ap);
-          break;
-        }
-      }
+      int gainLimit=game.cost2(card)+3;
+      game.server.displayComment(ap, "gain a victory costing up to "+gainLimit);
+      game.gainSpecial(ap, c -> game.cost2(c)<=gainLimit && c.isVictory);
     }
   }
   class Rogue extends Attack{

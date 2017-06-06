@@ -11,6 +11,8 @@ public class DominionCard extends Card{
   boolean isLooter=false;
   boolean isRuins=false;
   boolean isKnight=false;
+  boolean isCastle=false;
+  boolean isGathering=false;
 
   boolean isReaction1=false; //when attack is played
   boolean isReaction2=false; //when ANY card is gained
@@ -22,6 +24,7 @@ public class DominionCard extends Card{
 	public int actions=0;
 	public int buys=0;
 	public int cards=0;
+	public int debt=0;
 	
 	//a switch to tell duration cards activate their duration power twice 
 	//or three times if kings courted

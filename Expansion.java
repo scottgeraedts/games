@@ -6,7 +6,8 @@ public abstract class Expansion{
   static ArrayList<String> vicTokens;
   static ArrayList<String> coinTokens;
   static ArrayList<String> looters;
-  
+  static ArrayList<String> debtCards;
+
   static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
       "talisman","city","contraband","countinghouse","mint","mountebank","rabble","royalseal",
       "vault","venture","goons","hoard","grandmarket","bank","expand","forge","kingscourt",
@@ -20,12 +21,13 @@ public abstract class Expansion{
 
   public Expansion(Dominion g){
     game=g;
-    String [] vic={"bishop","goons","monument"};
+    String [] vic={"bishop","goons","monument","patrician", "chariotrace", "farmersmarket",
+      "sacrifice", "temple", "groundskeeper", "wildhunt"};
     vicTokens=new ArrayList<>(Arrays.asList(vic));
     String [] coin={"candlestickmaker","plaza","baker","butcher","merchantguild"};
     coinTokens=new ArrayList<>(Arrays.asList(coin));
-    String [] ruins={"deathcart","marauder","cultist"};
-    looters=new ArrayList<>(Arrays.asList(ruins));
+    String [] debt={"engineer", "cityquarter", "overlord", "royalblacksmith", "fortune" ,"capital"};
+    debtCards=new ArrayList<>(Arrays.asList(debt));
   }
   public boolean hasCard(String cardName){
     return Arrays.asList(cards).contains(cardName);
@@ -72,6 +74,10 @@ public abstract class Expansion{
         String urchinInput;
         for (ListIterator<DominionCard> it = game.matcards.listIterator(); it.hasNext(); ) {
           card = it.next();
+
+          //skip the last one, which might be an urchin we just played
+          if(!it.hasNext()) break;
+
           if (card.getName().equals("urchin")) {
             urchinInput = game.optionPane(activePlayer, o);
             if (urchinInput.equals(urchinOptions[0])) {
