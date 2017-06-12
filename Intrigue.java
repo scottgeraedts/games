@@ -521,8 +521,6 @@ public class Intrigue extends Expansion{
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
 
-      game.changePhase("gain");
-
       if(game.selectedCards.size()==0) return;
 
 

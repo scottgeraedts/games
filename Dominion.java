@@ -63,6 +63,7 @@ public class Dominion{
     //theres a bunch of useful methods in empires
     empires=new Empires(this);
     expansions.put("Empires", empires);
+    expansions.put("Alchemy", new Alchemy((this)));
     int startingPlayer=startGame(supply);
     server.initialize(supplyData(), playerData(),startingPlayer, gameOptions, playerOptions);
     updateSharedFields();
@@ -104,7 +105,7 @@ public class Dominion{
     gameOptions.add("Actions");
     gameOptions.add("Money");
     gameOptions.add("Buys");
-    supplyDecks=new LinkedHashMap<>();    
+    supplyDecks=new LinkedHashMap<>();
     ArrayList<String> supplies=getSupplyCards(supply);
 //    supplies.add("villa");
     System.out.println(supplies);
@@ -113,6 +114,7 @@ public class Dominion{
     boolean addRuins=false;
     boolean addTax=false;
     boolean addObelisk=false;
+    boolean addPotions=false;
     for(String s : supplies){
       if(s.equals("pirateship")) playerOptions.add("pirateship");
       if(s.equals("island")) playerOptions.add("island");
@@ -131,8 +133,13 @@ public class Dominion{
       }
       if(s.equals("tax")) addTax=true;
       if(s.equals("obelisk")) addObelisk=true;
+      if(Arrays.asList(Alchemy.potionCost).contains(s)) addPotions=true;
     }
     if(addRuins) supplies.add("ruins");
+    if(addPotions){
+      supplies.add("potion");
+      gameOptions.add("Potions");
+    }
     //set the shared fields
     fields=new PairList<>();
     for(String s: gameOptions){
@@ -266,7 +273,7 @@ public class Dominion{
           
       }else if(input.charAt(0)=='G'){
       //if first character is G, we gained a card
-        if(phase.equals("buys") || phase.equals("gain")){
+        if(phase.equals("buys")){
           gainCard(input.substring(1),activePlayer);
         }
         else if(phase.equals("selectDeck") || phase.equals("selectDeck2")){
@@ -366,25 +373,26 @@ public class Dominion{
     //if phase is gain you need the "gainLimit" set by the card you played to be big
     //if phase is something else there are no conditions since an action card got you here
     if(deck.size()>0 && ( 
-           (phase.equals("buys") && money>=deck.getCost() && buys>0 && players.get(activePlayer).debt==0)
-        //|| (phase.equals("gain") && gainLimit>=deck.getCost() && deck.card.debt==0)
-        || (!phase.equals("gain") && !phase.equals("buys"))
-        || skipBuy) ){
+           (phase.equals("buys") && money>=deck.getCost() && buys>0 && players.get(activePlayer).debt==0 && potions>=deck.card.potions)
+        || !phase.equals("buys") || skipBuy) ){
 
       if(phase.equals("buys") && !skipBuy) {
 
         if (deck.contraband) return false;
         buys--;
         money -= deck.getCost();
+        players.get(activePlayer).debt += deck.card.debt + deck.tax;
+        potions -= deck.card.potions;
+        deck.tax = 0;
+
+        //we need to deduct money before gettng the card because of split piles
+
       }
 
-      //we need to deduct money before gettng the card because of split piles
       DominionCard card=deck.topCard();
 
       if(phase.equals("buys") && !skipBuy) {
 
-        players.get(activePlayer).debt += card.debt + deck.tax;
-        deck.tax = 0;
 
         //for event cards thats all we have to do?
         if(card.isEvent){
@@ -396,9 +404,8 @@ public class Dominion{
         //** CARD SPECIFIC BUYING STUFF **//
         //extra gains from talisman
         if(!card.isVictory){
-          phase="gain";
+          //changing out of the buy phase is a quick way to avoid losing money/buys
           for(int i=0;i<Prosperity.talismanCounter; i++) gainCard(supplyName, activePlayer, "discard", true);
-          phase="buys";
           selectedCards.clear();
         }
         //goons
@@ -456,9 +463,6 @@ public class Dominion{
           Empires.charmCounter=0;
         }
       }
-      if(phase.equals("gain")) {
-        selectedCards.add(card);
-      }
 
       //trigger landmarks
       empires.landmarkGain(card, activePlayer);
@@ -506,7 +510,7 @@ public class Dominion{
         }//loop through players
       }
       //hovel is also kind of a pain
-      if(phase.equals("buys") && card.isVictory){
+      if(phase.equals("buys") && card.isVictory && !skipBuy){
         String [] options2={"Trash Hovel","Pass"};
         OptionData o=new OptionData(options2);
 
@@ -735,7 +739,7 @@ public class Dominion{
         updateSharedFields();
         displayPlayer(activePlayer);
       }
-    }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal") || input.equals("gain")){
+    }else if(input.equals("discard") || input.equals("trash") || input.equals("select") || input.equals("reveal")){
       return true;
     }
     return false;
@@ -751,9 +755,9 @@ public class Dominion{
       card=it.next();
       //there might be a problem with cleanup being called twice on e.g. a hermit
       //fix would be to separate cleanup from a function which says whether you are going on the duration pile this turn
-      if(!card.getName().equals("scheme") && card.cleanup(activePlayer,players.get(activePlayer))){
+      if(!card.getName().equals("scheme") && !card.getName().equals("herbalist") && card.cleanup(activePlayer,players.get(activePlayer))){
         it.remove();
-      }else if(card.getName().equals("scheme")){
+      }else if(card.getName().equals("scheme") || card.getName().equals("herbalist")){
         schemeCards.add(card);
       }
     }
@@ -1060,11 +1064,8 @@ public class Dominion{
     }
 
     minSelection=min;
-    if(!p.equals("gain") && !p.equals("selectDeck") && !p.equals("selectDeck2")
+    if(!p.equals("selectDeck") && !p.equals("selectDeck2")
             && players.get(activePlayer).hand.size()==0) return;
-//    if(p.equals("gain")){
-//      server.displayComment(activePlayer, "gain a card costing up to "+gainLimit);
-//    }
     if(max<=0) max=1;
     maxSelection=max;
 
@@ -1175,7 +1176,7 @@ public class Dominion{
       this.name=name;
 
       varied = name.equals("ruins") || name.equals("knight") || name.equals("castle")
-              || Empires.splitPiles.containsKey(name);
+              || Empires.splitPiles.containsKey(name) || name.equals("potion");
 
       //decks that are all made of the same card
       if(!varied) {
@@ -1228,6 +1229,9 @@ public class Dominion{
           for(int i=0; i<players.size()/3+1; i++)
             put(cardFactory("humblecastle", "Empires"));
 
+        }else if (name.equals("potion")){
+          //potions aren't in the randomizer
+          for(int i=0; i<10; i++) put(cardFactory("potion", "Alchemy"));
         }
 
         if(size()>0){

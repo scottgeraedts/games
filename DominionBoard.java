@@ -51,7 +51,7 @@ public class DominionBoard extends JFrame{
     doneButtons.put("topdeck",new JButton("Done Topdecking"));
     doneButtons.put("discard",new JButton("Done Discarding"));
     doneButtons.put("trash",new JButton("Done Trashing"));
-    doneButtons.put("gain",new JButton("Done Gaining"));
+    //doneButtons.put("gain",new JButton("Done Gaining"));
     doneButtons.put("select",new JButton("Done Selecting"));
     doneButtons.put("reveal",new JButton("Done Revealing"));
     
@@ -170,7 +170,7 @@ public class DominionBoard extends JFrame{
     
     //action listener for the done buying button
     EndSelection listener=new EndSelection();
-    String [] phases={"actions","buys","topdeck","discard","trash","gain","select","reveal"};
+    String [] phases={"actions","buys","topdeck","discard","trash","select","reveal"};
     for(int i=0;i<phases.length;i++){
       doneButtons.get(phases[i]).addActionListener(listener);
       doneButtons.get(phases[i]).setActionCommand("B"+phases[i]);
@@ -811,7 +811,7 @@ public class DominionBoard extends JFrame{
         popup.setVisible(true);
       }else{
         if( (phase.equals("selectDeck2") ||
-                (phase.equals("selectDeck") || phase.equals("gain") || buysCheck
+                (phase.equals("selectDeck") || buysCheck
                         && supply.data.size>0 && !supply.data.icons.containsKey("contraband"))) && eventCheck){
           if(!lock) output="G"+supply.name;
         }
