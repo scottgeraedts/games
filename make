@@ -1,4 +1,4 @@
 rm *class
-javac DominionServer.java
-javac DominionClient.java
-jar cfm Dominion.jar Manifest.txt *class DominionCards/*png
+javac -g -Xlint:unchecked DominionServer.java
+javac -Xlint:unchecked DominionClient.java
+jar cfm Dominion.jar Manifest.txt *class DominionCards/*jpg

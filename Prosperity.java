@@ -37,7 +37,7 @@ public class Prosperity extends Expansion{
       if(card==null) return;
       String [] options={"Trash","Discard"};
       OptionData o=new OptionData(options);
-      o.put(card.getImage(),"image");
+      o.add(card.getImage(),"image");
       String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
         game.trashCard(card, ap);
@@ -98,10 +98,12 @@ public class Prosperity extends Expansion{
       super("monument");
       cost=4;
       value=2;
+      isAction=true;
     }
     @Override
     public void work(int ap){
-      game.players.get(ap).vicTokens++;      
+      game.players.get(ap).vicTokens++;
+      game.displayPlayer(ap);
     }
   }
   public class Quarry extends DominionCard{
@@ -199,13 +201,13 @@ public class Prosperity extends Expansion{
         card=it.next();
         if(card.getName().equals("copper")){
           it.remove();
-          o.put(card.getImage(), "imagebutton");
+          o.add(card.getImage(), "imagebutton");
           cards.add(card);
         }
       }
       String all="Select all";
-      o.put(all,"textbutton");
-      o.put("Done","textbutton");
+      o.add(all,"textbutton");
+      o.add("Done","textbutton");
       String input;
       while(cards.size()>0){
         input=game.optionPane(ap,o);
@@ -329,7 +331,7 @@ public class Prosperity extends Expansion{
       game.selectedCards.clear();
       String [] options={"Discard 2 cards","pass"};
       OptionData o=new OptionData(options);
-      o.put(this.getImage(), "image");
+      o.add(this.getImage(), "image");
       String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
         game.doWork("discard",2,2,ap);
@@ -477,10 +479,10 @@ public class Prosperity extends Expansion{
         game.selectedCards.clear();
         game.changePhase("actions");
         game.server.displayComment(activePlayer,"");
-        
-        game.playCard(card,activePlayer,true);
-        game.playCard(card,activePlayer,true);
+
         game.playCard(card,activePlayer,false);
+        if(!card.lostTrack) game.playCard(card,activePlayer,true);
+        if(!card.lostTrack) game.playCard(card,activePlayer,true);
 
         //if you throne room a duration card, send this to the duration mat also
         if(card.isDuration) isDuration=true;

@@ -13,7 +13,7 @@ public class Guilds extends Expansion{
   public static int overpay(Dominion g, int ap){
     String [] options={"Overpay","Done"};
     OptionData o=new OptionData(options);
-    o.put("Overpayed 0", "text");
+    o.add("Overpayed 0", "text");
     String input;
     int out=0;
     while(g.money>0){
@@ -23,7 +23,7 @@ public class Guilds extends Expansion{
         g.money--;
         g.updateSharedFields();
         o=new OptionData(options);
-        o.put("Overpayed "+out, "text");
+        o.add("Overpayed "+out, "text");
       }else{
         break;
       }
@@ -106,11 +106,11 @@ public class Guilds extends Expansion{
           break;
         }
         o=new OptionData(options);
-        o.put(card.getImage(), "image");
+        o.add(card.getImage(), "image");
         input=game.optionPane(ap, o);
         if(input.equals(options[0])){
           game.trashCard(card, ap);
-        }else if(input.equals(options[0])){
+        }else if(input.equals(options[1])){
           player.disc.put(card);
           game.displayPlayer(ap);
         }else{
@@ -147,7 +147,7 @@ public class Guilds extends Expansion{
       if (cards.size()==0) return;
       OptionData o=new OptionData();
       for(DominionCard card : cards){
-        o.put(card.getImage(), "imagebutton");
+        o.add(card.getImage(), "imagebutton");
       }
       String input=game.optionPane((ap+1)%game.players.size(), o);
       DominionCard card;
@@ -192,8 +192,8 @@ public class Guilds extends Expansion{
     @Override
     public void subWork(int ap){
       DominionPlayer player=game.players.get(ap);
-      game.mask=makeMask(player.hand, c -> c.isMoney);
-      game.doWork("trash", 0, 1, ap);
+      game.doWork("trash", 0, 1, ap, c -> c.isMoney);
+      if(game.selectedCards.size()==0) return;
       cardName=game.selectedCards.get(0).getName();
       int gainLimit=game.cost2(game.selectedCards.get(0))+3;
       game.selectedCards.clear();
@@ -204,13 +204,7 @@ public class Guilds extends Expansion{
     @Override
     public void subStep(int ap, int atk){
       DominionPlayer player=game.players.get(ap);
-      game.mask=makeMask(player.hand, c -> c.getName().equals(cardName));
-      int count=Collections.frequency(game.mask,true);
-      if(count==1){
-        player.deck.add(player.hand.remove(game.mask.indexOf(true)));
-      }else if(count>1){
-        game.doWork("discard",1,1,ap);
-      }
+      game.doWork("discard",1,1,ap, c -> c.getName().equals(cardName));
     }
   }
   class Herald extends DominionCard{
@@ -243,7 +237,7 @@ public class Guilds extends Expansion{
           OptionData o = new OptionData(new String[0]);
           for (DominionCard aDisc : player.disc) {
             card = aDisc;
-            o.put(card.getName(), "imagebutton");
+            o.add(card.getName(), "imagebutton");
           }
           String input = game.optionPane(ap, o);
           for (DominionCard aDisc : player.disc) {

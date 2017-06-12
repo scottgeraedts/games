@@ -75,19 +75,27 @@ public class DominionPlayer{
   }
 
   //returns the breakdown of victory points for this player
-  public String victoryPoints(){
+  public Pair<Integer, String> victoryPoints(){
+
+    //put all cards from all sources into the deck
     deck.put(disc);
     deck.put(hand);
     deck.put(island);
     deck.put(duration);
     deck.put(nativevillage);
+    for(DominionCard card : deck){
+      if(card.getName().equals("archive")){
+        deck.put( ((Empires.Archive)card).cards);
+      }
+    }
+
+
     HashMap<String,Integer> cards=new HashMap<>();
     
     int total=0;
     String temp;
-    ArrayList<DominionCard> cardlist=new ArrayList<>(deck);
-    for(DominionCard card : cardlist){
-      total+=card.getPoints(cardlist);
+    for(DominionCard card : deck){
+      total+=card.getPoints(deck);
       temp=card.getName();
       if(card.isVictory || card.getName().equals("curse")){
         if(cards.containsKey(temp)) cards.put(temp,cards.get(temp)+1);
@@ -96,12 +104,10 @@ public class DominionPlayer{
     }
     total+=vicTokens;
     String out="";
-    if(total<10) out+=" ";
-    out+=total+"  (";
     for(Map.Entry<String,Integer> entry : cards.entrySet())
       out+=entry.getKey()+": "+entry.getValue()+", ";
     out+="Victory tokens: "+vicTokens;
-    return out+")";
+    return new Pair<Integer, String>(total,out);
   }
   public String getName(){ return name;}
   

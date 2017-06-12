@@ -7,12 +7,12 @@ public class DominionServer{
   //an interface is something that can return an instruction, like 'buy a card', 'play a card', etc
   //there are two kinds: clients which provide a display interface so humans can play
   //and robots which just return a value
-  public ArrayList<PlayerInterface> connections=new ArrayList<>();
+  ArrayList<PlayerInterface> connections=new ArrayList<>();
   //there may be more players than interfaces (if we are testing or doing hotseat)
   //this is a map from player to interface
   private HashMap<Integer,Integer> controllers=new HashMap<>();
   public static boolean DEBUG;
-  public ArrayList<String> playerNames=new ArrayList<>();
+  ArrayList<String> playerNames=new ArrayList<>();
 
   public static void main(String [] args) throws IOException{
   
@@ -20,12 +20,15 @@ public class DominionServer{
     
     //read config file
     BufferedReader fr=null;
+    String supply;
     try{
       fr=new BufferedReader(new FileReader("server_config.txt"));
       DEBUG=Boolean.parseBoolean(fr.readLine().split(" ")[0]);
+      supply=fr.readLine().split(" ")[0];
     }catch(FileNotFoundException ex){
       System.out.println("No config file found, going with defaults");
       DEBUG=false;
+      supply="random";
     }    
 
     int portNumber=4444;
@@ -92,7 +95,7 @@ public class DominionServer{
       //add a second human controlled by the first interface for testing purposes
       if(DEBUG) server.addHuman("tester",0);
       
-      Dominion game=new Dominion(server);
+      Dominion game=new Dominion(server, supply);
       System.out.println("game over");
       //asking for new games
       boolean playAgain=true;
@@ -139,22 +142,24 @@ public class DominionServer{
   }
   
   //pass initial string to all players
-  public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
+  public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer,
+                         LinkedHashSet<String> o, HashSet<String> o2){
     ArrayList<Integer> isControlled=new ArrayList<>();
     for(int i=0;i<connections.size();i++){
       for(Map.Entry<Integer,Integer> entry : controllers.entrySet()){
         if(entry.getValue()==i) isControlled.add(entry.getKey());
       }
-      connections.get(i).initialize(supplyData,playerData,startingPlayer,isControlled,o);
+      connections.get(i).initialize(supplyData,playerData,startingPlayer,isControlled,o,o2);
       isControlled.clear();
     }    
   }
-  public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
+  public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
+                    int startingPlayer, LinkedHashSet<String> o, HashSet<String> o2){
     for(int i=0;i<connections.size();i++){
-      connections.get(i).reset(supplyData,playerData,startingPlayer,o);
+      connections.get(i).reset(supplyData,playerData,startingPlayer,o,o2);
     }
   }
-  public void showScores(PairList<String,String> scores){
+  public void showScores(PairList<Integer,String> scores){
     for(Iterator<PlayerInterface> it=connections.iterator(); it.hasNext(); ){
       it.next().showScores(scores);
     }
@@ -163,7 +168,7 @@ public class DominionServer{
     connections.get(controllers.get(playerNum)).optionPane(o);
   }  
   public void displayComment(int playerNum, String text){
-    System.out.println("displayed "+text);
+    //System.out.println("displayed "+text);
     connections.get(controllers.get(playerNum)).displayComment(text);
   }
 
@@ -180,7 +185,9 @@ public class DominionServer{
     }
     //make initial string
     //pass initial string to all players
-    public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, ArrayList<Integer> controlled, HashSet<String> o){
+    public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
+                           int startingPlayer, ArrayList<Integer> controlled,
+                           LinkedHashSet<String> gameOptions, HashSet<String> playerOptions){
      String out="initialize%";
      out+=toArray(playerData);
      out+="%"+supplyData.size();
@@ -188,12 +195,14 @@ public class DominionServer{
       out+="#"+supplyData.get(i).toString();
      }
      out+="%"+startingPlayer+"%"+toArray(controlled);
-     out+="%"+toArray(o);
+     out+="%"+toArray(gameOptions);
+     out+="%"+toArray(playerOptions);
      output.println(out);
      output.flush();
    }
     //reset for a new game
-    public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer, HashSet<String> o){
+    public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
+                      int startingPlayer, LinkedHashSet<String> gameOptions, HashSet<String> playerOptions){
      String out="reset%";
      out+=toArray(playerData);
      out+="%"+supplyData.size();
@@ -201,7 +210,8 @@ public class DominionServer{
       out+="#"+supplyData.get(i).toString();
      }
      out+="%"+startingPlayer;
-     out+="%"+toArray(o);
+     out+="%"+toArray(gameOptions);
+     out+="%"+toArray(playerOptions);
       output.println(out);
       output.flush();
     }
@@ -220,7 +230,7 @@ public class DominionServer{
     public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask){
       output.println("changePhase%"+oldPhase+"%"+newPhase+"%"+toArray(mask));
     }
-    public void showScores(PairList<String,String> scores){
+    public void showScores(PairList<?,?> scores){
       output.println("showScores%"+scores.toString());
     } 
     public void displayPlayer(int playerNum, DominionPlayer.Data player, Collection<Boolean> mask){
@@ -238,8 +248,8 @@ public class DominionServer{
     public void displayComment(String text){
       output.println("displayComment%"+text);
     }
-    public void updateSharedFields(int actions, int money, int buys, int tradeRoute, int potions){
-      output.println("updateSharedFields%"+actions+"%"+money+"%"+buys+"%"+tradeRoute+"%"+potions);
+    public void updateSharedFields(PairList<String, Integer> fields){
+      output.println("updateSharedFields%"+fields.toString());
     }
     public boolean playAgain(){
       output.println("playAgain%");

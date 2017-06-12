@@ -63,9 +63,9 @@ public class Cornucopia extends Expansion{
       }
       OptionData o=new OptionData();
       for(DominionCard card2 : cards){
-        o.put(card2.getImage(),"image");
+        o.add(card2.getImage(),"image");
       }
-      o.put("Done","textbutton");
+      o.add("Done","textbutton");
       game.optionPane(ap,o);
       player.deck.put(cards.remove(cards.size()-1));
       player.disc.put(cards);
@@ -117,9 +117,9 @@ public class Cornucopia extends Expansion{
       }
       OptionData o=new OptionData();
       for(DominionCard card2 : cards){
-        o.put(card2.getImage(),"image");
+        o.add(card2.getImage(),"image");
       }
-      o.put("Done","textbutton");
+      o.add("Done","textbutton");
       game.optionPane(ap,o);
       player.hand.add(cards.remove(cards.size()-1));
       player.disc.put(cards);
@@ -169,17 +169,15 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.mask=makeMask(game.players.get(ap).hand);
-      if(game.mask.contains(true))
-        game.doWork("discard",0,1,ap);
+      game.doWork("discard",0,1,ap,c -> c.getName().equals("province"));
       if(game.selectedCards.size()==0) return;
-      
+
       OptionData o=new OptionData();
       for(DominionCard card : prizes){
-        o.put(card.getImage(), "imagebutton");
+        o.add(card.getImage(), "imagebutton");
       }
       if(game.supplyDecks.get("duchy").size()>0){
-        o.put(game.supplyDecks.get("duchy").card.getImage(), "imagebutton");
+        o.add(game.supplyDecks.get("duchy").card.getImage(), "imagebutton");
       }
       String input=game.optionPane(ap, o);
       if(input.equals(game.supplyDecks.get("duchy").card.getImage())){
@@ -198,9 +196,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subStep(int ap, int atk){
-      game.mask=makeMask(game.players.get(ap).hand);
-      if(game.mask.contains(true))
-        game.doWork("reveal",0,1,ap);
+      game.doWork("reveal",0,1,ap, c -> c.getName().equals("province"));
       if(game.selectedCards.size()>0) winning=false;
     }
     @Override
@@ -213,10 +209,6 @@ public class Cornucopia extends Expansion{
       }
       winning=true;
     }
-    @Override
-    public boolean maskCondition(DominionCard card){
-      return card.getName().equals("province");
-    }     
   }
   public class Youngwitch extends Attack{
     public Youngwitch(){
@@ -251,9 +243,9 @@ public class Cornucopia extends Expansion{
       ArrayList<DominionCard> cards=game.players.get(ap).draw(4);
       OptionData o=new OptionData();
       for(DominionCard card : cards){
-        o.put(card.getImage(), "image");
+        o.add(card.getImage(), "image");
       }
-      o.put("Done","textbutton");
+      o.add("Done","textbutton");
       game.optionPane(ap,o);
 
       HashSet<DominionCard> cardSet=new HashSet<>(cards);
@@ -275,6 +267,8 @@ public class Cornucopia extends Expansion{
       game.gainLimit=cardSet.size();
       game.doWork("gain",1,1,ap);
       game.selectedCards.clear();
+      game.changePhase("buys");
+      game.server.displayComment(ap, "");
     }
   }
   public class Huntingparty extends DominionCard{
@@ -323,7 +317,7 @@ public class Cornucopia extends Expansion{
         else{
           String [] options={"You gain","They gain"};
           OptionData o=new OptionData(options);
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
           String input=game.optionPane(atk,o);
           if(input.equals(options[0])){
             game.gainCard(card.getName(),atk);
@@ -438,7 +432,7 @@ public class Cornucopia extends Expansion{
       if(input.equals("+2 Money")) game.money+=2;
       if(input.equals("Gain 4 silvers")){
         for(int i=0; i<4; i++) game.gainCard("silver",ap);
-        //put deck in discard pile
+        //add deck in discard pile
         player.disc.put(player.deck.deal(player.deck.size()));
       } 
     }        

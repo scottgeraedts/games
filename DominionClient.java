@@ -1,3 +1,4 @@
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.io.*;
 import java.net.*;
@@ -134,7 +135,10 @@ public class DominionClient{
     //initialize supply
     ArrayList<Deck.SupplyData> supplyData=readArray(parts[1],new Deck.SupplyData());
     ArrayList<String> options=readArray(parts[4],"");
-    board=new DominionBoard(playerData,supplyData,readArray(parts[3],new Integer(0)),Integer.parseInt(parts[2]),options); // Let the constructor do the job
+    ArrayList<String> options2=readArray(parts[5],"");
+
+    board=new DominionBoard(playerData,supplyData,readArray(parts[3],new Integer(0)),
+            Integer.parseInt(parts[2]),options,options2); // Let the constructor do the job
     
   }
   public void playAgain(String input){
@@ -151,10 +155,11 @@ public class DominionClient{
     //initialize supply
     ArrayList<Deck.SupplyData> supplyData=readArray(parts[1],new Deck.SupplyData());
     ArrayList<String> options=readArray(parts[3],"");
-    board.reset(playerData,supplyData,Integer.parseInt(parts[2]),options); // Let the constructor do the job
+    ArrayList<String> options2=readArray(parts[4],"");
+    board.reset(playerData,supplyData,Integer.parseInt(parts[2]),options,options2); // Let the constructor do the job
     
   }
-  public void parseInput(String input){
+  private void parseInput(String input){
     //System.out.println(input);
     int cut=0;
     try{
@@ -163,7 +168,7 @@ public class DominionClient{
       System.out.println(input);
     }
     String methodName=input.substring(0,cut);
-    System.out.println("client: "+methodName);
+    //System.out.println("client: "+methodName);
     input=input.substring(cut+1);
     
     //get name if method from the first argument
@@ -172,7 +177,7 @@ public class DominionClient{
       method = this.getClass().getMethod(methodName, String.class);
       method.invoke(this, input);
     }catch (NoSuchMethodException e) { 
-      System.out.println("Unknown method name");
+      System.out.println("Unknown method name "+methodName+'\n'+input);
     } catch (Exception ex) {
       ex.printStackTrace();
     }
@@ -187,7 +192,7 @@ public class DominionClient{
   public void changePlayer(String input){
 //    System.out.println(input);
     String [] parts=input.split("%");
-    System.out.println("changing player "+parts[0]+" "+parts[2]);
+//    System.out.println("changing player "+parts[0]+" "+parts[2]);
     board.changePlayer(Integer.parseInt(parts[0]),new DominionPlayer.Data(parts[1]),
         Integer.parseInt(parts[2]),new DominionPlayer.Data(parts[3]),readArray(parts[4],new Boolean(true)));
     
@@ -214,9 +219,7 @@ public class DominionClient{
     board.displaySupply(new Deck.SupplyData(input));
   }
   public void updateSharedFields(String input){
-    String [] parts=input.split("%");
-     board.refreshSharedFields(Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),
-        Integer.parseInt(parts[2]), Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
+     board.refreshSharedFields(new PairList<String, Integer>(input, String.class, Integer.class));
   }
   public void displayComment(String input){
     board.displayComment(input);

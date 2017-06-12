@@ -40,9 +40,9 @@ public class Intrigue extends Expansion{
       OptionData o=new OptionData(options);
       
       if(game.cardInTrash(c -> c.isAction)){
-        o.put("Gain from Trash","textbutton");
+        o.add("Gain from Trash","textbutton");
       }else{
-        o.put("No actions in trash","text");
+        o.add("No actions in trash","text");
       }
       String input=game.optionPane(activePlayer,o);
       DominionCard card;
@@ -58,6 +58,7 @@ public class Intrigue extends Expansion{
           card=deck.peek();
           if(card.isAction){
             game.trashCard(deck.topCard(), activePlayer);
+            if(deck.size()==0) game.emptyPiles++;
             break;
           }
         }
@@ -109,7 +110,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void cleanup(int activePlayer){
-      //put the cards into the players hands
+      //add the cards into the players hands
       DominionCard card;
       for(int i=0;i<game.players.size();i++){
         card=passedCards.get(i);
@@ -198,6 +199,7 @@ public class Intrigue extends Expansion{
         System.out.println("swindler trashed "+card.getName());
         int value=game.cost2(card);
         game.trashCard(card, victim);
+        if(!game.isValidSupply(c -> game.cost2(card)==value));
         game.server.displayComment(attacker,"Trashed a "+card.getName()+", choose a card costing "+value);
 
         Dominion.SupplyDeck deck;
@@ -230,8 +232,8 @@ public class Intrigue extends Expansion{
         
         //show the drawn card
         OptionData o=new OptionData(new String[0]);
-        o.put(card2.getImage(),"image");
-        o.put("Continue","textbutton");
+        o.add(card2.getImage(),"image");
+        o.add("Continue","textbutton");
         game.optionPane(activePlayer,o);        
         
         if(card1.equals(card2.getName())){
@@ -724,9 +726,9 @@ public class Intrigue extends Expansion{
         if(card2.isAction) game.actions+=2;
         if(card2.isVictory) game.players.get(activePlayer).drawToHand(2);
         if(card2.isMoney) game.money+=2;
-        o.put(card2.getImage(),"image");
+        o.add(card2.getImage(),"image");
       }
-      o.put("Done","textbutton");
+      o.add("Done","textbutton");
       game.optionPane(activePlayer,o);
       game.updateSharedFields();
       game.displayPlayer(activePlayer);

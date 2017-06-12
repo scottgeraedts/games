@@ -78,13 +78,13 @@ public class Core extends Expansion{
       ArrayList<DominionCard> cards=player.draw(2);
       for(DominionCard card : cards){
         if(test(card)){
-          o.put(card.getImage(),"imagebutton");
+          o.add(card.getImage(),"imagebutton");
           doneButton=false;
         }else{
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
         }
       }       
-      if(doneButton) o.put("Done","textbutton");
+      if(doneButton) o.add("Done","textbutton");
       String input=game.optionPane(attacker,o);
 
       DominionCard card;
@@ -212,7 +212,7 @@ public class Core extends Expansion{
         OptionData o=new OptionData(new String[0]);
         for(Iterator<DominionCard>it=player.disc.iterator();it.hasNext(); ){
           card=it.next();
-          o.put(card.getName(),"imagebutton");
+          o.add(card.getName(),"imagebutton");
         }
         String input=game.optionPane(activePlayer,o);
         for(Iterator<DominionCard>it=player.disc.iterator();it.hasNext(); ){
@@ -239,6 +239,7 @@ public class Core extends Expansion{
       game.gainLimit=5;
       game.doWork("gain",0,1,activePlayer);
       game.trashCard(game.matcards.remove(game.matcards.size()-1), activePlayer);
+      lostTrack=true;
     }
     
   }
@@ -260,7 +261,7 @@ public class Core extends Expansion{
       while(player.hand.size()<7){
         try{
           card=player.getCard();
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
         }catch(OutOfCardsException e){
           break;
         }
@@ -321,9 +322,9 @@ public class Core extends Expansion{
       game.mask=makeMask(game.players.get(activePlayer).hand);
       game.doWork("trash",0,1,activePlayer);
       if(game.selectedCards.size()<0) return;
-      int cost=game.selectedCards.get(0).cost;
+      int cost=game.cost2(game.selectedCards.get(0));
 
-      game.gainSpecial(activePlayer, c -> c.isMoney && game.cost2(c)<=cost+3, "hand");
+      game.gainSpecial(activePlayer, c -> c.isMoney && game.costCompare(c,cost), "hand");
     }
     @Override
     public boolean maskCondition(DominionCard card){
@@ -400,7 +401,7 @@ public class Core extends Expansion{
       for(int i=0;i<2;i++){
         try{
           card=player.getCard();
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
           input=game.optionPane(activePlayer,o);
           if(input.equals(options[0])){
             game.trashCard(card, activePlayer);
@@ -438,7 +439,7 @@ public class Core extends Expansion{
     public void discardOrKeep(int activePlayer, int attacker){
       try{
         DominionCard card=game.players.get(activePlayer).getCard();
-        o.put(card.getImage(),"image");
+        o.add(card.getImage(),"image");
         String result=game.optionPane(attacker,o);
         if(result.equals(options[0])) game.players.get(activePlayer).deck.put(card);
         else game.players.get(activePlayer).disc.put(card);
@@ -469,11 +470,11 @@ public class Core extends Expansion{
         
         cards.add(card);
         if(card.isMoney)
-          o.put(card.getImage(),"imagebutton");
+          o.add(card.getImage(),"imagebutton");
         else
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
       }
-      o.put("Done","textbutton");
+      o.add("Done","textbutton");
       String out=game.optionPane(attacker,o);
       if(out.equals(cards.get(0).getName())){
         game.players.get(victim).disc.put(cards.get(1));
@@ -494,9 +495,9 @@ public class Core extends Expansion{
       }
       
       o.clear();
-      o.put(card.getImage(),"image");
-      o.put("Keep","textbutton");
-      o.put("Trash","textbutton");
+      o.add(card.getImage(),"image");
+      o.add("Keep","textbutton");
+      o.add("Trash","textbutton");
       out=game.optionPane(attacker,o);
       if(out.equals("Keep")){
         game.players.get(attacker).disc.put(card);
@@ -527,9 +528,9 @@ public class Core extends Expansion{
         game.selectedCards.clear();
         game.changePhase("actions");
         game.server.displayComment(activePlayer,"");
-        
-        game.playCard(card,activePlayer,true);
+
         game.playCard(card,activePlayer,false);
+        if(!card.lostTrack) game.playCard(card,activePlayer,true);
 
         //if you throne room a duration card, send this to the duration mat also
         if(card.isDuration) isDuration=true;
@@ -564,7 +565,7 @@ public class Core extends Expansion{
         if(card.isAction){
           String [] options={"Play", "Discard"};
           OptionData o=new OptionData(options);
-          o.put(card.getName(), "image");
+          o.add(card.getName(), "image");
           String input=game.optionPane(activePlayer,o);
           if(input.equals(options[0])){
             game.playCard(card,activePlayer);

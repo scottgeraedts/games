@@ -14,11 +14,10 @@ public class DominionBoard extends JFrame{
 
   //player panel
   private ArrayList<PlayerDisplay> players=new ArrayList<PlayerDisplay>();
-  private ArrayList<String> gameOptions=new ArrayList<>();
 
   //supply panel
   private LinkedHashMap<String,SupplyDisplay> supplyDecks=new LinkedHashMap<>();
-  private ImageIcon embargoToken, contrabandToken;
+  private HashMap<String, ImageIcon> tokens=new HashMap<>();
   
   //mat panel
   private JPanel cardPanel;
@@ -28,7 +27,6 @@ public class DominionBoard extends JFrame{
   private HashMap<String,JButton> doneButtons=new HashMap<>();
   private JButton coinTokenButton=new JButton("Play Coin Token");
   private JButton debtButton=new JButton("Pay Off Debt");
-  private JTextField moneyField,buysField,actionsField;
   private HashMap<String, JTextField> specialFields;
   private HashMap<String, JLabel> specialLabels;
   private JTextField helpField;
@@ -43,7 +41,8 @@ public class DominionBoard extends JFrame{
   private HashMap<String,ImageIcon> giantImageTable=new HashMap<>();
   
   public DominionBoard(ArrayList<DominionPlayer.Data> playersData, 
-      ArrayList<Deck.SupplyData> supplyData, ArrayList<Integer> controlled, int startingPlayer, ArrayList<String> o){
+      ArrayList<Deck.SupplyData> supplyData, ArrayList<Integer> controlled, int startingPlayer,
+                       ArrayList<String> gameOptions, ArrayList<String> playerOptions){
 
 		setTitle("Dominion");
 
@@ -57,47 +56,56 @@ public class DominionBoard extends JFrame{
     doneButtons.put("reveal",new JButton("Done Revealing"));
     
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
-    gameOptions=o;
 
     //images that will be used later to mark supply piles
-    embargoToken=new ImageIcon(this.getClass().getResource("DominionCards/embargotoken.png"));
-    embargoToken=new ImageIcon(resize(embargoToken.getImage(),35,25));
-    contrabandToken=new ImageIcon(this.getClass().getResource("DominionCards/contrabandtoken.png"));
-    contrabandToken=new ImageIcon(resize(contrabandToken.getImage(),35,25));
+    String [] s={"embargo", "contraband","obelisk", "bane"};
+    ImageIcon tempIcon=null;
+    for (String value : s) {
+      try {
+        tempIcon = new ImageIcon(this.getClass().getResource("DominionCards/" + value + "token.jpg"));
+      } catch (NullPointerException ex) {
+        try {
+          tempIcon = new ImageIcon(this.getClass().getResource("DominionCards/" + value + "token.png"));
+        } catch (NullPointerException ex2) {
+          System.out.println("failed to load " + value);
+        }
+      }
+      tokens.put(value, new ImageIcon(resize(tempIcon.getImage(), 35, 25)));
+    }
 
     //some graphics setup
   	setSize(1500,800);
   	Container cp;
 		cp = getContentPane();
 		cp.setLayout(new GridLayout(0,2));  // The content-pane sets its layout
-    cp.add(setupPlayerPanel(playersData, controlled, startingPlayer));
-    cp.add(setupSharedPanel(supplyData));
+    cp.add(setupPlayerPanel(playersData, controlled, startingPlayer, playerOptions));
+    cp.add(setupSharedPanel(supplyData, gameOptions));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  // Exit program if close-window button clicked      
     setVisible(true);
   }
   public void reset(ArrayList<DominionPlayer.Data> playersData, 
-      ArrayList<Deck.SupplyData> supplyData, int startingPlayer, ArrayList<String> o){
+      ArrayList<Deck.SupplyData> supplyData, int startingPlayer, ArrayList<String> gameOptions,
+                    ArrayList<String> playerOptions){
 
-    gameOptions=o;
-    
     //reset supplies
     supplyPanel.removeAll();
     SupplyDisplay tempSupply;
     for(int i=0; i<supplyData.size(); i++){
-      tempSupply=new SupplyDisplay(supplyData.get(i));
+      tempSupply=new SupplyDisplay(supplyData.get(i), nameList(supplyData));
       supplyDecks.put(supplyData.get(i).name,tempSupply);
       supplyPanel.add(tempSupply.getPanel()); 
     }
     
     //reset players
     for(int i=0;i<playersData.size();i++){
-      players.get(i).setupOptional();
+      players.get(i).setupOptional(playerOptions);
       displayPlayer(i,playersData.get(i),new ArrayList<Boolean>());
     }
     changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer),new ArrayList<Boolean>());
     activePlayer=startingPlayer;
     changePhase(phase,"actions",new ArrayList<Boolean>());
     displayTrash(new Deck.Data(0,Deck.blankBack));
+    resetSharedPanel(gameOptions);
     repaint();
     revalidate();
   }
@@ -110,13 +118,14 @@ public class DominionBoard extends JFrame{
     setVisible(false);
     dispose();
   }
-  private JPanel setupPlayerPanel(ArrayList<DominionPlayer.Data> playersData, ArrayList<Integer> controlled, int startingPlayer){
+  private JPanel setupPlayerPanel(ArrayList<DominionPlayer.Data> playersData, ArrayList<Integer> controlled,
+                                  int startingPlayer, ArrayList<String> playerOptions){
     
     players.clear();
     JPanel panel=new JPanel();
     panel.setLayout(new GridLayout(playersData.size(),1));
     for(int i=0;i<playersData.size();i++){
-      players.add( new PlayerDisplay(playersData.get(i)) );
+      players.add( new PlayerDisplay(playersData.get(i), playerOptions) );
       panel.add(players.get(i).getPanel());
     }
     for(Integer i : controlled) players.get(i).controlled=true;
@@ -127,7 +136,7 @@ public class DominionBoard extends JFrame{
     return panel;
   }  
   
-  private JPanel setupSharedPanel(ArrayList<Deck.SupplyData> supplyData){
+  private JPanel setupSharedPanel(ArrayList<Deck.SupplyData> supplyData, ArrayList<String> gameOptions){
     JPanel panel=new JPanel();
     panel.setLayout(new GridLayout(2,0));
     
@@ -135,7 +144,7 @@ public class DominionBoard extends JFrame{
     supplyPanel.setPreferredSize(new Dimension(500,1000));
     SupplyDisplay tempSupply;
     for(int i=0; i<supplyData.size(); i++){
-      tempSupply=new SupplyDisplay(supplyData.get(i));
+      tempSupply=new SupplyDisplay(supplyData.get(i), nameList(supplyData));
       supplyDecks.put(supplyData.get(i).name,tempSupply);
       supplyPanel.add(tempSupply.getPanel()); 
     }  
@@ -174,56 +183,14 @@ public class DominionBoard extends JFrame{
 
     fieldsPanel=new JPanel();
     fieldsPanel.setLayout(new GridLayout(5,2));
-    
-    JLabel actionsLabel=new JLabel("Actions: ");
-    fieldsPanel.add(actionsLabel);
-    actionsField=new JTextField(2);
-    actionsField.setEditable(false);
-    fieldsPanel.add(actionsField);
-    
-    JLabel moneyLabel=new JLabel("Money: ");
-    fieldsPanel.add(moneyLabel);
-    moneyField=new JTextField(2);
-    moneyField.setEditable(false);
-    fieldsPanel.add(moneyField);
 
-    JLabel buysLabel=new JLabel("Buys: ");
-    fieldsPanel.add(buysLabel);
-    buysField=new JTextField(2);
-    buysField.setEditable(false);
-    fieldsPanel.add(buysField);
-
-    //optional additions to the fields panel
-    for(Map.Entry<String, JLabel> e : specialLabels.entrySet()){
-      specialLabels
-    }
-    tradeRouteLabel=new JLabel("Trade Route: ");
-    tradeRouteField=new JTextField(2);
-    tradeRouteField.setEditable(false);
-    
-    potionsLabel=new JLabel("Potions: ");
-    potionsField=new JTextField(2);
-    potionsField.setEditable(false);
-
-
-    for(String option : gameOptions){
-
-      if(option.equals("traderoute")){
-        fieldsPanel.add(tradeRouteLabel);
-        fieldsPanel.add(tradeRouteField);
-      }
-      if(option.equals("potions")){
-        fieldsPanel.add(potionsLabel);
-        fieldsPanel.add(potionsField);
-      }
-    }
-    
+    resetSharedPanel(gameOptions);
     dataPanel.add(fieldsPanel);
 
     dataPanel.add(trash.getPanel());
     dataPanel.add(doneButtons.get("actions"));
-    
-    refreshSharedFields(1,0,1,0,0);
+
+    refreshSharedFields();
  
     helpField=new JTextField("");
     infoPanel.add(helpField);
@@ -242,22 +209,21 @@ public class DominionBoard extends JFrame{
         if(!lock) output=evt.getActionCommand();
     }
   }
-  private void resetSharedPanel(){
+  //optional additions to the fields panel
+  private void resetSharedPanel(ArrayList<String> gameOptions){
     //try to remove options
-    fieldsPanel.remove(tradeRouteField);
-    fieldsPanel.remove(tradeRouteLabel);
-    fieldsPanel.remove(potionsField);
-    fieldsPanel.remove(potionsLabel);
+    fieldsPanel.removeAll();
+    specialFields=new HashMap<>();
+    specialLabels=new HashMap<>();
     for(String option : gameOptions){
-      if(option.equals("traderoute")){
-        fieldsPanel.add(tradeRouteLabel);
-        fieldsPanel.add(tradeRouteField);
-      }
-      if(option.equals("potions")){
-        fieldsPanel.add(potionsLabel);
-        fieldsPanel.add(potionsField);
-      }
+      specialFields.put(option, new JTextField(2));
+      specialFields.get(option).setEditable(false);
+      specialFields.get(option).setText("0");
+      specialLabels.put(option, new JLabel(option+": "));
+      fieldsPanel.add(specialLabels.get(option));
+      fieldsPanel.add(specialFields.get(option));
     }
+
   }
   public void changePlayer(int oldPlayer, DominionPlayer.Data oldData, int newPlayer, DominionPlayer.Data newData, ArrayList<Boolean> mask){
     players.get(oldPlayer).active=false;
@@ -265,7 +231,7 @@ public class DominionBoard extends JFrame{
     activePlayer=newPlayer; 
     players.get(newPlayer).active=true;
     players.get(newPlayer).display(newData,mask); 
-    refreshSharedFields(1,0,1,0,0);
+    refreshSharedFields();
     cardPanel.removeAll();
     playedDuration=new ArrayList<>(players.get(newPlayer).durationCards);
     players.get(newPlayer).durationCards.clear();
@@ -308,6 +274,16 @@ public class DominionBoard extends JFrame{
     repaint();
     revalidate();
   }
+  private void refreshSharedFields(){
+    for(Map.Entry<String, JTextField> e : specialFields.entrySet()){
+      if(e.getKey().equals("Actions") || e.getKey().equals("Buys"))
+        e.getValue().setText("1");
+      else
+        e.getValue().setText("0");
+    }
+    buys=1;
+
+  }
   public void refreshSharedFields(PairList<String, Integer> fields){
     for(int i=0; i<fields.size(); i++){
       specialFields.get(fields.getKey(i)).setText(fields.getValue(i)+"");
@@ -318,7 +294,7 @@ public class DominionBoard extends JFrame{
   public void showScores(OptionData points){
     String out="";
     for(int i=0;i<points.size();i++){
-      out+=points.getKey(i)+": "+points.getValue(i)+"\n";
+      out+=points.getValue(i)+"\n";
     }
     JOptionPane.showMessageDialog(this,out);
   }
@@ -328,9 +304,9 @@ public class DominionBoard extends JFrame{
     }          
   }   
   public ImageIcon getImage(String imagename){
-    return getImage(imagename,false);
+    return getImage(imagename,false, false);
   }
-  public ImageIcon getImage(String imagename, boolean giant){
+  public ImageIcon getImage(String imagename, boolean giant, boolean event){
     HashMap<String,ImageIcon> dummy;
     if(giant) dummy=giantImageTable;
     else dummy=imageTable;
@@ -341,12 +317,22 @@ public class DominionBoard extends JFrame{
       ImageIcon img=new ImageIcon();
       //System.out.println("loading image "+imagename);
       try{
-        img = new ImageIcon(this.getClass().getResource("DominionCards/"+imagename+".png"));     
+        img = new ImageIcon(this.getClass().getResource("DominionCards/"+imagename+".jpg"));
       }catch(NullPointerException ex){
-        System.out.println("failed to load "+imagename);
+        try{
+          img = new ImageIcon(this.getClass().getResource("DominionCards/"+imagename+".png"));
+        }catch(NullPointerException ex2) {
+          System.out.println("failed to load " + imagename);
+        }
       }
-      if(giant) img=new ImageIcon(resize(img.getImage(),400,550));
-      else img=new ImageIcon(resize(img.getImage(),80,110));
+      if(giant){
+        if(event) img=new ImageIcon(resize(img.getImage(),600,250));
+        else img=new ImageIcon(resize(img.getImage(),400,550));
+      }
+      else{
+        if(event) img=new ImageIcon(resize(img.getImage(),120,80));
+        else img=new ImageIcon(resize(img.getImage(),80,110));
+      }
       dummy.put(imagename,img);
       return img;
     }
@@ -369,7 +355,7 @@ public class DominionBoard extends JFrame{
   }
   public void displayPlayer(int i, DominionPlayer.Data data, ArrayList<Boolean> mask){ 
     players.get(i).display(data,mask);
-    //do we need to put in a debt button
+    //do we need to add in a debt button
     dataPanel.remove(debtButton);
     if(phase.equals("buys") && players.get(activePlayer).debt>0){
       dataPanel.add(debtButton);
@@ -411,7 +397,7 @@ public class DominionBoard extends JFrame{
     private JTextField coinfield=new JTextField();
     private JTextField debtfield=new JTextField();
 
-  public PlayerDisplay(DominionPlayer.Data tplayer){
+  public PlayerDisplay(DominionPlayer.Data tplayer, ArrayList<String> playerOptions){
 
       player=tplayer;
       
@@ -439,7 +425,7 @@ public class DominionBoard extends JFrame{
          }
       });
       
-      setupOptional();
+      setupOptional(playerOptions);
       
       infoPanel.add(optionPanel);   
       panel.add(infoPanel);
@@ -447,7 +433,7 @@ public class DominionBoard extends JFrame{
       
       display(player,new ArrayList<Boolean>());
     }
-    public void setupOptional(){
+    public void setupOptional(ArrayList<String> playerOptions){
 
       //stuff that isn't always displayed
       islandCards=player.islandCards;
@@ -456,8 +442,8 @@ public class DominionBoard extends JFrame{
       coinTokens=player.coinTokens;
       debt=player.debt;
       optionPanel.removeAll();
-      optionPanel.setLayout(new GridLayout(gameOptions.size(),1));
-      for(String s : gameOptions){
+      optionPanel.setLayout(new GridLayout(playerOptions.size(),1));
+      for(String s : playerOptions){
         if(s.equals("pirateship")){
           JPanel piratepanel=new JPanel();
           piratepanel.setLayout(new FlowLayout());
@@ -509,9 +495,6 @@ public class DominionBoard extends JFrame{
       }
     }
     //use last times data to display
-    public void display(){
-      display(player,new ArrayList<Boolean>());
-    }
     public void display(DominionPlayer.Data tplayer, ArrayList<Boolean> mask){
       player=tplayer;
       handPanel.removeAll();
@@ -675,23 +658,54 @@ public class DominionBoard extends JFrame{
     public String name;
     public Deck.SupplyData data;
     private SupplyMouseAdapter adapter;
-    private JPanel embargoPanel=new JPanel(), contrabandPanel=new JPanel();
+    private HashMap<String, JPanel> iconPanels=new HashMap<>();
+    private JTextField taxField=new JTextField(1);
+    private JPanel dataPanel;
     
-    public SupplyDisplay(Deck.SupplyData tdata){
+    public SupplyDisplay(Deck.SupplyData tdata, Collection<String> supplies){
       data=tdata;
       name=data.name;
-      image=getImage(data.image);
+//      image=getImage(data.image, false, data.landmark || data.event);
       
-      panel.setPreferredSize(new Dimension(100,130));
+      if(data.landmark || data.event) panel.setPreferredSize(new Dimension(120,80));
+      else panel.setPreferredSize(new Dimension(100,130));
       panel.setLayout(new OverlayLayout(panel));
       panel.setBorder(BorderFactory.createLineBorder(Color.black));     
       
-      JPanel dataPanel=new JPanel();
+      dataPanel=new JPanel();
       dataPanel.setLayout(new GridLayout(2,2));
-      embargoPanel.setOpaque(false);
-      dataPanel.add(embargoPanel);
-      contrabandPanel.setOpaque(false);
-      dataPanel.add(contrabandPanel);
+
+      //add optional panels
+      //need to add 4 total piles for this to look right, so count how many panels you've added
+      //and add empty panels if necessary
+      int addedPanels=2;
+      if(supplies.contains("embargo")){
+        addPanel("embargo");
+        addedPanels++;
+      }
+      if(supplies.contains("obelisk")){
+        addPanel("obelisk");
+        addedPanels++;
+      }
+      if(supplies.contains("youngwitch")){
+        addPanel("bane");
+        addedPanels++;
+      }
+      if(supplies.contains("contraband") || supplies.contains("grandmarket")) {
+        addPanel("contraband");
+        addedPanels++;
+      }
+      if(supplies.contains("tax")) {
+        addPanel("tax");
+        taxField.setEditable(false);
+        taxField.setBackground(Color.RED);
+        taxField.setFont(new Font("Arial", Font.BOLD, 20));
+        addedPanels++;
+      }
+      for( ; addedPanels<4; addedPanels++){
+        addPanel(Integer.toString(addedPanels));
+      }
+
       dataPanel.setAlignmentX(0.5f);
       dataPanel.setAlignmentY(0.f);
       
@@ -699,81 +713,88 @@ public class DominionBoard extends JFrame{
       n.setEditable(false);
       n.setBackground(Color.WHITE);
       n.setFont(new Font("Arial", Font.BOLD, 20));
-      n.setText(data.size+"");  
+//      n.setText(data.size+"");
       
-      dataPanel.add(n);      
+      if (!data.landmark && !data.event) dataPanel.add(n);
       
       cost=new JTextField(1);
       cost.setBackground(Color.WHITE);
       cost.setEditable(false);
       cost.setFont(new Font("Arial", Font.BOLD, 20));
-      cost.setText(data.cost+"");
-      dataPanel.add(cost);
-      
-      if(data.embargo>0){
-        embargoPanel.setOpaque(true);
-        embargoPanel.add(new JLabel(embargoToken));
-      }
-      if(data.contraband){
-        contrabandPanel.setOpaque(true);
-        contrabandPanel.add(new JLabel(contrabandToken));
-      }      
+//      cost.setText(data.cost+"");
+      if(!data.landmark) dataPanel.add(cost);
+
+
       dataPanel.setOpaque(false);
       panel.add(dataPanel);
-      button=new JLabel(image);
+//      button=new JLabel(image);
       button.setOpaque(false);
       button.setAlignmentX(0.5f);
       button.setAlignmentY(0.5f);
       panel.add(button);
       
       //display card on right click
-      adapter=new SupplyMouseAdapter(DominionBoard.this,name,this);
+      adapter=new SupplyMouseAdapter(DominionBoard.this,data.image,this);
       panel.addMouseListener(adapter);
 
+      display(data);
 
     }
+    private void addPanel(String s){
+      iconPanels.put(s, new JPanel());
+      iconPanels.get(s).setOpaque(false);
+      dataPanel.add(iconPanels.get(s));
+    }
 
-    public void display(Deck.SupplyData tdata){
+    void display(Deck.SupplyData tdata){
       data=tdata;
-      image=getImage(data.image);
+      image=getImage(data.image, false, data.landmark || data.event);
       button.setIcon(image);
       n.setText(data.size+"");
       cost.setText(data.cost+"");
-      if(tdata.embargo>0){
-        embargoPanel.setOpaque(true);
-        embargoPanel.add(new JLabel(embargoToken));
+
+      //turn off all the icons
+      for(Map.Entry<String, JPanel> e : iconPanels.entrySet()){
+        e.getValue().removeAll();
+        e.getValue().setOpaque(false);
       }
-      if(tdata.contraband){
-        contrabandPanel.setOpaque(true);
-        contrabandPanel.add(new JLabel(contrabandToken));
-      }else{
-        contrabandPanel.removeAll();
-        contrabandPanel.setOpaque(false);
+      //turn some of them back on
+      for(int i=0; i<data.icons.size(); i++){
+        if(data.icons.getKey(i).equals("tax")){
+          taxField.setText(data.icons.getValue(i));
+          iconPanels.get("tax").add(taxField);
+        }else{
+          String s=data.icons.getKey(i);
+          iconPanels.get(s).add(new JLabel(tokens.get(s)));
+        }
+        iconPanels.get(data.icons.getKey(i)).setOpaque(true);
       }
       adapter.refreshPopup(data.image);
+      repaint();
+      revalidate();
     }
   }
   public class SupplyMouseAdapter extends MouseAdapter{
     JDialog popup=new JDialog();
     JLabel image;
     SupplyDisplay supply;
-    public String oldName;
-    public SupplyMouseAdapter(JFrame parent, String name, SupplyDisplay tsupply){
+    String oldName;
+    SupplyMouseAdapter(JFrame parent, String name, SupplyDisplay tsupply){
       oldName=name;
       supply=tsupply;
       Dimension parentSize = parent.getSize(); 
       Point p = parent.getLocation(); 
       popup.setLocation(p.x + parentSize.width / 4, p.y + parentSize.height / 4);
-      image=new JLabel(getImage(name,true));
+      image=new JLabel(getImage(name,true, supply.data.landmark || supply.data.event));
       popup.add(image);
       popup.pack();
       popup.setDefaultCloseOperation(HIDE_ON_CLOSE);
     }
     //refresh the big image if needed
-    public void refreshPopup(String name){
+    void refreshPopup(String name){
       if(!name.equals(oldName)){
         popup.remove(image);
-        image=new JLabel(getImage(name, true));
+        image=new JLabel(getImage(name, true, supply.data.landmark || supply.data.event));
         popup.add(image);
         popup.pack();
         oldName=name;
@@ -781,13 +802,17 @@ public class DominionBoard extends JFrame{
     }
     @Override
     public void mousePressed(MouseEvent e){
+
+      //if we can buy the card
+      boolean buysCheck=phase.equals("buys") && money>=supply.data.cost && buys>0;
+      //can only gain events in the event phase, can never gain landmarks
+      boolean eventCheck=(phase.equals("buys") || !supply.data.event) && !supply.data.landmark;
       if(SwingUtilities.isRightMouseButton(e) || e.isControlDown()){
         popup.setVisible(true);
       }else{
-        if( phase.equals("selectDeck2") ||
-                (phase.equals("selectDeck") || phase.equals("gain") ||
-                        (phase.equals("buys") && money>=supply.data.cost && buys>0) )
-                        && supply.data.size>0 && !supply.data.contraband){
+        if( (phase.equals("selectDeck2") ||
+                (phase.equals("selectDeck") || phase.equals("gain") || buysCheck
+                        && supply.data.size>0 && !supply.data.icons.containsKey("contraband"))) && eventCheck){
           if(!lock) output="G"+supply.name;
         }
       }
@@ -799,7 +824,15 @@ public class DominionBoard extends JFrame{
       }
     }
   }
-  
+
+  //a little function that turns a list of supplydeck.data into a list of strings
+  private Collection<String> nameList(ArrayList<Deck.SupplyData> in){
+    HashSet<String> out=new HashSet<>(in.size());
+    for(Deck.SupplyData deck : in){
+      out.add(deck.name);
+    }
+    return out;
+  }
   //displayers a popup of options for the user to click, closes when one is selected
   //can't be static because it uses the image hashtable
   public class OptionPane extends JDialog implements ActionListener{

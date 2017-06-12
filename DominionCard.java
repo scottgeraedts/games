@@ -20,11 +20,19 @@ public class DominionCard extends Card{
 
 	public int value=0;
 	public int cost=0;
+	int potions=0;
 	protected int vicPoints=0;
 	public int actions=0;
 	public int buys=0;
 	public int cards=0;
-	public int debt=0;
+	int debt=0;
+
+	//this is for cards (like feast, encampment) which can't be throneroomed
+	boolean lostTrack=false;
+
+	//marks landmarks and events
+  boolean isEvent=false;
+  boolean isLandmark=false;
 	
 	//a switch to tell duration cards activate their duration power twice 
 	//or three times if kings courted
@@ -143,11 +151,13 @@ public class DominionCard extends Card{
       cards=1;
       value=1;
       isAction=true;
-    }else if(name.equals("tunnel")){
-      cost=3;
-      isVictory=true;
-      isReactionX=true;
-      vicPoints=2;
+    }else if(name.equals("tunnel")) {
+      cost = 3;
+      isVictory = true;
+      isReactionX = true;
+      vicPoints = 2;
+    }else if(Arrays.asList(Empires.landmarks).contains(name)){
+      isLandmark=true;
 		}else{
 		}
   }
@@ -172,6 +182,7 @@ public class DominionCard extends Card{
   //it gets the player object directly since we can't modify the player here in dominioncard
   //it also gets the index of the player so its subclasses can do stuff
   public boolean cleanup(int x, DominionPlayer player){
+    lostTrack=false;
     if(isDuration){
       player.duration.add(this);
       return true;
@@ -185,20 +196,11 @@ public class DominionCard extends Card{
   public ArrayList<Boolean> makeMask(Collection<DominionCard> hand){
       ArrayList<Boolean> mask=new ArrayList<Boolean>(hand.size());
       int i=0;
-      for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
-        mask.add(maskCondition(it.next()));
-        i++;
-      }
-      return mask;
-  }
-  public ArrayList<Boolean> makeMask(Collection<DominionCard> hand, Predicate<DominionCard> tester){
-    ArrayList<Boolean> mask=new ArrayList<Boolean>(hand.size());
-    int i=0;
-    for(Iterator<DominionCard> it=hand.iterator(); it.hasNext(); ){
-        mask.add(tester.test(it.next()));
-        i++;
+    for (DominionCard aHand : hand) {
+      mask.add(maskCondition(aHand));
+      i++;
     }
-    return mask;
+      return mask;
   }
   public boolean maskCondition(DominionCard card){
     return true;
@@ -206,13 +208,13 @@ public class DominionCard extends Card{
   public int getPoints(Collection<DominionCard> cards){
     return vicPoints;
   }
-  public boolean isReaction(){
+  boolean isReaction(){
     return isReaction1 || isReaction2 || isReactionX;
   }
   //what the AI should do if this card makes it trash/discard/etc
   //if this returns default there is some default behavior
   //but individual cards can override this
-  public String AIResponse(){
+  String AIResponse(){
     return "default";
   }
   @Override

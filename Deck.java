@@ -5,13 +5,13 @@ import java.lang.reflect.Array;
 class Deck<T extends Card> extends LinkedList<T>{
 //	protected LinkedList<T> cards;
 	private Random ran;
-	public boolean faceup=false;
+	boolean faceup=false;
 	
 	//paths for images
-	public String backImage;
-	public static String standardBack="PlayingCards/PNG-cards-1.3/back.jpg";
-	public static String dominionBack="back";
-	public static String blankBack="empty";
+	String backImage;
+	static String standardBack="PlayingCards/PNG-cards-1.3/back.jpg";
+	static String dominionBack="back";
+	static String blankBack="empty";
 
 	//constructors and stuff
 	public Deck(){ 
@@ -64,7 +64,7 @@ class Deck<T extends Card> extends LinkedList<T>{
 		if(isEmpty()) System.out.println("randomCard out of cards!");
 		return remove(ran.nextInt(size()));
 	}
-	//put cards on deck
+	//add cards on deck
 	public void put(T c){ addFirst(c);	}
 	public void put(Collection<T> c){ 
     addAll(c);
@@ -79,40 +79,44 @@ class Deck<T extends Card> extends LinkedList<T>{
     }
     public Data(){}
     public Data(String in){
-      String [] parts=in.split("!");
+      String [] parts=in.split("&");
       size=Integer.parseInt(parts[0]);
       image=parts[1];
     }
     public String toString(){
-      return size+"!"+image;
+      return size+"&"+image;
     }
   }
   public static class SupplyData extends Data{
-    public int cost;
-    public String name;
-    public boolean contraband;
-    public int embargo;
-    public SupplyData(int a, String image, int tcost, String name, int embargo, boolean contraband){
+    int cost;
+    String name;
+    boolean landmark;
+    boolean event;
+    PairList<String, String> icons;
+    public SupplyData(int a, String image, int tcost, String name, boolean event, boolean landmark, PairList<String, String> icons){
       super(a,image);
       size=a;
       this.image=image;
       cost=tcost;
       this.name=name;
-      this.embargo=embargo;
-      this.contraband=contraband;
+      this.event=event;
+      this.landmark=landmark;
+			this.icons=icons;
     }
     public SupplyData(String in){
       super(in);
-      String [] parts=in.split("!");
+      String [] parts=in.split("&");
       cost=Integer.parseInt(parts[2]);
       name=parts[3];      
-      embargo=Integer.parseInt(parts[4]);
-      contraband=Boolean.parseBoolean(parts[5]);
+			event=Boolean.parseBoolean(parts[4]);
+			landmark=Boolean.parseBoolean(parts[5]);
+			icons=new PairList<>(parts[6],String.class, String.class);
+
     }
     public SupplyData(){}
     @Override
     public String toString(){
-      return super.toString()+"!"+cost+"!"+name+"!"+embargo+"!"+contraband;
+      return super.toString()+"&"+cost+"&"+name+"&"+event+"&"+landmark+"&"+icons.toString();
     }
   }
   public Data makeData(){

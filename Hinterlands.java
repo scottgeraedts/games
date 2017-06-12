@@ -62,7 +62,7 @@ public class Hinterlands extends Expansion{
       DominionCard card;
       try{
         card=player.getCard();
-        o.put(card.getImage(),"image");
+        o.add(card.getImage(),"image");
         String input=game.optionPane(ap,o);
         if(input.equals(options[0])){
           player.disc.put(card);
@@ -158,7 +158,7 @@ public class Hinterlands extends Expansion{
       if(cards.size()==0) return;
       
       for(DominionCard card : cards){
-        o.put(card.getImage(),"image");
+        o.add(card.getImage(),"image");
       }
       String result=game.optionPane(attacker,o);
       if(result.equals(options[0])) game.putBack(activePlayer,cards);
@@ -178,9 +178,9 @@ public class Hinterlands extends Expansion{
     public boolean cleanup(int ap, DominionPlayer player){
       OptionData o=new OptionData();
       for(DominionCard card : game.matcards){
-        if(card.isAction) o.put(card.getImage(), "imagebutton");
+        if(card.isAction) o.add(card.getImage(), "imagebutton");
       }
-      o.put("Done", "textbutton");
+      o.add("Done", "textbutton");
       String input=game.optionPane(ap,o);
       DominionCard card;
       for(ListIterator<DominionCard> it=game.matcards.listIterator(); it.hasNext(); ){
@@ -209,7 +209,7 @@ public class Hinterlands extends Expansion{
         String [] options={"Discard", "Put back"};
         OptionData o=new OptionData(options);
         DominionCard card=player.getCard();
-        o.put(card.getImage(),"image");
+        o.add(card.getImage(),"image");
         String input=game.optionPane(ap,o);
         if(input.equals(options[0])){
           player.disc.put(card);
@@ -260,13 +260,13 @@ public class Hinterlands extends Expansion{
         
         cards.add(card);
         if(card.getName().equals("silver") || card.getName().equals("gold")){
-          o.put(card.getImage(),"imagebutton");
+          o.add(card.getImage(),"imagebutton");
           silverFound=true;
         }else
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
         if(card.isMoney) moneyFound=true;
       }
-      if(!silverFound) o.put("Done","textbutton");
+      if(!silverFound) o.add("Done","textbutton");
 
       String out=game.optionPane(attacker,o);
       if(out.equals(cards.get(0).getImage())){
@@ -388,9 +388,9 @@ public class Hinterlands extends Expansion{
       while(true){
         if(cards.size()==0) break;
         for(DominionCard card2 : cards){
-          o.put(card2.getImage(),"imagebutton");
+          o.add(card2.getImage(),"imagebutton");
         }
-        o.put("Done Discarding","textbutton");
+        o.add("Done Discarding","textbutton");
         input=game.optionPane(ap, o);
         if(input.equals("Done Discarding")){
           break;
@@ -514,10 +514,10 @@ public class Hinterlands extends Expansion{
       while(true){
         for(Iterator<DominionCard>it=player.disc.iterator(); it.hasNext(); ){
           card=it.next();
-          if(card.isAction) o.put(card.getName(),"imagebutton");
+          if(card.isAction) o.add(card.getName(),"imagebutton");
         }
         if(o.size()==0) break;
-        o.put("Done","textbutton");
+        o.add("Done","textbutton");
         String input=game.optionPane(ap,o);
 
         if(input.equals("Done")) break;

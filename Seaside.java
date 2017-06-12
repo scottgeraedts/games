@@ -28,6 +28,7 @@ public class Seaside extends Expansion{
       game.matcards.remove(this);
       game.trashCard(this, activePlayer);
       game.displaySupply(game.selectedDeck);
+      lostTrack=true;
     }
   }
   public class Haven extends RegularCard{
@@ -103,7 +104,7 @@ public class Seaside extends Expansion{
       if(player.deck.size()==0) return;
       DominionCard card=player.deck.removeLast();
       OptionData o=new OptionData(options);
-      o.put(card.getImage(),"image");
+      o.add(card.getImage(),"image");
       String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
         player.deck.put(card);
@@ -179,9 +180,9 @@ public class Seaside extends Expansion{
       }
       if(options.size()==0) return;
       OptionData o=new OptionData(new String[0]);
-      o.put("Choose a card to trash:","text"); 
+      o.add("Choose a card to trash:","text");
       for(DominionCard card : options){
-        o.put(card.getImage(), "imagebutton");
+        o.add(card.getImage(), "imagebutton");
       }
       String input=game.optionPane(ap,o);
       DominionCard card;
@@ -195,9 +196,9 @@ public class Seaside extends Expansion{
       }
       o.clear();
       if(options.size()==0) return;
-      o.put("Choose a card to discard:","text");
+      o.add("Choose a card to discard:","text");
       for(DominionCard card2 : options){
-        o.put(card2.getImage(), "imagebutton");
+        o.add(card2.getImage(), "imagebutton");
       }
       input=game.optionPane(ap,o);
       for(ListIterator<DominionCard> it=options.listIterator(); it.hasNext(); ){
@@ -222,7 +223,7 @@ public class Seaside extends Expansion{
       if(smugglerCards2.size()==0) return;
       OptionData o=new OptionData(new String[0]);
       for(String cardName : smugglerCards2){
-        o.put(cardName,"imagebutton");
+        o.add(cardName,"imagebutton");
       }
       String input=game.optionPane(ap,o);
       game.gainCard(input,ap);
@@ -287,6 +288,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
+      lostTrack=true;
       DominionPlayer player=game.players.get(ap);
       game.doWork("select",1,1,ap);
       player.island.add(game.selectedCards.get(0));
@@ -308,9 +310,9 @@ public class Seaside extends Expansion{
       ArrayList<DominionCard> cards=player.draw(5);
       OptionData o=new OptionData();
       for(DominionCard card : cards)
-        o.put(card.getImage(),"image");
-      o.put("Discard","textbutton");
-      o.put("Put Back","textbutton");
+        o.add(card.getImage(),"image");
+      o.add("Discard","textbutton");
+      o.add("Put Back","textbutton");
       String input=game.optionPane(ap,o);
       if(input.equals("Discard")){
         player.disc.put(cards);
@@ -345,14 +347,14 @@ public class Seaside extends Expansion{
       boolean isMoney=false;
       for(DominionCard card : cards){
         if(card.isMoney){
-          o.put(card.getImage(),"imagebutton");
+          o.add(card.getImage(),"imagebutton");
           isMoney=true;
         }else{
-          o.put(card.getImage(),"image");
+          o.add(card.getImage(),"image");
         }
       }
       if(!isMoney)
-        o.put("Done","textbutton");
+        o.add("Done","textbutton");
       String choice=game.optionPane(ap,o);
       DominionCard card;
       for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
@@ -502,7 +504,7 @@ public class Seaside extends Expansion{
       value=1;
       isAction=true;
       o=new OptionData(options);
-      o.put(imagename,"image");
+      o.add(imagename,"image");
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){

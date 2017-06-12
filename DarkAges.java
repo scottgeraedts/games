@@ -94,10 +94,10 @@ public class DarkAges extends Expansion{
       ArrayList<DominionCard> cards=player.draw(2);
       OptionData o=new OptionData();
       for(DominionCard card : cards){
-        o.put(card.getImage(), "image");
+        o.add(card.getImage(), "image");
       }
-      o.put("Discard", "textbutton");
-      o.put("Put Back", "textbutton");
+      o.add("Discard", "textbutton");
+      o.add("Put Back", "textbutton");
       String input=game.optionPane(ap, o);
       if(input.equals("Discard")) player.disc.put(cards);
       else player.deck.put(cards);
@@ -113,6 +113,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void work(int ap){
+      lostTrack=true;
       game.matcards.remove(this);
     }
   }
@@ -228,9 +229,9 @@ public class DarkAges extends Expansion{
         OptionData o=new OptionData();
         Deck<DominionCard> deck=game.players.get(ap).disc;
         for(DominionCard card : deck){
-          if(!card.isMoney) o.put(card.getImage(), "imagebutton");
+          if(!card.isMoney) o.add(card.getImage(), "imagebutton");
         }
-        o.put("Done", "textbutton");
+        o.add("Done", "textbutton");
         input=game.optionPane(ap, o);
         DominionCard card2;
         for(ListIterator<DominionCard> it=deck.listIterator(); it.hasNext(); ){
@@ -242,8 +243,7 @@ public class DarkAges extends Expansion{
           }
         }
       }else if(input.equals(options[1])){
-        game.mask=makeMask(game.players.get(ap).hand, c -> !c.isMoney);
-        game.doWork("trash",0,1,ap);
+        game.doWork("trash",0,1,ap, c -> !c.isMoney);
         game.selectedCards.clear();
       }
 
@@ -366,6 +366,7 @@ public class DarkAges extends Expansion{
         game.updateSharedFields();
         trashed = true;
       }
+      game.selectedCards.clear();
     }
 
     @Override
@@ -405,8 +406,8 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.mask=makeMask(game.players.get(ap).hand, c -> c.isAction);
-      game.doWork("trash", 0, 1, ap);
+      lostTrack=true;
+      game.doWork("trash", 0, 1, ap,  c -> c.isAction);
       if(game.selectedCards.size()==0){
         game.matcards.remove(this);
         game.trashCard(this, ap);
@@ -462,7 +463,7 @@ public class DarkAges extends Expansion{
         DominionCard card=player.getCard();
         String [] options={"Discard", "Put Back"};
         OptionData o=new OptionData(options);
-        o.put(card.getImage(), "image");
+        o.add(card.getImage(), "image");
         String input=game.optionPane(ap, o);
         if(input.equals(options[0])){
           player.disc.put(card);
@@ -484,6 +485,7 @@ public class DarkAges extends Expansion{
     public Marauder(){
       super("marauder");
       cost=4;
+      isLooter=true;
     }
     @Override
     public void subWork(int ap){
@@ -504,29 +506,28 @@ public class DarkAges extends Expansion{
 
       //this first part is basically throneroom
       game.server.displayComment(ap,"Choose a card to play twice");
-      game.mask=makeMask(game.players.get(ap).hand, c -> c.isAction);
+      game.doWork("select",1,1,ap, c -> c.isAction);
+      game.mask.clear();
+      if(game.selectedCards.size()==0) return;
+      DominionCard card=game.selectedCards.get(0);
 
-      if(game.mask.contains(true)){
-        game.doWork("select",1,1,ap);
-        game.mask.clear();
-        DominionCard card=game.selectedCards.get(0);
+      game.selectedCards.clear();
+      game.changePhase("actions");
+      game.server.displayComment(ap,"");
 
-        game.selectedCards.clear();
-        game.changePhase("actions");
-        game.server.displayComment(ap,"");
+      //this card will never to go the mat
+      game.playCard(card,ap,true);
+      if(!card.lostTrack) game.playCard(card,ap,true);
 
-        //this card will never to go the mat
-        game.playCard(card,ap,true);
-        game.playCard(card,ap,true);
+      game.cardPlayed(ap);
 
-        game.cardPlayed(ap);
-
-        //now try to gain a card costing one more than this card
+      //now try to gain a card costing one more than this card
+      if(!card.lostTrack) {
         game.trashCard(card, ap);
-        int val=game.cost2(card)+1;
-        game.server.displayComment(ap, "Gain an action costing exactly "+val);
-        game.gainSpecial(ap, c -> game.cost2(c)==val && c.isAction);
-      }//there is a card to pick
+        int val = game.cost2(card) + 1;
+        game.server.displayComment(ap, "Gain an action costing exactly " + val);
+        game.gainSpecial(ap, c -> game.cost2(c) == val && c.isAction );
+      }
     }//subWork
   }
   class Rats extends RegularCard{
@@ -538,8 +539,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.mask=makeMask(game.players.get(ap).hand, c -> !c.getName().equals("rats"));
-      game.doWork("trash", 1, 1, ap);
+      game.doWork("trash", 1, 1, ap, c -> !c.getName().equals("rats"));
     }
     @Override
     public void onTrash(int ap){
@@ -569,7 +569,7 @@ public class DarkAges extends Expansion{
         OptionData o=new OptionData(new String[0]);
         for(Iterator<DominionCard>it=player.disc.iterator();it.hasNext(); ){
           card=it.next();
-          o.put(card.getName(),"imagebutton");
+          o.add(card.getName(),"imagebutton");
         }
         String input=game.optionPane(ap,o);
         for(Iterator<DominionCard>it=player.disc.iterator();it.hasNext(); ){
@@ -608,37 +608,15 @@ public class DarkAges extends Expansion{
       game.putBack(ap, cards);
     }
   }
-  class Bandofmisfits extends RegularCard{
+  class Bandofmisfits extends CopyCard{
     DominionCard card=null;
     public Bandofmisfits(){
       super("bandofmisfits");
       cost=5;
     }
     @Override
-    public void subWork(int ap){
-      //in case there are a lot of bridges
-      if(game.cost2(this)==0) return;
-
-      Dominion.SupplyDeck deck;
-      while(true){
-        game.doWork("selectDeck", 1, 1, ap);
-        deck=game.supplyDecks.get(game.selectedDeck);
-        if(deck.getCost()<=game.cost2(this) && deck.card.isAction && deck.card.debt==0){
-          card=game.cardFactory(deck.card.getName());
-          game.playCard(card, ap, true);
-          break;
-        }
-      }
-    }
-    @Override
-    public boolean maskCondition(DominionCard card2){
-      if(card==null) return false;
-      return card.maskCondition(card2);
-    }
-    @Override
-    public boolean cleanup(int ap, DominionPlayer player){
-      card=null;
-      return false;
+    protected int getLimit(){
+      return game.cost2(this)-1;
     }
   }
   class Banditcamp extends DominionCard{
@@ -667,7 +645,7 @@ public class DarkAges extends Expansion{
       String [] options={"Discard", "Put Back"};
       OptionData o=new OptionData(options);
       for(DominionCard card : cards){
-        o.put(card.getImage(), "image");
+        o.add(card.getImage(), "image");
       }
       String input=game.optionPane(ap, o);
       if(input.equals(options[0])){
@@ -730,16 +708,14 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.mask=makeMask(game.players.get(ap).hand, c -> c.isMoney);
-      if(!game.mask.contains(true)) return;
-      game.doWork("select", 0, 1, ap);
+      game.doWork("select", 0, 1, ap, c -> c.isMoney);
       game.mask.clear();
       game.changePhase("buys");
       DominionCard card=game.selectedCards.get(0);
       game.selectedCards.clear();
 
       game.playCard(card, ap, true);
-      game.playCard(card, ap, true);
+      if(!card.lostTrack) game.playCard(card, ap, true);
       game.trashCard(card, ap);
     }
   }
@@ -748,14 +724,13 @@ public class DarkAges extends Expansion{
       super("cultist");
       cost=5;
       cards=2;
+      isLooter=true;
     }
     @Override
     public void subWork(int ap){
-      game.mask=makeMask(game.players.get(ap).hand, c -> c.equals(this));
-      if(!game.mask.contains(true)) return;
 
-      game.doWork("select", 1, 1, ap);
-      game.mask.clear();
+      game.doWork("select", 0, 1, ap, c -> c.equals(this));
+      if(game.selectedCards.size()==0) return;
       DominionCard card=game.selectedCards.get(0);
       game.selectedCards.clear();
       game.playCard(card, ap);
@@ -781,10 +756,9 @@ public class DarkAges extends Expansion{
       String [] options={"Gain from trash", "Trash and Gain"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.gainFromTrash(ap, "topcard", c -> game.cost2(c)<=6 && game.cost2(c)>=3);
+        game.gainFromTrash(ap, "topcard", c -> game.cost2(c)<=6 && game.cost2(c)>=3 );
       }else{
-        game.mask=makeMask(game.players.get(ap).hand, c -> c.isAction);
-        game.doWork("trash", 1, 1, ap);
+        game.doWork("trash", 1, 1, ap, c -> c.isAction);
         if(game.selectedCards.size()>0){
           game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
           game.doWork("gain", 1, 1, ap);
@@ -824,14 +798,14 @@ public class DarkAges extends Expansion{
       OptionData o=new OptionData();
       boolean foundCard=false;
       for(DominionCard card : cards){
-        if(game.cost2(card)<=6 && game.cost2(card)>=3){
-          o.put(card.getImage(), "imagebutton");
+        if(game.cost2(card)<=6 && game.cost2(card)>=3 && card.debt==0 && card.potions==0){
+          o.add(card.getImage(), "imagebutton");
           foundCard=true;
         }else{
-          o.put(card.getImage(), "image");
+          o.add(card.getImage(), "image");
         }
       }
-      if(!foundCard) o.put("Done", "textbutton");
+      if(!foundCard) o.add("Done", "textbutton");
       String input=game.optionPane(ap, o);
 
       DominionCard card2;
@@ -972,9 +946,9 @@ public class DarkAges extends Expansion{
     public void subStep(int ap, int atk){
       LinkedList<DominionCard> hand=game.players.get(ap).hand;
       OptionData o=new OptionData();
-      o.put("Choose a card to discard: ", "text");
+      o.add("Choose a card to discard: ", "text");
       for(DominionCard card : hand){
-        o.put(card.getImage(), "imagebutton");
+        o.add(card.getImage(), "imagebutton");
       }
       String input=game.optionPane(atk, o);
       DominionCard card2;
@@ -996,7 +970,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.server.displayComment(ap, "gain a card to not trash"+game.gainLimit);
+      game.server.displayComment(ap, "choose a card to not trash");
       game.doWork("selectDeck2", 1, 1, ap);
       ArrayList<DominionCard> cards=new ArrayList<>();
       DominionCard card=null;
@@ -1030,7 +1004,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      attack=game.cardInTrash( c -> game.cost2(c)>=3 && game.cost2(c)<=6);
+      attack=!game.cardInTrash( c -> game.cost2(c)>=3 && game.cost2(c)<=6);
       if(!attack)
         game.gainFromTrash(ap, "discard", c -> game.cost2(c)>=3 && game.cost2(c)<=6);
     }
@@ -1042,16 +1016,19 @@ public class DarkAges extends Expansion{
       ArrayList<DominionCard> cards=player.draw(2);
       if(cards.size()==0) return;
       OptionData o=new OptionData();
+      OptionData o2=new OptionData();
       boolean foundCard=false;
       for(DominionCard card : cards){
         if(game.cost2(card)<=6 && game.cost2(card)>=3){
-          o.put(card.getImage(), "imagebutton");
+          o.add(card.getImage(), "imagebutton");
           foundCard=true;
         }else{
-          o.put(card.getImage(), "image");
+          o.add(card.getImage(), "image");
         }
+        o2.add(card.getImage(), "image");
       }
-      if(!foundCard) o.put("Done", "textbutton");
+      if(!foundCard) o.add("Done", "textbutton");
+      o2.add("Done", "textbutton");
       String input=game.optionPane(ap, o);
 
       DominionCard card2;
@@ -1063,6 +1040,7 @@ public class DarkAges extends Expansion{
           break;
         }
       }
+      game.optionPane(atk, o2);
       game.putBack(ap, cards);
     }
   }

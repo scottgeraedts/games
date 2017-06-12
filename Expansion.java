@@ -5,13 +5,12 @@ public abstract class Expansion{
   Dominion game;
   static ArrayList<String> vicTokens;
   static ArrayList<String> coinTokens;
-  static ArrayList<String> looters;
   static ArrayList<String> debtCards;
 
   static String [] prosperityCards={"loan","traderoute","watchtower","bishop","quarry",
       "talisman","city","contraband","countinghouse","mint","mountebank","rabble","royalseal",
       "vault","venture","goons","hoard","grandmarket","bank","expand","forge","kingscourt",
-      "peddler"};
+      "peddler","monument"};
   static String [] darkAgesCards={"altar", "armory", "banditcamp", "bandofmisfits", "beggar",
           "catacombs", "count", "counterfeit", "cultist", "deathcart", "feodum", "forager", "fortress",
           "graverobber", "hermit", "huntinggrounds",
@@ -22,17 +21,18 @@ public abstract class Expansion{
   public Expansion(Dominion g){
     game=g;
     String [] vic={"bishop","goons","monument","patrician", "chariotrace", "farmersmarket",
-      "sacrifice", "temple", "groundskeeper", "wildhunt"};
+      "sacrifice", "temple", "groundskeeper", "wildhunt","castle","sacrifice", "triumph"};
     vicTokens=new ArrayList<>(Arrays.asList(vic));
     String [] coin={"candlestickmaker","plaza","baker","butcher","merchantguild"};
     coinTokens=new ArrayList<>(Arrays.asList(coin));
-    String [] debt={"engineer", "cityquarter", "overlord", "royalblacksmith", "fortune" ,"capital"};
+    String [] debt={"engineer", "cityquarter", "overlord", "royalblacksmith", "fortune" ,"capital",
+            "triumph","annex","donate","tax", "mountainpass"};
     debtCards=new ArrayList<>(Arrays.asList(debt));
   }
-  public boolean hasCard(String cardName){
+  boolean hasCard(String cardName){
     return Arrays.asList(cards).contains(cardName);
   }
-  public static boolean usePlatinums(ArrayList<String> supplyCards){
+  static boolean usePlatinums(ArrayList<String> supplyCards){
     Random ran=new Random();
     double weight=0.05;
 
@@ -43,7 +43,7 @@ public abstract class Expansion{
     if(ran.nextDouble()<weight) return true;
     else return false;
   }
-  public static boolean useShelters(ArrayList<String> supplyCards){
+  static boolean useShelters(ArrayList<String> supplyCards){
     Random ran=new Random();
     double weight=0.05;
 
@@ -200,16 +200,81 @@ public abstract class Expansion{
     }
     @Override
     public final void work(int activePlayer){
-      if(comment.length()>0) game.server.displayComment(activePlayer,comment);
+      boolean displayedComment=false;
+      if(comment.length()>0){
+        game.server.displayComment(activePlayer,comment);
+        displayedComment=true;
+      }
 
       subWork(activePlayer);
 
       game.mask.clear();
-      if(isAction) game.changePhase("actions");
-      game.server.displayComment(activePlayer,"");
+      //if(isAction) game.changePhase("actions");
+      if(displayedComment) game.server.displayComment(activePlayer,"");
       game.selectedCards.clear();
     }
     public void subWork(int activePlayer){}
   }
-  
+  //used for band of misfits and overlord
+  //these cards are complicated!
+  protected abstract class CopyCard extends RegularCard{
+    protected DominionCard card;
+    public CopyCard(String name){
+      super(name);
+    }
+    @Override
+    public void subWork(int ap) {
+      Dominion.SupplyDeck deck;
+      while (true) {
+        game.doWork("selectDeck", 1, 1, ap);
+        deck = game.supplyDecks.get(game.selectedDeck);
+        if (deck.getCost() <= getLimit() && deck.card.isAction && deck.card.debt == 0) {
+          card = game.cardFactory(deck.card.getName());
+          break;
+        }
+      }
+      game.playCard(card, ap, true);
+      isDuration=card.isDuration;
+
+      //be careful with cards that trash themselves
+      if(card.getName().equals("deathcart") || card.getName().equals("feast")
+              || card.getName().equals("embargo")){
+        game.trash.remove(card);
+        game.trashCard(this, ap);
+      }else if(card.getName().equals("island")){
+        DominionPlayer player=game.players.get(ap);
+        player.island.remove(card);
+        player.island.add(this);
+      }
+    }
+
+    @Override
+    public boolean maskCondition(DominionCard card2) {
+      if (card == null) return false;
+      return card.maskCondition(card2);
+    }
+
+    @Override
+    public void duration(int ap){
+      card.duration(ap);
+    }
+    @Override
+    public boolean cleanup(int ap, DominionPlayer player){
+      card.cleanup(ap, player);
+      if(card.getName().equals("hermit")){
+        game.trash.remove(card);
+        game.trashCard(this, ap);
+      }
+      if(isDuration){
+        player.duration.add(this);
+        return true;
+      }else{
+        card=null;
+        return false;
+      }
+    }
+    protected int getLimit(){
+      return 100;
+    }
+  }
 }

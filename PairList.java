@@ -6,9 +6,44 @@ public class PairList<K extends Comparable,V extends Comparable>{
   protected ArrayList<K> names=new ArrayList<>();
   protected ArrayList<V> types=new ArrayList<>();
   public PairList(){}
-  public void put(K a,V b){
+
+  public PairList(String input, Class<K> clazz1, Class<V> clazz2){
+    String [] parts=input.split("@");
+    int size=Integer.parseInt(parts[0]);
+
+    if(size==0) return;
+    String[] t = parts[1].split("!");
+    for (int i = 0; i < size; i++) {
+      names.add(generalCast(t[i],clazz1));
+    }
+    t = parts[2].split("!");
+    for (int i = 0; i < size; i++) {
+      types.add(generalCast(t[i],clazz2));
+    }
+  }
+  private <T> T generalCast(String t, Class<T> clazz){
+    try{
+      if(clazz.getName().equals("java.lang.Integer")){
+        return clazz.cast(Integer.parseInt(t));
+      }
+      else return clazz.cast(t);
+    }catch(ClassCastException ex){
+      System.out.println(t);
+      ex.printStackTrace();
+    }
+    return null;
+  }
+  public void add(K a, V b) {
     names.add(a);
     types.add(b);
+  }
+  public void put(K a, V b) {
+    if(containsKey(a)){
+      types.set(names.indexOf(a), b);
+    }else{
+      names.add(a);
+      types.add(b);
+    }
   }
   public V get(K a){
     return types.get(names.indexOf(a));
@@ -34,6 +69,7 @@ public class PairList<K extends Comparable,V extends Comparable>{
   public V getValue(int i){
     return types.get(i);
   }
+  @Override
   public String toString(){
     String out=size()+"@";
     for(int i=0;i<size();i++){
@@ -47,8 +83,9 @@ public class PairList<K extends Comparable,V extends Comparable>{
     }
     return out;
   }
+
   //sort the values of the array and return a sorted list
-  public void sortByValue(){
+  void sortByValue(){
     ArrayList<Integer> nums=new ArrayList<Integer>(size());
     for(int i=0;i<size();i++) nums.add(i);
      
@@ -69,18 +106,9 @@ public class PairList<K extends Comparable,V extends Comparable>{
   }  
   @SuppressWarnings("unchecked")
   public static void main(String [] args){
-//    PairList x=new PairList<String,Integer>();
-//    x.put("a",1);
-//    x.put("b",3);
-//    x.put("c",2);
-//    System.out.println(x);
-//    x.sortByValue();
-//    System.out.println(x);
 
-    HashMap<String,String> map=new HashMap<>();
-    map.put("aa","bb");
-    System.out.println(map.containsKey("aa"));
-    
+    PairList<String,Integer> x=new PairList<>("3@0!0!0@1!2!3", String.class, Integer.class);
+    System.out.println(x);
   }
 }  
 
