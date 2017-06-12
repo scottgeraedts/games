@@ -228,7 +228,7 @@ public abstract class Expansion{
       while (true) {
         game.doWork("selectDeck", 1, 1, ap);
         deck = game.supplyDecks.get(game.selectedDeck);
-        if (deck.getCost() <= getLimit() && deck.card.isAction && deck.card.debt == 0) {
+        if (deck.getCost() <= getLimit() && deck.card.isAction && deck.card.debt == 0 && deck.card.potions==0) {
           card = game.cardFactory(deck.card.getName());
           break;
         }

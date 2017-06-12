@@ -437,9 +437,8 @@ public class Prosperity extends Expansion{
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
 
-      game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
-      game.doWork("gain",1,1,activePlayer);      
-    }    
+      game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 3)<=0);
+    }
   }
   private class Forge extends RegularCard{
     public Forge(){

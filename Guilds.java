@@ -53,20 +53,19 @@ public class Guilds extends Expansion{
     public void subWork(int ap){
       game.doWork("trash",1,1,ap);
       if(game.selectedCards.size()==0) return;
-      game.gainLimit=game.cost2(game.selectedCards.get(0))-1;
-      if(game.gainLimit<0) return;
-      game.selectedCards.clear();
-      game.server.displayComment(ap, "gain 2 cards costing up to "+game.gainLimit);
-      game.doWork("gain",0,2,ap);
+      int gainLimit=game.cost2(game.selectedCards.get(0))-1;
+      game.server.displayComment(ap, "gain 2 cards costing up to "+gainLimit);
+      for(int i=0; i<2; i++)
+        game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), -1)<=0);
     }
     @Override
     public void onGain(int ap){
-      int over=overpay(game,ap);
+      final int over=overpay(game,ap);
       game.server.displayComment(ap, "Gain 2 cards costing "+over);
       int counter=0;
 
       for(int i=0; i<2; i++)
-        game.gainSpecial(ap, c -> c.isAction && game.cost2(c)==over);
+        game.gainSpecial(ap, c -> c.isAction && game.costCompare(c, over, 0, 0)==0);
     }
   }
   class Doctor extends RegularCard{
@@ -196,10 +195,9 @@ public class Guilds extends Expansion{
       if(game.selectedCards.size()==0) return;
       cardName=game.selectedCards.get(0).getName();
       int gainLimit=game.cost2(game.selectedCards.get(0))+3;
-      game.selectedCards.clear();
 
       game.server.displayComment(ap, "gain a treasure costing up to "+gainLimit);
-      game.gainSpecial(ap, c -> isMoney && game.cost2(c)<=gainLimit);
+      game.gainSpecial(ap, c -> isMoney && game.costCompare(c, game.selectedCards.get(0),3)<=0);
     }
     @Override
     public void subStep(int ap, int atk){
@@ -297,9 +295,8 @@ public class Guilds extends Expansion{
         }//while coin tokens
 
         //gain card
-        game.gainLimit=game.cost2(game.selectedCards.get(0))+extra;
-        game.selectedCards.clear();
-        game.doWork("gain", 1, 1, ap);
+        final int temp=extra;
+        game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), temp)<=0);
       }
     }
   }

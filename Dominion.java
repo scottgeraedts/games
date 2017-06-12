@@ -21,8 +21,6 @@ public class Dominion{
   private boolean gameOver;
   private String phase;
 
-  int gainLimit;
-
   //stuff for selections
   //cards that have been selected for trashing/discarding etc go here in case they need to be looked at by e.g. a forge
   String selectedDeck;
@@ -56,13 +54,13 @@ public class Dominion{
 
     expansions.put("Core",new Core(this));
     expansions.put("Intrigue",new Intrigue(this));
-//    expansions.put("Seaside",new Seaside(this));
-//    expansions.put("Prosperity",new Prosperity(this));
-//    expansions.put("Hinterlands",new Hinterlands(this));
-//    expansions.put("Cornucopia",new Cornucopia(this));
-//    expansions.put("Guilds",new Guilds(this));
-//    expansions.put("DarkAges",new DarkAges(this));
-//    //theres a bunch of useful methods in empires
+    expansions.put("Seaside",new Seaside(this));
+    expansions.put("Prosperity",new Prosperity(this));
+    expansions.put("Hinterlands",new Hinterlands(this));
+    expansions.put("Cornucopia",new Cornucopia(this));
+    expansions.put("Guilds",new Guilds(this));
+    expansions.put("DarkAges",new DarkAges(this));
+    //theres a bunch of useful methods in empires
     empires=new Empires(this);
     expansions.put("Empires", empires);
     int startingPlayer=startGame(supply);
@@ -369,7 +367,7 @@ public class Dominion{
     //if phase is something else there are no conditions since an action card got you here
     if(deck.size()>0 && ( 
            (phase.equals("buys") && money>=deck.getCost() && buys>0 && players.get(activePlayer).debt==0)
-        || (phase.equals("gain") && gainLimit>=deck.getCost() && deck.card.debt==0)
+        //|| (phase.equals("gain") && gainLimit>=deck.getCost() && deck.card.debt==0)
         || (!phase.equals("gain") && !phase.equals("buys"))
         || skipBuy) ){
 
@@ -418,10 +416,11 @@ public class Dominion{
         if(card.isVictory) Seaside.victoryBought=true;
         //haggler
         for(int i=0;i<Hinterlands.hagglerCounter;i++){
-          gainLimit=deck.getCost()-1;
+          int gainLimit=deck.getCost()-1;
           server.displayComment(activePlayer, "gain a non-Victory card costing up to "+gainLimit);
           while(true){
             doWork("selectDeck",1,1,activePlayer,null, null);
+            //this call doesn't go through gainSpecial because its in the buy phase so peddler is cheaper
             if(supplyDecks.get(selectedDeck).getCost()<=gainLimit && !supplyDecks.get(selectedDeck).card.isVictory){
               gainCard(selectedDeck,activePlayer);
               break;
@@ -443,7 +442,9 @@ public class Dominion{
             while(true){
               doWork("selectDeck", 1, 1, activePlayer);
               deck2=supplyDecks.get(selectedDeck);
-              if(!deck2.card.equals(card) && costCompare(deck2.card, card)==0){
+              //doesnt use costCompare because of peddler
+              if(!deck2.card.equals(card) && deck2.getCost()==deck.getCost()
+                      && deck2.card.debt==card.debt && deck2.card.potions==card.potions){
                 gainCard(selectedDeck, activePlayer, "discard", true);
                 break;
               }
@@ -1061,9 +1062,9 @@ public class Dominion{
     minSelection=min;
     if(!p.equals("gain") && !p.equals("selectDeck") && !p.equals("selectDeck2")
             && players.get(activePlayer).hand.size()==0) return;
-    if(p.equals("gain")){
-      server.displayComment(activePlayer, "gain a card costing up to "+gainLimit);
-    }
+//    if(p.equals("gain")){
+//      server.displayComment(activePlayer, "gain a card costing up to "+gainLimit);
+//    }
     if(max<=0) max=1;
     maxSelection=max;
 

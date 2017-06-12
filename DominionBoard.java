@@ -284,21 +284,21 @@ public class DominionBoard extends JFrame{
     buys=1;
 
   }
-  public void refreshSharedFields(PairList<String, Integer> fields){
+  void refreshSharedFields(PairList<String, Integer> fields){
     for(int i=0; i<fields.size(); i++){
       specialFields.get(fields.getKey(i)).setText(fields.getValue(i)+"");
     }
     money=fields.get("Money");
     buys=fields.get("Buys");
   }
-  public void showScores(OptionData points){
+  void showScores(OptionData points){
     String out="";
     for(int i=0;i<points.size();i++){
       out+=points.getValue(i)+"\n";
     }
     JOptionPane.showMessageDialog(this,out);
   }
-  public void pressButton(JButton button){
+  void pressButton(JButton button){
     for(ActionListener a: button.getActionListeners()) {
       a.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null) {});
     }          

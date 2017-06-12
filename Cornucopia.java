@@ -264,11 +264,8 @@ public class Cornucopia extends Expansion{
     @Override
     public void work(int ap){
       HashSet<DominionCard> cardSet=new HashSet<>(game.matcards);
-      game.gainLimit=cardSet.size();
-      game.doWork("gain",1,1,ap);
-      game.selectedCards.clear();
+      game.gainNumber(ap, cardSet.size());
       game.changePhase("buys");
-      game.server.displayComment(ap, "");
     }
   }
   public class Huntingparty extends DominionCard{

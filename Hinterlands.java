@@ -606,11 +606,8 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void onGain(int ap){
-      game.gainLimit=game.cost2(this)-1;
-      game.doWork("gain",1,1,ap);
+      game.gainNumber(ap, game.cost2(this)-1);
       game.changePhase("buys");
-      game.selectedCards.clear();
-      game.server.displayComment(ap,"");
     }
   }
   public class Farmland extends DominionCard{
@@ -622,11 +619,11 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void onGain(int ap){
+      game.server.displayComment(ap, "Remodel a card");
       game.doWork("trash",1,1,ap);
       if(game.selectedCards.size()==0) return;
-      game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
-      game.doWork("gain",1,1,ap);    
-      game.selectedCards.clear();  
+      game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), 2)<=0);
+      game.selectedCards.clear();
     }
   }
 }

@@ -49,8 +49,7 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.gainLimit=5;
-      game.doWork("gain",0,1,activePlayer);
+      game.gainNumber(activePlayer, 5);
       game.players.get(activePlayer).hand.add(game.players.get(activePlayer).disc.topCard());
       game.displayPlayer(activePlayer);
       game.selectedCards.clear();

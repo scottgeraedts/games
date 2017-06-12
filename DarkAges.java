@@ -248,8 +248,7 @@ public class DarkAges extends Expansion{
       }
 
       //gain a card costuing up to 3
-      game.gainLimit=3;
-      game.doWork("gain", 1, 1, ap);
+      game.gainNumber(ap, 3);
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
@@ -526,7 +525,7 @@ public class DarkAges extends Expansion{
         game.trashCard(card, ap);
         int val = game.cost2(card) + 1;
         game.server.displayComment(ap, "Gain an action costing exactly " + val);
-        game.gainSpecial(ap, c -> game.cost2(c) == val && c.isAction );
+        game.gainSpecial(ap, c -> game.costCompare(c, card, 1)==0  && c.isAction );
       }
     }//subWork
   }
@@ -658,9 +657,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void onTrash(int ap){
-      game.gainLimit=game.cost2(this);
-      game.doWork("gain", 1, 1, ap);
-      game.selectedCards.clear();
+      game.gainSpecial(ap, c -> game.costCompare(c, this)<0);
     }
   }
   class Count extends RegularCard{
@@ -756,13 +753,13 @@ public class DarkAges extends Expansion{
       String [] options={"Gain from trash", "Trash and Gain"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.gainFromTrash(ap, "topcard", c -> game.cost2(c)<=6 && game.cost2(c)>=3 );
+        game.gainFromTrash(ap, "topcard", c -> game.costCompare(c, 6, 0,0) <=0 && game.cost2(c)>=3 );
       }else{
         game.doWork("trash", 1, 1, ap, c -> c.isAction);
         if(game.selectedCards.size()>0){
-          game.gainLimit=game.cost2(game.selectedCards.get(0))+3;
-          game.doWork("gain", 1, 1, ap);
+          game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), 3)<=0);
         }
+        game.selectedCards.clear();
       }
     }
   }
@@ -857,8 +854,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.gainLimit=3;
-      game.doWork("gain", 1,1, ap);
+      game.gainNumber(ap, 3);
     }
   }
   class Damesylvia extends Knight{
@@ -992,7 +988,7 @@ public class DarkAges extends Expansion{
       game.trashCard(card, ap);
       int gainLimit=game.cost2(card)+3;
       game.server.displayComment(ap, "gain a victory costing up to "+gainLimit);
-      game.gainSpecial(ap, c -> game.cost2(c)<=gainLimit && c.isVictory);
+      game.gainSpecial(ap, c -> game.costCompare(c, gainLimit, 0, 0)<=0 && c.isVictory);
     }
   }
   class Rogue extends Attack{
@@ -1004,9 +1000,9 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      attack=!game.cardInTrash( c -> game.cost2(c)>=3 && game.cost2(c)<=6);
+      attack=!game.cardInTrash( c -> game.cost2(c)>=3 && game.costCompare(c, 6, 0, 0)<=0);
       if(!attack)
-        game.gainFromTrash(ap, "discard", c -> game.cost2(c)>=3 && game.cost2(c)<=6);
+        game.gainFromTrash(ap, "discard", c -> game.cost2(c)>=3 && game.costCompare(c, 6, 0, 0)<=0);
     }
     @Override
     public void subStep(int ap, int atk){
@@ -1019,7 +1015,7 @@ public class DarkAges extends Expansion{
       OptionData o2=new OptionData();
       boolean foundCard=false;
       for(DominionCard card : cards){
-        if(game.cost2(card)<=6 && game.cost2(card)>=3){
+        if(game.costCompare(card, 6, 0, 0)<=0 && game.cost2(card)>=3){
           o.add(card.getImage(), "imagebutton");
           foundCard=true;
         }else{
@@ -1053,8 +1049,7 @@ public class DarkAges extends Expansion{
     public void subWork(int ap){
       game.doWork("trash",1,1,ap);
       if(game.selectedCards.size()>0){
-        game.gainLimit=5;
-        game.doWork("gain", 1, 1, ap);
+        game.gainNumber(ap, 5);
       }
     }
   }
