@@ -209,7 +209,7 @@ public abstract class Expansion{
       subWork(activePlayer);
 
       game.mask.clear();
-      //if(isAction) game.changePhase("actions");
+      if(isAction) game.changePhase("actions");
       if(displayedComment) game.server.displayComment(activePlayer,"");
       game.selectedCards.clear();
     }

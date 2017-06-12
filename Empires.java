@@ -337,15 +337,13 @@ class Empires extends Expansion {
 
     @Override
     public void subWork(int ap) {
-      game.gainLimit = 4;
-      game.doWork("gain", 1, 1, ap);
+      game.gainNumber(ap, 4);
       String[] options = {"Trash this card", "Done"};
       String input = game.optionPane(ap, new OptionData(options));
       if (input.equals(options[0])) {
         game.trashCard(this, ap);
         game.matcards.remove(this);
-        game.gainLimit = 4;
-        game.doWork("gain", 1, 1, ap);
+        game.gainNumber(ap, 4);
         game.selectedCards.clear();
       }
     }
@@ -1233,7 +1231,7 @@ class Empires extends Expansion {
     public void onGain(int ap){
       game.doWork("trash", 0, 1, ap, c -> c.isAction);
       game.selectedCards.clear();
-      game.gainSpecial(ap, c -> c.isAction && game.cost2(c)<=6);
+      game.gainSpecial(ap, c -> c.isAction && game.costCompare(c,6,0,0)<=0);
     }
   }
   class Delve extends DominionCard{
@@ -1274,7 +1272,7 @@ class Empires extends Expansion {
     @Override
     public void onGain(int ap){
       for(int i=0; i<2; i++) game.gainCard("copper", ap, "discard", true);
-      game.gainSpecial(ap, c -> !c.isVictory && game.cost2(c)<=5);
+      game.gainSpecial(ap, c -> !c.isVictory && game.costCompare(c,5,0,0)<=0);
     }
   }
   class Ritual extends DominionCard{

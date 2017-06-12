@@ -232,13 +232,12 @@ public class Core extends Expansion{
     public Feast(){
       super("feast");
       cost=4;
-      comment="Gain a card costing up to 5";
     }
     @Override
     public void subWork(int activePlayer){
-      game.gainLimit=5;
-      game.doWork("gain",0,1,activePlayer);
-      game.trashCard(game.matcards.remove(game.matcards.size()-1), activePlayer);
+      DominionCard card=game.gainNumber(activePlayer, 5);
+      game.matcards.remove(card);
+      game.trashCard(card, activePlayer);
       lostTrack=true;
     }
     
@@ -322,9 +321,9 @@ public class Core extends Expansion{
       game.mask=makeMask(game.players.get(activePlayer).hand);
       game.doWork("trash",0,1,activePlayer);
       if(game.selectedCards.size()<0) return;
-      int cost=game.cost2(game.selectedCards.get(0));
+      DominionCard card=game.selectedCards.get(0);
 
-      game.gainSpecial(activePlayer, c -> c.isMoney && game.costCompare(c,cost), "hand");
+      game.gainSpecial(activePlayer, c -> c.isMoney && game.costCompare(c,game.cost2(card)+3, card.debt, card.potions)<=0, "hand");
     }
     @Override
     public boolean maskCondition(DominionCard card){
@@ -376,10 +375,10 @@ public class Core extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
-
-      game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
-      game.doWork("gain",1,1,activePlayer);      
-    }    
+      if(game.selectedCards.size()==0) return;
+      game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 2)<=0);
+      game.selectedCards.clear();
+    }
   }
   private class Sentry extends DominionCard{
     public Sentry(){
@@ -598,8 +597,7 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.gainLimit=4;
-      game.doWork("gain",0,1,activePlayer);      
+      game.gainNumber(activePlayer, 4);
     }
   }
   private class Gardens extends DominionCard{

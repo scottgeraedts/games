@@ -193,7 +193,7 @@ public class DominionCard extends Card{
   public void onGain(int x){}
   public void onTrash(int x){}
   
-  public ArrayList<Boolean> makeMask(Collection<DominionCard> hand){
+  ArrayList<Boolean> makeMask(Collection<DominionCard> hand){
       ArrayList<Boolean> mask=new ArrayList<Boolean>(hand.size());
       int i=0;
     for (DominionCard aHand : hand) {

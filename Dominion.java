@@ -56,13 +56,13 @@ public class Dominion{
 
     expansions.put("Core",new Core(this));
     expansions.put("Intrigue",new Intrigue(this));
-    expansions.put("Seaside",new Seaside(this));
-    expansions.put("Prosperity",new Prosperity(this));
-    expansions.put("Hinterlands",new Hinterlands(this));
-    expansions.put("Cornucopia",new Cornucopia(this));
-    expansions.put("Guilds",new Guilds(this));
-    expansions.put("DarkAges",new DarkAges(this));
-    //theres a bunch of useful methods in empires
+//    expansions.put("Seaside",new Seaside(this));
+//    expansions.put("Prosperity",new Prosperity(this));
+//    expansions.put("Hinterlands",new Hinterlands(this));
+//    expansions.put("Cornucopia",new Cornucopia(this));
+//    expansions.put("Guilds",new Guilds(this));
+//    expansions.put("DarkAges",new DarkAges(this));
+//    //theres a bunch of useful methods in empires
     empires=new Empires(this);
     expansions.put("Empires", empires);
     int startingPlayer=startGame(supply);
@@ -199,6 +199,9 @@ public class Dominion{
   public void work(int t){
     work(t,null);
   }
+
+  //active card is used for the AI, every card that implements an AI response method should pass "this"
+  //to all calls to doWork so the card knows what to do
   public void work(int t, DominionCard activeCard){
   
     int activePlayer=t;
@@ -432,7 +435,7 @@ public class Dominion{
         //hermit
         DarkAges.hermitSwitch=false;
         //charm
-        if(Empires.charmCounter>0 && isValidSupply(c -> cost2(c)==cost2(card) && !c.equals(card) && c.debt==card.debt) ){
+        if(Empires.charmCounter>0 && isValidSupply(c -> costCompare(c,card)==0 && !c.equals(card) && c.debt==card.debt) ){
           String oldPhase=phase;
           for(int i=0; i<Empires.charmCounter; i++){
             server.displayComment(activePlayer, "gain a card with a different name costing "+cost2(card));
@@ -440,7 +443,7 @@ public class Dominion{
             while(true){
               doWork("selectDeck", 1, 1, activePlayer);
               deck2=supplyDecks.get(selectedDeck);
-              if(!deck2.card.equals(card) && cost2(deck2.card)==cost2(card)){
+              if(!deck2.card.equals(card) && costCompare(deck2.card, card)==0){
                 gainCard(selectedDeck, activePlayer, "discard", true);
                 break;
               }
@@ -934,11 +937,15 @@ public class Dominion{
     if(card.isAction) return Math.max(card.cost-bridgeCounter-Prosperity.quarryCounter,0);
     else return Math.max(card.cost-bridgeCounter,0);
   }
-  boolean costCompare(DominionCard card, int gt, int lt){ return costCompare(card, gt, lt, 0, 0); }
-  boolean costCompare(DominionCard card, int gt){ return costCompare(card, gt, 0, 0, 0); }
-  boolean costCompare(DominionCard card, int gt, int lt, int debt, int potions){
-    return cost2(card)<=gt && cost2(card)>=lt && card.debt==debt && card.potions==potions;
+  //returns 0 if two cards are equal in cost, -1 if this card is less, 1 if this card is more
+  int costCompare(DominionCard card1, DominionCard card2){ return costCompare(card1, cost2(card2), card2.debt, card2.potions); }
+  int costCompare(DominionCard card1, DominionCard card2, int extra){ return costCompare(card1, cost2(card2)+extra, card2.debt, card2.potions); }
+  int costCompare(DominionCard card1, int cost, int debt, int potions){
+    if(cost==cost2(card1) && debt==card1.debt && potions==card1.potions) return 0;
+    else if(card1.cost<=cost && card1.debt<=debt && card1.potions <= potions) return -1;
+    else return 1;
   }
+
   //puts a card anywhere in the deck
   void putAnywhere(int activePlayer, DominionCard card){
     DominionPlayer player=players.get(activePlayer);
@@ -984,11 +991,11 @@ public class Dominion{
   //"gain a card costing exactly"
   void controlledGain(int activePlayer, int val){
     server.displayComment(activePlayer, "gain a card costing exactly "+val);
-    gainSpecial(activePlayer, c -> cost2(c)==val && c.debt==0);
+    gainSpecial(activePlayer, c -> costCompare(c,val,0,0)==0);
 
   }
   //find out if there are any cards in the supply that we can gain
-  boolean isValidSupply(Predicate<DominionCard> tester){
+  private boolean isValidSupply(Predicate<DominionCard> tester){
     boolean canGain=false;
     for(Map.Entry <String,SupplyDeck> entry : supplyDecks.entrySet()){
       if( entry.getValue().size()>0 && tester.test(entry.getValue().card)){
@@ -999,26 +1006,38 @@ public class Dominion{
     return canGain;  
   }
   //gain a card subject to some conditions
-  void gainSpecial(int ap, Predicate<DominionCard> tester){
-    gainSpecial(ap, tester, "discard");
+  DominionCard  gainNumber(int ap, int val){
+    System.out.println(val);
+    server.displayComment(ap, "Gain a card costing up to "+val);
+    DominionCard out=gainSpecial(ap, c -> costCompare(c, val, 0, 0)<=0);
+    server.displayComment(ap, "");
+    return out;
   }
-  void gainSpecial(int ap, Predicate<DominionCard> tester, String where){
+  DominionCard gainSpecial(int ap, Predicate<DominionCard> tester){
+    return gainSpecial(ap, tester, "discard");
+  }
+  DominionCard gainSpecial(int ap, Predicate<DominionCard> tester, String where){
     //quit if no valid card to gain
-    if (!isValidSupply(tester)) return;
+    System.out.println("is there a valid supply "+isValidSupply(tester));
+    if (!isValidSupply(tester)) return null;
 
     String oldPhase=phase;
+    DominionCard outcard=null;
     while (true) {
       doWork("selectDeck", 1, 1, ap);
       Dominion.SupplyDeck deck = supplyDecks.get(selectedDeck);
       if (tester.test(deck.card) && deck.size() > 0){
+        outcard=deck.card;
         gainCard(selectedDeck, ap, where, true);
         Empires.triumphCounter++;
         if(deck.getName().equals("silver")) Empires.conquestCounter++;
         break;
       }
-      selectedCards.clear();
+//      selectedCards.clear();
     }
     changePhase(oldPhase);
+    return outcard;
+
   }
   //a typical request for the player to do something
   public void doWork(String p, int min, int max, int activePlayer){

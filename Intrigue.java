@@ -199,18 +199,8 @@ public class Intrigue extends Expansion{
         System.out.println("swindler trashed "+card.getName());
         int value=game.cost2(card);
         game.trashCard(card, victim);
-        if(!game.isValidSupply(c -> game.cost2(card)==value));
         game.server.displayComment(attacker,"Trashed a "+card.getName()+", choose a card costing "+value);
-
-        Dominion.SupplyDeck deck;
-        while(true){
-          game.work(attacker);
-          deck=game.supplyDecks.get(game.selectedDeck);
-          if(deck.getCost()==value && deck.size()>0){
-            game.gainCard(deck.getName(),victim);
-            break;
-          }
-        }        
+        game.gainSpecial(victim, c -> game.costCompare(c, card)==0);
       }catch(OutOfCardsException e){
       }
     }
@@ -325,9 +315,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.gainLimit=4;
-      game.doWork("gain",0,1,activePlayer);
-      DominionCard card=game.selectedCards.get(0);
+      DominionCard card=game.gainNumber(activePlayer, 4);
       
       if(card.isAction){
         game.actions++;
@@ -534,10 +522,12 @@ public class Intrigue extends Expansion{
       game.doWork("trash",1,1,activePlayer);
 
       game.changePhase("gain");
-      game.gainLimit=game.cost2(game.selectedCards.get(0))+2;
+
+      if(game.selectedCards.size()==0) return;
+
+
+      DominionCard card=game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 2)<=0);
       game.selectedCards.clear();
-      game.doWork("gain",0,1,activePlayer);
-      DominionCard card=game.selectedCards.get(0);
       if(card.isAction || card.isMoney){
         curse=false;
         game.players.get(activePlayer).deck.put(game.players.get(activePlayer).disc.topCard());
@@ -597,7 +587,7 @@ public class Intrigue extends Expansion{
     public void subWork(int activePlayer){
       game.doWork("trash",1,1,activePlayer);
       game.displayPlayer(activePlayer);
-      game.controlledGain(activePlayer, game.cost2(game.selectedCards.get(0))+1);
+      game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 1)==0);
       game.selectedCards.clear();
     }
   }
@@ -684,18 +674,16 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subStep(int victim, int attacker){
-      DominionCard card;
       while(true){
         try{
-          card=game.players.get(victim).getCard();
+          DominionCard card=game.players.get(victim).getCard();
+          if(game.costCompare(card,3,0,0)<0) game.players.get(victim).disc.put(card);
+          else{
+            game.trashCard(card, victim);
+            game.gainSpecial(victim, c -> game.costCompare(c, card, -2)<=0);
+            break;
+          }
         }catch(OutOfCardsException ex){
-          break;
-        }
-        if(game.cost2(card)<3) game.players.get(victim).disc.put(card);
-        else{
-          game.trashCard(card, victim);
-          game.gainLimit=game.cost2(card)-2;
-          if(game.gainLimit>=0) game.doWork("gain",0,1,victim);
           break;
         }
       }
