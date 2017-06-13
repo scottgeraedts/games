@@ -1073,6 +1073,7 @@ class Empires extends Expansion {
       //game.displayPlayer(activePlayer);
       //game.matcards.add(card);
       game.cardPlayed(ap);
+      game.changePhase(oldPhase);
     }
   }
   class Forum extends RegularCard{
@@ -1133,10 +1134,12 @@ class Empires extends Expansion {
     }
     @Override
     public void subStep(int ap, int atk){
-      int x=game.players.get(ap).hand.size()-2;
-      game.doWork("discard", x, x, ap);
-      game.players.get(ap).drawToHand(1);
-      game.displayPlayer(ap);
+      if(active) {
+        int x = game.players.get(ap).hand.size() - 2;
+        game.doWork("discard", x, x, ap);
+        game.players.get(ap).drawToHand(1);
+        game.displayPlayer(ap);
+      }
     }
   }
   class Wildhunt extends DominionCard{

@@ -2,7 +2,7 @@ import java.util.*;
 
 public class Cornucopia extends Expansion{
   
-  private static ArrayList<DominionCard> prizes=new ArrayList<>(5);
+  private static ArrayList<DominionCard> prizes=null;
   static String bane;
   
   Cornucopia(Dominion g){
@@ -11,10 +11,6 @@ public class Cornucopia extends Expansion{
         "tournament", "harvest", "remake", "huntingparty", "hornofplenty", "horsetraders",
         "jester", "youngwitch"};
     cards=temp;
-    String [] prizeNames={"diadem","bagofgold","followers","princess","trustysteed"};
-    for(String name : prizeNames){
-      prizes.add(game.cardFactory(name,"Cornucopia"));
-    }
   }
   public class Hamlet extends RegularCard{
     public Hamlet(){
@@ -172,6 +168,14 @@ public class Cornucopia extends Expansion{
       game.doWork("discard",0,1,ap,c -> c.getName().equals("province"));
       if(game.selectedCards.size()==0) return;
 
+      //if the prize list hasn't been made, make it
+      //can't do this in constructor because cardfactory needs cornucopia to have been added to dominion
+      if(prizes==null){
+        String [] names={"trustysteed", "bagofgold", "princess", "followers", "diadem"};
+        for(String s : names) prizes.add(game.cardFactory(s, "Cornucopia"));
+      }
+
+      //gain a prize
       OptionData o=new OptionData();
       for(DominionCard card : prizes){
         o.add(card.getImage(), "imagebutton");
@@ -413,7 +417,7 @@ public class Cornucopia extends Expansion{
       options.add("+2 Money");
       options.add("Gain 4 silvers");
       OptionData o=new OptionData(options.toArray(new String[4]));
-      
+
       String input=game.optionPane(ap,o);
       resolve(input, ap);
       options.remove(input);

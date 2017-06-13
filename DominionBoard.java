@@ -21,9 +21,9 @@ public class DominionBoard extends JFrame{
   
   //mat panel
   private JPanel cardPanel;
-  private JPanel dataPanel;
   private JPanel supplyPanel;
   private JPanel fieldsPanel; //global so it can be reset
+  private JPanel buttonPanel;
   private HashMap<String,JButton> doneButtons=new HashMap<>();
   private JButton coinTokenButton=new JButton("Play Coin Token");
   private JButton debtButton=new JButton("Pay Off Debt");
@@ -109,12 +109,12 @@ public class DominionBoard extends JFrame{
     repaint();
     revalidate();
   }
-  public void playAgain(){
+  void playAgain(){
     String [] options={"Play again","Quit"};
     OptionData o=new OptionData(options);
     optionPane(o);
   }
-  public void kill(){
+  void kill(){
     setVisible(false);
     dispose();
   }
@@ -137,9 +137,23 @@ public class DominionBoard extends JFrame{
   }  
   
   private JPanel setupSharedPanel(ArrayList<Deck.SupplyData> supplyData, ArrayList<String> gameOptions){
+    /*
+      panel == supplyPanel
+              ------------
+              matPanel
+
+        matPanel= infoPanel
+                  --------
+                  cardPanel
+        infoPanel=  helpField | dataPanel
+                    ---------
+                    buttonPanel
+     */
+
     JPanel panel=new JPanel();
     panel.setLayout(new GridLayout(2,0));
-    
+
+    //-SUPPLY PANEL
     supplyPanel=new JPanel();
     supplyPanel.setPreferredSize(new Dimension(500,1000));
     SupplyDisplay tempSupply;
@@ -154,26 +168,37 @@ public class DominionBoard extends JFrame{
     scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);    
     panel.add(scrollPane);
 
-    //starting mat panel    
+
+
+    //-MATPANEL
     JPanel matPanel=new JPanel();
     matPanel.setLayout(new GridLayout(2,0));
-    
-    cardPanel=new JPanel();
-    cardPanel.setLayout(new FlowLayout());
-    
-    dataPanel=new JPanel();
-    dataPanel.setLayout(new FlowLayout());
-    
+    panel.add(matPanel);
+
+    //--INFOPANEL
     JPanel infoPanel=new JPanel();
     infoPanel.setLayout(new GridLayout(1,2));
-    
-    
-    //action listener for the done buying button
+    matPanel.add(infoPanel);
+
+    //---LEFTPANEL
+    JPanel leftPanel=new JPanel();
+    leftPanel.setLayout(new GridLayout(2,1));
+    infoPanel.add(leftPanel);
+
+    //----HELPFIELD
+    helpField=new JTextField("");
+    leftPanel.add(helpField);
+
+    //----BUTTONPANEL
+    buttonPanel=new JPanel();
+    buttonPanel.setLayout(new FlowLayout());
+
+    //action listener for the done buttons
     EndSelection listener=new EndSelection();
     String [] phases={"actions","buys","topdeck","discard","trash","select","reveal"};
-    for(int i=0;i<phases.length;i++){
-      doneButtons.get(phases[i]).addActionListener(listener);
-      doneButtons.get(phases[i]).setActionCommand("B"+phases[i]);
+    for (String phase1 : phases) {
+      doneButtons.get(phase1).addActionListener(listener);
+      doneButtons.get(phase1).setActionCommand("B" + phase1);
     }
     coinTokenButton.addActionListener(listener);
     coinTokenButton.setActionCommand("Bcoin");
@@ -181,25 +206,31 @@ public class DominionBoard extends JFrame{
     debtButton.addActionListener(listener);
     debtButton.setActionCommand("Bdebt");
 
-    fieldsPanel=new JPanel();
-    fieldsPanel.setLayout(new GridLayout(5,2));
+    buttonPanel.add(doneButtons.get("actions"));
 
-    resetSharedPanel(gameOptions);
+    leftPanel.add(buttonPanel);
+
+    //---DATAPANEL
+    JPanel dataPanel = new JPanel();
+    dataPanel.setLayout(new FlowLayout());
+    infoPanel.add(dataPanel);
+
+    //----FIELDSPANEL
+    fieldsPanel=new JPanel();
+    fieldsPanel.setLayout(new GridLayout(gameOptions.size(),2));
     dataPanel.add(fieldsPanel);
 
+    //----TRASH
     dataPanel.add(trash.getPanel());
-    dataPanel.add(doneButtons.get("actions"));
 
-    refreshSharedFields();
- 
-    helpField=new JTextField("");
-    infoPanel.add(helpField);
-    infoPanel.add(dataPanel);
- 
-    matPanel.add(infoPanel);
+    //--CARD PANEL
+    cardPanel=new JPanel();
+    cardPanel.setLayout(new FlowLayout());
     matPanel.add(cardPanel);
-    panel.add(matPanel);
-   
+
+    resetSharedPanel(gameOptions);
+    refreshSharedFields();
+
     return panel;
   }
   public class EndSelection implements ActionListener{
@@ -259,14 +290,14 @@ public class DominionBoard extends JFrame{
     try{
       //remove this every time, only sometimes readd it
       //if the button isn't there nothing bad will happen
-      dataPanel.remove(coinTokenButton);
-      dataPanel.remove(doneButtons.get(oldPhase));
+      buttonPanel.remove(coinTokenButton);
+      buttonPanel.remove(doneButtons.get(oldPhase));
     }catch(NullPointerException e){
     }
    
     try{
-      dataPanel.add(doneButtons.get(newPhase)); 
-      if(newPhase.equals("buys") && players.get(activePlayer).coinTokens>0) dataPanel.add(coinTokenButton);
+      buttonPanel.add(doneButtons.get(newPhase));
+      if(newPhase.equals("buys") && players.get(activePlayer).coinTokens>0) buttonPanel.add(coinTokenButton);
     }catch(NullPointerException e){
     }
  
@@ -356,9 +387,9 @@ public class DominionBoard extends JFrame{
   public void displayPlayer(int i, DominionPlayer.Data data, ArrayList<Boolean> mask){ 
     players.get(i).display(data,mask);
     //do we need to add in a debt button
-    dataPanel.remove(debtButton);
+    buttonPanel.remove(debtButton);
     if(phase.equals("buys") && players.get(activePlayer).debt>0){
-      dataPanel.add(debtButton);
+      buttonPanel.add(debtButton);
       repaint();
       revalidate();
     }

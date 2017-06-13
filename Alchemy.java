@@ -1,11 +1,21 @@
 import java.util.*;
+
 public class Alchemy extends Expansion{
+
+  //this is true when, at the end of the phase, we need to start a possession phase
+  static boolean possessionSwitch=false;
+  //this is true when we are in a possession phase
+  static boolean possessed=false;
+  //this stuff stores a players material for when possession happens
+  static LinkedList<DominionCard> possessionCards=new LinkedList<>();
+
+
   static String [] potionCost={"transmute", "vineyard", "apothecary", "scrying pool", "university",
           "alchemist", "familiar", "philosphersstone", "golem", "possession"};
   public Alchemy(Dominion g){
     super(g);
     String [] t={"transmute", "vineyard", "herbalist","apothecary", "scrying pool", "university",
-            "alchemist", "familiar", "philosophersstone"};
+            "alchemist", "familiar", "philosophersstone", "golem", "apprentice"};
     cards=t;
   }
   class Potion extends DominionCard{
@@ -85,6 +95,8 @@ public class Alchemy extends Expansion{
       super("apothecary");
       cost=2;
       potions=1;
+      cards=1;
+      actions=1;
       isAction=true;
     }
     @Override
@@ -223,6 +235,65 @@ public class Alchemy extends Expansion{
     }
     @Override
     public void work(int ap){
+      LinkedList<DominionCard> discards=new LinkedList<>();
+      LinkedList<DominionCard> actions=new LinkedList<>();
+
+      DominionCard card;
+      DominionPlayer player=game.players.get(ap);
+      while(actions.size()<2){
+        try{
+          card=player.getCard();
+        }catch (OutOfCardsException ex){
+          break;
+        }
+        if(card.isAction && !card.getName().equals("golem")) actions.add(card);
+        else discards.add(card);
+      }
+      player.disc.put(discards);
+      OptionData o;
+      while(actions.size()>0){
+        o=new OptionData();
+        for(DominionCard card2 : actions){
+          o.put(card2.getImage(), "imagebutton");
+        }
+        String input=game.optionPane(ap, o);
+        game.playCard(Dominion.remove(actions, c -> c.getImage().equals(input)), ap);
+      }
     }
+  }
+  class Apprentice extends RegularCard{
+    public Apprentice(){
+      super("apprentice");
+      cost=5;
+      actions=1;
+    }
+    @Override
+    public void subWork(int ap){
+      game.doWork("trash", 1, 1, ap);
+      if(game.selectedCards.size()>0){
+        game.players.get(ap).drawToHand(game.cost2(game.selectedCards.get(0))+4*game.selectedCards.get(0).potions);
+        game.displayPlayer(ap);
+      }
+    }
+  }
+  class Possession extends DominionCard{
+    public Possession(){
+      super("possession");
+      cost=6;
+      potions=1;
+      isAction=true;
+    }
+    @Override
+    public void work(int ap){
+      if(!possessed) possessionSwitch=true;
+    }
+  }
+  //stuff for possession
+  void startPossession(int ap){
+    //some day these will get implemented!
+
+  }
+  void endPossession(int ap){
+
   }
 }

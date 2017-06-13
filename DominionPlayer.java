@@ -75,7 +75,7 @@ public class DominionPlayer{
   }
 
   //returns the breakdown of victory points for this player
-  public Pair<Integer, String> victoryPoints(){
+  Pair<Integer, String> victoryPoints(){
 
     //put all cards from all sources into the deck
     deck.put(disc);
@@ -83,12 +83,13 @@ public class DominionPlayer{
     deck.put(island);
     deck.put(duration);
     deck.put(nativevillage);
+    LinkedList<DominionCard> archiveCards=new LinkedList<>();
     for(DominionCard card : deck){
       if(card.getName().equals("archive")){
-        deck.put( ((Empires.Archive)card).cards);
+        archiveCards.addAll( ((Empires.Archive)card).cards);
       }
     }
-
+    deck.put(archiveCards);
 
     HashMap<String,Integer> cards=new HashMap<>();
     

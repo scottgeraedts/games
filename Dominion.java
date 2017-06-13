@@ -1,4 +1,3 @@
-
 import java.io.*;
 import java.util.*;
 import java.util.function.Predicate;
@@ -16,7 +15,7 @@ public class Dominion{
   private HashSet<String> playerOptions;
   private PairList<String, Integer> fields;
 
-  public int money,actions,buys,potions;
+  int money,actions,buys,potions;
   int emptyPiles;
   private boolean gameOver;
   private String phase;
@@ -47,8 +46,7 @@ public class Dominion{
     for(int i=0;i<server.playerNames.size();i++){
       players.add(new DominionPlayer(server.playerNames.get(i)));
 
-//      if(DominionServer.DEBUG)
-//        for(int j=0;j<3;j++) players.get(i).deck.add(cardFactory("bordervillage"));
+//      for(int j=0;j<3;j++) players.get(i).deck.add(cardFactory("trustysteed", "Cornucopia"));
     }
 
 
@@ -64,6 +62,7 @@ public class Dominion{
     empires=new Empires(this);
     expansions.put("Empires", empires);
     expansions.put("Alchemy", new Alchemy((this)));
+
     int startingPlayer=startGame(supply);
     server.initialize(supplyData(), playerData(),startingPlayer, gameOptions, playerOptions);
     updateSharedFields();
@@ -157,10 +156,10 @@ public class Dominion{
     cards.addAll(supplies);
     
     //make the supplies
-    for(int i=0;i<cards.size();i++){
-      SupplyDeck deck=new SupplyDeck(cards.get(i));
-      supplyDecks.put(cards.get(i), deck);
-      if(addTax && !deck.card.isEvent && !deck.card.isLandmark) deck.tax++;
+    for (String card1 : cards) {
+      SupplyDeck deck = new SupplyDeck(card1);
+      supplyDecks.put(card1, deck);
+      if (addTax && !deck.card.isEvent && !deck.card.isLandmark) deck.tax++;
     }
     //now that we know what supplies there are we can deal with some landmark stuff
     if(addObelisk){
@@ -183,7 +182,7 @@ public class Dominion{
       }else{
         for(int i=0; i<3; i++) player.deck.put(cardFactory("estate"));
       }
-      //for(int i=0; i<3; i++) player.deck.add(cardFactory("smallcastle", "Empires"));
+      //for(int i=0; i<3; i++) player.deck.add(cardFactory("trustysteed", "Cornucopia"));
       player.deck.shuffle();
       player.drawToHand(5);
     }
@@ -583,7 +582,8 @@ public class Dominion{
     }
 
     //add card on discard pile or (more rarely) top of deck
-    if(where.equals("hand") || card.getName().equals("villa")) player.hand.add(card);
+    if(Alchemy.possessed) Alchemy.possessionCards.add(card);
+    else if(where.equals("hand") || card.getName().equals("villa")) player.hand.add(card);
     else if(where.equals("topcard")) player.deck.put(card);
     else if(where.equals("discard")) player.disc.put(card);
     else{
@@ -636,7 +636,9 @@ public class Dominion{
 
   }
   void trashCard(DominionCard card, int ap){
-    trash.put(card);
+    if(Alchemy.possessed) players.get(ap).disc.put(card);
+    else trash.put(card);
+
     card.onTrash(ap);
 
     ArrayList<String> cards=reactionReveal(players.get(ap).hand, ap, null,
@@ -802,7 +804,7 @@ public class Dominion{
       Empires.donateSwitch=false;
     }
 
-    //check if the player add an outpost on their duration mat, and didn't play an outpost last time
+    //check if the player had an outpost on their duration mat, and didn't play an outpost last time
     if(Seaside.outpost){
       Seaside.outpost=false;
     }else{
@@ -816,12 +818,18 @@ public class Dominion{
     int newPlayer;
 
     //if there is an outpost on the duration mat, that player gets to go again
-    if(Seaside.outpost){
-      newPlayer=activePlayer;
+    if(Seaside.outpost) {
+      newPlayer = activePlayer;
       players.get(activePlayer).disc.put(players.get(activePlayer).hand);
       players.get(activePlayer).hand.clear();
       players.get(activePlayer).drawToHand(3);
+    }else if(Alchemy.possessionSwitch){
+      newPlayer=activePlayer;
+      ((Alchemy)expansions.get("Alchemy")).startPossession(activePlayer);
     }else{
+      if(Alchemy.possessed){
+        ((Alchemy)expansions.get("Alchemy")).endPossession(activePlayer);
+      }
       players.get(activePlayer).endTurn();       
       newPlayer=(activePlayer+1)%players.size();
     }
@@ -995,6 +1003,18 @@ public class Dominion{
     player.deck.put(cards);
     displayPlayer(activePlayer);
     server.displayComment(activePlayer,"");
+  }
+  //given a list of cards and a condition, removes the first card that matches the condition
+  public static DominionCard remove(List<DominionCard> cards, Predicate<DominionCard> tester){
+    DominionCard card;
+    for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
+      card=it.next();
+      if(tester.test(card)){
+        it.remove();
+        return card;
+      }
+    }
+    return null;
   }
   //"gain a card costing exactly"
   void controlledGain(int activePlayer, int val){
