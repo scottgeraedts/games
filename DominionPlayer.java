@@ -62,8 +62,8 @@ public class DominionPlayer{
       }
     }
   }
-  public ArrayList<DominionCard> draw(int n){
-    ArrayList<DominionCard> out=new ArrayList<>();
+  public LinkedList<DominionCard> draw(int n){
+    LinkedList<DominionCard> out=new LinkedList<>();
     for(int i=0;i<n;i++){
       try{
         out.add(getCard());

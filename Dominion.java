@@ -750,11 +750,11 @@ public class Dominion{
     DominionPlayer player=players.get(activePlayer);
 
     //check if any cards do things at the end of the turn
+    //some cards (duration, treasury, etc) remove themselves from the mat on cleanup, so cleanup returns true
+    //scheme and herbalist also do this
     ArrayList<DominionCard> schemeCards=new ArrayList<>();    
     for(ListIterator<DominionCard> it=matcards.listIterator(); it.hasNext(); ){
       card=it.next();
-      //there might be a problem with cleanup being called twice on e.g. a hermit
-      //fix would be to separate cleanup from a function which says whether you are going on the duration pile this turn
       if(!card.getName().equals("scheme") && !card.getName().equals("herbalist") && card.cleanup(activePlayer,players.get(activePlayer))){
         it.remove();
       }else if(card.getName().equals("scheme") || card.getName().equals("herbalist")){
@@ -963,7 +963,7 @@ public class Dominion{
     displayPlayer(activePlayer);
   }
   //puts a bunch of cards on top of the deck in user-specified order
-  public void putBack(int activePlayer, ArrayList<DominionCard> cards){
+  public void putBack(int activePlayer, List<DominionCard> cards){
     if(cards.size()==0) return;
     
     String [] options;
@@ -975,21 +975,24 @@ public class Dominion{
     while(cards.size()>1){
       options=new String[0];
       o=new OptionData(options);
-      for(int i=0;i<cards.size();i++){
-        o.add(cards.get(i).getImage(),"imagebutton");
+      for(DominionCard card : cards){
+        o.add(card.getImage(),"imagebutton");
       }
       input=optionPane(activePlayer,o);
+      DominionCard card;
 //      input=server.getUserInput(activePlayer, null);
-      for(int i=0;i<cards.size();i++){
-        if(input.equals(cards.get(i).getName())){
-          player.deck.put(cards.remove(i));
+      for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
+        card=it.next();
+        if(input.equals(card.getName())){
+          player.deck.put(card);
+          it.remove();
           break;
         }          
       }
       displayPlayer(activePlayer);
       
     }
-    player.deck.put(cards.get(0));
+    player.deck.put(cards);
     displayPlayer(activePlayer);
     server.displayComment(activePlayer,"");
   }

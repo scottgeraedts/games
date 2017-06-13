@@ -379,7 +379,7 @@ public class Hinterlands extends Expansion{
     @Override
     public void work(int ap){
       game.server.displayComment(ap,"Choose cards to discard");
-      ArrayList<DominionCard> cards=game.players.get(ap).draw(4);
+      LinkedList<DominionCard> cards=game.players.get(ap).draw(4);
       game.displayPlayer(ap);
       OptionData o=new OptionData();
       String input;

@@ -307,7 +307,7 @@ public class Seaside extends Expansion{
     @Override 
     public void work(int ap){
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(5);
+      LinkedList<DominionCard> cards=player.draw(5);
       OptionData o=new OptionData();
       for(DominionCard card : cards)
         o.add(card.getImage(),"image");
@@ -340,7 +340,7 @@ public class Seaside extends Expansion{
     public void subStep(int vic, int ap){
       if(!input.equals("Attack")) return;
       DominionPlayer victim=game.players.get(vic);
-      ArrayList<DominionCard> cards=victim.draw(2);
+      LinkedList<DominionCard> cards=victim.draw(2);
       if(cards.size()==0) return;
 
       OptionData o=new OptionData();

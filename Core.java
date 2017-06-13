@@ -74,7 +74,7 @@ public class Core extends Expansion{
       OptionData o=new OptionData(new String[0]);
       boolean doneButton=true;
 
-      ArrayList<DominionCard> cards=player.draw(2);
+      LinkedList<DominionCard> cards=player.draw(2);
       for(DominionCard card : cards){
         if(test(card)){
           o.add(card.getImage(),"imagebutton");
@@ -389,7 +389,7 @@ public class Core extends Expansion{
     }
     @Override
     public void work(int activePlayer){
-      ArrayList<DominionCard> cards=new ArrayList<>(2);
+      LinkedList<DominionCard> cards=new LinkedList<>();
       DominionPlayer player=game.players.get(activePlayer);
       DominionCard card;
       String [] options={"Trash", "Discard", "Put back"};
@@ -419,7 +419,8 @@ public class Core extends Expansion{
       game.putBack(activePlayer,cards);      
     }
   }
-  private class Spy extends Attack{
+  private class
+  Spy extends Attack{
     OptionData o;
     String [] options={"Keep","Discard"};
 
@@ -434,7 +435,7 @@ public class Core extends Expansion{
     public void subWork(int activePlayer){
       discardOrKeep(activePlayer, activePlayer);
     }
-    public void discardOrKeep(int activePlayer, int attacker){
+    private void discardOrKeep(int activePlayer, int attacker){
       try{
         DominionCard card=game.players.get(activePlayer).getCard();
         o.add(card.getImage(),"image");

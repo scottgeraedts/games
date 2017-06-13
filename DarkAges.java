@@ -91,7 +91,7 @@ public class DarkAges extends Expansion{
     @Override
     public void work(int ap){
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(2);
+      LinkedList<DominionCard> cards=player.draw(2);
       OptionData o=new OptionData();
       for(DominionCard card : cards){
         o.add(card.getImage(), "image");
@@ -255,8 +255,9 @@ public class DarkAges extends Expansion{
       if(hermitSwitch) {
         game.trashCard(this, ap);
         game.gainCardNoSupply(game.cardFactory("madman", "DarkAges"), ap, "discard");
+        return true;
       }
-      return false;
+      else return false;
     }
   }
   class Madman extends DominionCard{
@@ -595,7 +596,7 @@ public class DarkAges extends Expansion{
     @Override
     public void work(int ap){
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(3);
+      LinkedList<DominionCard> cards=player.draw(3);
       DominionCard card;
       for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
         card=it.next();
@@ -640,7 +641,7 @@ public class DarkAges extends Expansion{
     @Override
     public void work(int ap){
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(3);
+      LinkedList<DominionCard> cards=player.draw(3);
       String [] options={"Discard", "Put Back"};
       OptionData o=new OptionData(options);
       for(DominionCard card : cards){
@@ -790,7 +791,7 @@ public class DarkAges extends Expansion{
       extra(ap);
 
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(2);
+      LinkedList<DominionCard> cards=player.draw(2);
       if(cards.size()==0) return;
       OptionData o=new OptionData();
       boolean foundCard=false;
@@ -968,7 +969,7 @@ public class DarkAges extends Expansion{
     public void subWork(int ap){
       game.server.displayComment(ap, "choose a card to not trash");
       game.doWork("selectDeck2", 1, 1, ap);
-      ArrayList<DominionCard> cards=new ArrayList<>();
+      LinkedList<DominionCard> cards=new LinkedList<>();
       DominionCard card=null;
       DominionPlayer player=game.players.get(ap);
       while(true){
@@ -1009,7 +1010,7 @@ public class DarkAges extends Expansion{
       if(!attack) return;
 
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(2);
+      LinkedList<DominionCard> cards=player.draw(2);
       if(cards.size()==0) return;
       OptionData o=new OptionData();
       OptionData o2=new OptionData();

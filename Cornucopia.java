@@ -240,7 +240,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void work(int ap){
-      ArrayList<DominionCard> cards=game.players.get(ap).draw(4);
+      LinkedList<DominionCard> cards=game.players.get(ap).draw(4);
       OptionData o=new OptionData();
       for(DominionCard card : cards){
         o.add(card.getImage(), "image");

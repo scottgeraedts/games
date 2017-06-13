@@ -79,7 +79,7 @@ public class Guilds extends Expansion{
       game.doWork("selectDeck2",1,1,ap);
       String name=game.supplyDecks.get(game.selectedDeck).card.getName();
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(3);
+      LinkedList<DominionCard> cards=player.draw(3);
       DominionCard card;
       for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
         card=it.next();
@@ -142,7 +142,7 @@ public class Guilds extends Expansion{
     @Override
     public void work(int ap){
       DominionPlayer player=game.players.get(ap);
-      ArrayList<DominionCard> cards=player.draw(3);
+      LinkedList<DominionCard> cards=player.draw(3);
       if (cards.size()==0) return;
       OptionData o=new OptionData();
       for(DominionCard card : cards){

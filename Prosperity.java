@@ -284,7 +284,7 @@ public class Prosperity extends Expansion{
     @Override
     public void subStep(int vic, int ap){
       DominionPlayer player=game.players.get(vic);
-      ArrayList<DominionCard> cards=player.draw(3);
+      LinkedList<DominionCard> cards=player.draw(3);
       DominionCard card;
       for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
         card=it.next();

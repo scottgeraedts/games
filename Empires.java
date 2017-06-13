@@ -949,7 +949,7 @@ class Empires extends Expansion {
     }
   }
   class Archive extends DominionCard{
-    ArrayList<DominionCard> cards;
+    LinkedList<DominionCard> cards;
     public Archive(){
       super("archive");
       cost=5;
