@@ -21,5 +21,6 @@ public interface PlayerInterface{
   public boolean playAgain();
   public void terminate();
   public String getUserInput(DominionCard card);
+  void changeController(int player, boolean control);
   
 }

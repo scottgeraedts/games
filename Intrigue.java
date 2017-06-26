@@ -410,6 +410,8 @@ public class Intrigue extends Expansion{
       if(card.isKnight) picks++;
       if(card.isCastle) picks++;
       if(card.isGathering) picks++;
+      if(card.isReserve) picks++;
+      if(card.isTraveller) picks++;
 
       ArrayList<String> options=new ArrayList<>(4);
       ArrayList<String> choices=new ArrayList<>(picks);

@@ -298,6 +298,7 @@ public class DarkAges extends Expansion{
     public void work(int ap){
       DominionCard card;
       DominionPlayer player=game.players.get(ap);
+      LinkedList<DominionCard> cards=new LinkedList<>();
       while(true){
         try {
           card = player.getCard();
@@ -308,9 +309,10 @@ public class DarkAges extends Expansion{
           player.hand.add(card);
           break;
         }else{
-          player.disc.put(card);
+          cards.add(card);
         }
       }
+      player.disc.put(cards);
       game.displayPlayer(ap);
     }
   }

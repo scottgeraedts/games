@@ -58,7 +58,8 @@ public class DominionBoard extends JFrame{
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
 
     //images that will be used later to mark supply piles
-    String [] s={"embargo", "contraband","obelisk", "bane"};
+    String [] s={"embargo", "contraband","obelisk", "bane","action1", "action2", "money1", "money2",
+      "card1", "card2", "buy1", "buy2", "journey", "minusMoney", "minusCard", "trash1", "trash2"};
     ImageIcon tempIcon=null;
     for (String value : s) {
       try {
@@ -124,6 +125,7 @@ public class DominionBoard extends JFrame{
     players.clear();
     JPanel panel=new JPanel();
     panel.setLayout(new GridLayout(playersData.size(),1));
+
     for(int i=0;i<playersData.size();i++){
       players.add( new PlayerDisplay(playersData.get(i), playerOptions) );
       panel.add(players.get(i).getPanel());
@@ -244,6 +246,8 @@ public class DominionBoard extends JFrame{
   private void resetSharedPanel(ArrayList<String> gameOptions){
     //try to remove options
     fieldsPanel.removeAll();
+    fieldsPanel.setLayout(new GridLayout(gameOptions.size(),2));
+
     specialFields=new HashMap<>();
     specialLabels=new HashMap<>();
     for(String option : gameOptions){
@@ -394,13 +398,18 @@ public class DominionBoard extends JFrame{
       revalidate();
     }
   }
-  public void displayTrash(Deck.Data data){
+  void displayTrash(Deck.Data data){
     trash.display(data);
   }
   public void displayComment(String comment){
     helpField.setText(comment);
   }
 
+  //changing controller for possession
+  void changeController(int ap, boolean control){
+    players.get(ap).controlled=control;
+    players.get(ap).display();
+  }
 //////////////************CLASSES THAT HANDLE LARGE COMPONENTS*********///
   //hold a JPanel and some associated info associated with a player
   protected class PlayerDisplay implements ActionListener{
@@ -416,17 +425,24 @@ public class DominionBoard extends JFrame{
     //stuff for special cards
     private JPanel optionPanel=new JPanel();
     private JTextField pirateship=new JTextField();
+    private JTextField miser=new JTextField();
     private JButton islandButton=new JButton("Island");
     private ArrayList<String> islandCards;
     private JButton durationButton=new JButton("Duration");
-    public ArrayList<String> durationCards;
+    ArrayList<String> durationCards;
     private JButton nativevillageButton=new JButton("Native Village");
     private ArrayList<String> nativeVillageCards;
-    public int coinTokens=0;
-    public int debt=0;
+    int coinTokens=0;
+    int debt=0;
     private JTextField vicfield=new JTextField();    
     private JTextField coinfield=new JTextField();
     private JTextField debtfield=new JTextField();
+    private JLabel journeyToken=new JLabel(tokens.get("journey"));
+    private JLabel minusMoney=new JLabel(tokens.get("minusMoney"));
+    private JLabel minusCard=new JLabel(tokens.get("minusCard"));
+    private JButton reserveButton=new JButton("Reserve");
+    ArrayList<String> tavern=new ArrayList<>();
+
 
   public PlayerDisplay(DominionPlayer.Data tplayer, ArrayList<String> playerOptions){
 
@@ -460,7 +476,13 @@ public class DominionBoard extends JFrame{
       
       infoPanel.add(optionPanel);   
       panel.add(infoPanel);
-      panel.add(handPanel);
+
+      //a scroll bar for the hand
+      handPanel.setPreferredSize(new Dimension(500,500));
+      JScrollPane handBar=new JScrollPane(handPanel);
+      handBar.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+      handBar.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+      panel.add(handBar);
       
       display(player,new ArrayList<Boolean>());
     }
@@ -472,6 +494,7 @@ public class DominionBoard extends JFrame{
       nativeVillageCards=player.nativeVillage;
       coinTokens=player.coinTokens;
       debt=player.debt;
+      tavern=player.tavern;
       optionPanel.removeAll();
       optionPanel.setLayout(new GridLayout(playerOptions.size(),1));
       for(String s : playerOptions){
@@ -483,6 +506,15 @@ public class DominionBoard extends JFrame{
           pirateship.setText(player.pirateship+"");
           piratepanel.add(pirateship);
           optionPanel.add(piratepanel);
+        }
+        if(s.equals("miser")){
+          JPanel miserpanel=new JPanel();
+          miserpanel.setLayout(new FlowLayout());
+          miserpanel.add(new JLabel("Miser Money"));
+          miser.setEditable(false);
+          miser.setText(player.miser+"");
+          miserpanel.add(miser);
+          optionPanel.add(miserpanel);
         }
         if(s.equals("victorytokens")){
           JPanel vicpanel=new JPanel();
@@ -523,7 +555,14 @@ public class DominionBoard extends JFrame{
           nativevillageButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,nativeVillageCards));  
           optionPanel.add(nativevillageButton);                
         }
+        if(s.equals("tavern")){
+          reserveButton.addMouseListener(new PlayerMouseAdapter(DominionBoard.this,tavern));
+          optionPanel.add(reserveButton);
+        }
       }
+    }
+    void display(){
+      display(player, new ArrayList<Boolean>());
     }
     //use last times data to display
     public void display(DominionPlayer.Data tplayer, ArrayList<Boolean> mask){
@@ -583,6 +622,22 @@ public class DominionBoard extends JFrame{
       vicfield.setText(player.vicTokens+"");
       coinfield.setText(player.coinTokens+"");
       debtfield.setText(player.debt+"");
+      miser.setText(player.miser+"");
+      if(player.journey){
+        optionPanel.add(journeyToken);
+      }else{
+        optionPanel.remove(journeyToken);
+      }
+      if(player.minusCardToken){
+        optionPanel.add(minusCard);
+      }else{
+        optionPanel.remove(minusCard);
+      }
+      if(player.minusMoneyToken){
+        optionPanel.add(minusMoney);
+      }else{
+        optionPanel.remove(minusMoney);
+      }
 
       repaint();
       revalidate();
@@ -733,6 +788,22 @@ public class DominionBoard extends JFrame{
         taxField.setFont(new Font("Arial", Font.BOLD, 20));
         addedPanels++;
       }
+      //tokens, try not adding them twice
+      if(supplies.contains("peasant")){
+        addedPanels+=addPanel2("card");
+        addedPanels+=addPanel2("action");
+        addedPanels+=addPanel2("buy");
+        addedPanels+=addPanel2("money");
+      }else{
+        if(supplies.contains("lostarts")) addedPanels+=addPanel2("action");
+        if(supplies.contains("seaway")) addedPanels+=addPanel2("buy");
+        if(supplies.contains("pathfinding")) addedPanels+=addPanel2("card");
+        if(supplies.contains("training")) addedPanels+=addPanel2("money");
+
+      }
+      if(supplies.contains("plan")){
+        addPanel("trash");
+      }
       for( ; addedPanels<4; addedPanels++){
         addPanel(Integer.toString(addedPanels));
       }
@@ -776,6 +847,15 @@ public class DominionBoard extends JFrame{
       iconPanels.get(s).setOpaque(false);
       dataPanel.add(iconPanels.get(s));
     }
+    private int addPanel2(String s1){
+      String s;
+      int x=2;
+      for(int i=1; i<=x; i++) {
+        s=s1+i;
+        addPanel(s);
+      }
+      return x;
+    }
 
     void display(Deck.SupplyData tdata){
       data=tdata;
@@ -796,6 +876,7 @@ public class DominionBoard extends JFrame{
           iconPanels.get("tax").add(taxField);
         }else{
           String s=data.icons.getKey(i);
+          System.out.println(s);
           iconPanels.get(s).add(new JLabel(tokens.get(s)));
         }
         iconPanels.get(data.icons.getKey(i)).setOpaque(true);

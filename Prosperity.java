@@ -262,9 +262,8 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void subStep(int vic, int ap){
-      game.mask=makeMask(game.players.get(vic).hand);
       game.server.displayComment(ap,"you may discard a curse to block the attack, or press 'Done Discarding' ");
-      game.doWork("discard",0,1,vic);
+      game.doWork("discard",0,1,vic, c -> c.getName().equals("curse"));
       if(game.selectedCards.size()==0){
         game.gainCard("curse",vic);
         game.gainCard("copper",vic);
@@ -455,6 +454,7 @@ public class Prosperity extends Expansion{
       game.server.displayComment(ap,"Gain a card costing exactly "+temp);
       game.selectedCards.clear();
       game.controlledGain(ap,temp);
+      game.server.displayComment(ap, "");
     }
   }
   private class Kingscourt extends DominionCard{

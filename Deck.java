@@ -67,7 +67,7 @@ class Deck<T extends Card> extends LinkedList<T>{
 	//add cards on deck
 	public void put(T c){ addFirst(c);	}
 	public void put(Collection<T> c){ 
-    addAll(c);
+    addAll(0,c);
 	}	
 
   public static class Data{

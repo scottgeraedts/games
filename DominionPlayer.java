@@ -4,21 +4,40 @@ public class DominionPlayer{
   public LinkedList<DominionCard> hand=new LinkedList<DominionCard>();
 	public Deck<DominionCard> deck, disc;
 	private String name;
-	public LinkedList<DominionCard> duration=new LinkedList<>();
-	public int vicTokens=0;
-	public int coinTokens=0;
-	public int debt=0;
-	
+	LinkedList<DominionCard> duration=new LinkedList<>();
+	int vicTokens=0;
+	int coinTokens=0;
+	int debt=0;
+  //adventures stuff
+	LinkedList<DominionCard> tavern=new LinkedList<>();
+	boolean journey=false;
+  boolean minusMoneyToken=false;
+  boolean minusCardToken=false;
+
 	//****specific card related stuff***///
 	//nativevillage
-	public ArrayList<DominionCard> nativevillage=new ArrayList<>();
+	ArrayList<DominionCard> nativevillage=new ArrayList<>();
 	//island
-	public ArrayList<DominionCard> island=new ArrayList<>();
+	ArrayList<DominionCard> island=new ArrayList<>();
 	//pirateship
-	public int pirateship=0;
+	int pirateship=0;
 	//horsetraders
-	public ArrayList<DominionCard> horseTraders=new ArrayList<>();
-	
+	ArrayList<DominionCard> horseTraders=new ArrayList<>();
+	//champions
+  int champions=0;
+  //adventures tokens which are activate on play and are set by teacher (card, money, buy, action)
+  HashMap<String, String> adventureTokens=new HashMap<>();
+  //miser
+  int miser=0;
+  //hautned woods
+  boolean hauntedWoods=false;
+  //swamp hag
+  boolean swampHag=false;
+  //save
+  DominionCard saveCard=null;
+  //expidition
+  boolean expedition=false;
+
   public DominionPlayer(String newname){
 		disc=new Deck<DominionCard>();
 		name=newname;
@@ -32,13 +51,19 @@ public class DominionPlayer{
 
   }
 
-  public void endTurn(){
+  void endTurn(){
     disc.put(hand);
     hand.clear();
     drawToHand(5);
+    if(saveCard != null){
+      hand.add(saveCard);
+      saveCard=null;
+    }
+    if(expedition){
+      drawToHand(2);
+      expedition=false;
+    }
   }
-
-	public int nCards(){ return disc.size()+deck.size(); }
 
 	public DominionCard getCard() throws OutOfCardsException{
 		if(!deck.isEmpty()) return deck.topCard(); 			
@@ -54,6 +79,10 @@ public class DominionPlayer{
 		
 	}  
   public void drawToHand(int n){
+    if(minusCardToken){
+      n--;
+      minusCardToken=false;
+    }
     for(int i=0;i<n;i++){
       try{
         hand.add( getCard()); 
@@ -90,6 +119,7 @@ public class DominionPlayer{
       }
     }
     deck.put(archiveCards);
+    deck.put(tavern);
 
     HashMap<String,Integer> cards=new HashMap<>();
     
@@ -104,6 +134,10 @@ public class DominionPlayer{
       }
     }
     total+=vicTokens;
+    //distant lands
+    for(DominionCard card : tavern){
+      if(card.getName().equals("distantlands")) total+=4;
+    }
     String out="";
     for(Map.Entry<String,Integer> entry : cards.entrySet())
       out+=entry.getKey()+": "+entry.getValue()+", ";
@@ -122,8 +156,13 @@ public class DominionPlayer{
     ArrayList<String> islandCards=new ArrayList<>();
     ArrayList<String> durationCards=new ArrayList<>();
     ArrayList<String> nativeVillage=new ArrayList<>();
-    int pirateship=0;
+    int pirateship;
     int debt;
+    int miser;
+    boolean journey;
+    boolean minusMoneyToken;
+    boolean minusCardToken;
+    ArrayList<String> tavern=new ArrayList<>();
     
     public Data(){}
     public Data (String in){
@@ -143,6 +182,11 @@ public class DominionPlayer{
       vicTokens=Integer.parseInt(parts[handSize+8]);
       coinTokens=Integer.parseInt(parts[handSize+9]);
       debt=Integer.parseInt(parts[handSize+10]);
+      miser=Integer.parseInt(parts[handSize+11]);
+      journey=Boolean.parseBoolean(parts[handSize+12]);
+      minusMoneyToken=Boolean.parseBoolean(parts[handSize+13]);
+      minusCardToken=Boolean.parseBoolean(parts[handSize+14]);
+      tavern=DominionClient.readArray(parts[handSize+15], "");
     }
     public String toString(){
       String out=""+hand.size();
@@ -157,6 +201,11 @@ public class DominionPlayer{
       out+="@"+vicTokens;
       out+="@"+coinTokens;
       out+="@"+debt;
+      out+="@"+miser;
+      out+="@"+journey;
+      out+="@"+minusMoneyToken;
+      out+="@"+minusCardToken;
+      out+="@"+DominionServer.toArray(tavern);
       return out;
     }
   }
@@ -183,6 +232,14 @@ public class DominionPlayer{
     out.vicTokens=vicTokens;
     out.coinTokens=coinTokens;
     out.debt=debt;
+    out.miser=miser;
+    out.journey=journey;
+    out.minusMoneyToken=minusMoneyToken;
+    out.minusCardToken=minusCardToken;
+    for(DominionCard card2 : tavern){
+      out.tavern.add(card2.getImage());
+    }
+
     return out;
   }
 }

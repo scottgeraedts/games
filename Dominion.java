@@ -5,7 +5,7 @@ import java.util.function.Predicate;
 
 public class Dominion{
 
-  public DominionServer server;
+  DominionServer server;
   public ArrayList<DominionPlayer> players;
   LinkedHashMap<String, SupplyDeck> supplyDecks;
   public ArrayList<DominionCard> matcards;
@@ -19,6 +19,9 @@ public class Dominion{
   int emptyPiles;
   private boolean gameOver;
   private String phase;
+
+  //the player whose turn it is (used for cost2, I can't figure out a  way around it)
+  DominionPlayer turnPlayer;
 
   //stuff for selections
   //cards that have been selected for trashing/discarding etc go here in case they need to be looked at by e.g. a forge
@@ -35,6 +38,7 @@ public class Dominion{
     
   private HashMap<String,Expansion> expansions=new HashMap<>();
   private Empires empires;
+  private Adventures adventures;
   
  //**********STUFF WHICH SETS UP THE GAME*********//
   public Dominion(DominionServer tserver, String supply){
@@ -46,8 +50,8 @@ public class Dominion{
     for(int i=0;i<server.playerNames.size();i++){
       players.add(new DominionPlayer(server.playerNames.get(i)));
 
-//      for(int j=0;j<3;j++) players.get(i).deck.add(cardFactory("trustysteed", "Cornucopia"));
     }
+    turnPlayer=players.get(0);
 
 
     expansions.put("Core",new Core(this));
@@ -62,8 +66,11 @@ public class Dominion{
     empires=new Empires(this);
     expansions.put("Empires", empires);
     expansions.put("Alchemy", new Alchemy((this)));
+    adventures=new Adventures(this);
+    expansions.put("Adventures", adventures);
 
     int startingPlayer=startGame(supply);
+    turnPlayer=players.get(startingPlayer);
     server.initialize(supplyData(), playerData(),startingPlayer, gameOptions, playerOptions);
     updateSharedFields();
     work(startingPlayer);
@@ -82,7 +89,7 @@ public class Dominion{
     resetCardCounters();
     durationHolder.clear();
     selectedCards.clear();
-    empires.setDefaults();
+    if(expansions.containsKey("Empires")) empires.setDefaults();
     for(DominionPlayer player : players) player.duration.clear();
     server.reset(supplyData(), playerData(), startingPlayer, gameOptions, playerOptions);
     work(startingPlayer);
@@ -120,7 +127,8 @@ public class Dominion{
       if(s.equals("nativevillage")) playerOptions.add("nativevillage");
       if(cardFactory(s).isDuration) playerOptions.add("duration");
       if(s.equals("traderoute")) gameOptions.add("Trade Route");
-      if(empires.gathererNames.containsKey(s)) gameOptions.add(empires.gathererNames.get(s));
+      if(expansions.containsKey("Empires") && empires.gathererNames.containsKey(s))
+        gameOptions.add(empires.gathererNames.get(s));
       if(Expansion.vicTokens.contains(s)) playerOptions.add("victorytokens");
       if(Expansion.coinTokens.contains(s)) playerOptions.add("cointokens");
       if(cardFactory(s).isLooter) addRuins=true;
@@ -133,6 +141,8 @@ public class Dominion{
       if(s.equals("tax")) addTax=true;
       if(s.equals("obelisk")) addObelisk=true;
       if(Arrays.asList(Alchemy.potionCost).contains(s)) addPotions=true;
+      if(s.equals("miser")) playerOptions.add("miser");
+      if(cardFactory(s).isReserve) playerOptions.add("tavern");
     }
     if(addRuins) supplies.add("ruins");
     if(addPotions){
@@ -170,7 +180,7 @@ public class Dominion{
         if(!card.isLandmark && !card.isEvent) break;
       }
     }
-    empires.setDefiledshrineTokens();
+    if(supplies.contains("defiledshrine")) empires.setDefiledshrineTokens();
     //based on what's in the supply, give each play estates or shelters
     //and then shuffle and draw 5 cards
     boolean shelters=Expansion.useShelters(supplies);
@@ -182,7 +192,7 @@ public class Dominion{
       }else{
         for(int i=0; i<3; i++) player.deck.put(cardFactory("estate"));
       }
-      //for(int i=0; i<3; i++) player.deck.add(cardFactory("trustysteed", "Cornucopia"));
+      //for(int i=0; i<3; i++) player.deck.add(cardFactory("teacher", "Adventures"));
       player.deck.shuffle();
       player.drawToHand(5);
     }
@@ -310,7 +320,23 @@ public class Dominion{
   void playCard(DominionCard card, int activePlayer, boolean throneRoom){
     System.out.println("played "+card.getName());
 
-    if(card.isAction && phase.equals("actions")) conspiratorCounter++;
+    if(card.isAction && phase.equals("actions")){
+      conspiratorCounter++;
+      actions+=players.get(activePlayer).champions;
+    }
+    //try to see if there's any adventure tokens on this card
+    if(players.get(activePlayer).adventureTokens.size()>0){
+      String supplyName=cardToSupply(card);
+      for(Map.Entry<String, String> e : players.get(activePlayer).adventureTokens.entrySet()){
+        if(e.getValue().equals(supplyName)){
+          if(e.getKey().equals("money")) money++;
+          else if(e.getKey().equals("card")) players.get(activePlayer).drawToHand(1);
+          else if(e.getKey().equals("buy")) buys++;
+          else if(e.getKey().equals("action")) actions++;
+        }
+      }
+    }
+
     if(supplyDecks.containsKey("peddler") && card.isAction) displaySupply("peddler");
 
     if(card.isAction && Empires.enchantressSwitch[activePlayer]){
@@ -334,8 +360,9 @@ public class Dominion{
       }
     }
 
-
-    if(!throneRoom){
+    //put card in play, but don't if it is the first play of a throne room
+    //or if its a reserve card
+    if(!throneRoom && !card.isReserve){
       matcards.add(card);
     }
 
@@ -347,6 +374,22 @@ public class Dominion{
       card.work(activePlayer);
     }
 
+    //put card on tavern mat
+    if (card.isReserve) players.get(activePlayer).tavern.add(card);
+    //some tavern cards are played after an action
+    if(expansions.containsKey("Adventures") && card.isAction) {
+      adventures.tavern(activePlayer, card, c -> c.getName().equals("coinoftherealm"));
+      boolean royalCarriageAllowed = !card.isEvent && !card.lostTrack;
+      adventures.tavern(activePlayer, card, c -> c.getName().equals("royalcarriage") && royalCarriageAllowed);
+    }
+
+    //get rid of minusMoney token if possible
+    if(players.get(activePlayer).minusMoneyToken && money>0){
+      money--;
+      players.get(activePlayer).minusMoneyToken=false;
+      displayPlayer(activePlayer);
+      updateSharedFields();
+    }
   }
   public boolean gainCard(String supplyName, int activePlayer){
     return gainCard(supplyName,activePlayer, "discard", false);
@@ -373,7 +416,8 @@ public class Dominion{
     //if phase is something else there are no conditions since an action card got you here
     if(deck.size()>0 && ( 
            (phase.equals("buys") && money>=deck.getCost() && buys>0 && players.get(activePlayer).debt==0 && potions>=deck.card.potions)
-        || !phase.equals("buys") || skipBuy) ){
+        || !phase.equals("buys") || skipBuy)
+            && (!Adventures.missionSwitch2 || deck.card.isEvent)){
 
       if(phase.equals("buys") && !skipBuy) {
 
@@ -402,7 +446,7 @@ public class Dominion{
 
         //** CARD SPECIFIC BUYING STUFF **//
         //extra gains from talisman
-        if(!card.isVictory){
+        if(!card.isVictory && costCompare(card, 4, 0, 0)<=0){
           //changing out of the buy phase is a quick way to avoid losing money/buys
           for(int i=0;i<Prosperity.talismanCounter; i++) gainCard(supplyName, activePlayer, "discard", true);
           selectedCards.clear();
@@ -424,15 +468,7 @@ public class Dominion{
         for(int i=0;i<Hinterlands.hagglerCounter;i++){
           int gainLimit=deck.getCost()-1;
           server.displayComment(activePlayer, "gain a non-Victory card costing up to "+gainLimit);
-          while(true){
-            doWork("selectDeck",1,1,activePlayer,null, null);
-            //this call doesn't go through gainSpecial because its in the buy phase so peddler is cheaper
-            if(supplyDecks.get(selectedDeck).getCost()<=gainLimit && !supplyDecks.get(selectedDeck).card.isVictory){
-              gainCard(selectedDeck,activePlayer);
-              break;
-            }
-          }
-          changePhase("buys");
+          gainSpecial(activePlayer, c -> costCompare(c, gainLimit, 0, 0)<=0 && !c.isVictory);
           server.displayComment(activePlayer, "");
         }
         //merchantguild
@@ -461,10 +497,22 @@ public class Dominion{
           changePhase(oldPhase);
           Empires.charmCounter=0;
         }
+        //haunted woods
+        if(players.get(activePlayer).hauntedWoods){
+          putBack(activePlayer, players.get(activePlayer).hand);
+          players.get(activePlayer).hand.clear();
+          displayPlayer(activePlayer);
+          players.get(activePlayer).hauntedWoods=false;
+        }
+        //plan
+        if(players.get(activePlayer).adventureTokens.getOrDefault("trash", "").equals(supplyName)){
+          doWork("trash", 0, 1, activePlayer);
+          selectedCards.clear();
+        }
       }
 
       //trigger landmarks
-      empires.landmarkGain(card, activePlayer);
+      if(expansions.containsKey("Empires")) empires.landmarkGain(card, activePlayer);
 
       if(deck.size()==0){
         if(card.getName().equals("province") || card.getName().equals("colony")) gameOver=true;
@@ -530,6 +578,10 @@ public class Dominion{
         players.get(activePlayer).vicTokens+=Empires.groundskeeperCounter;
         displayPlayer(activePlayer);
       }
+      //duplicate
+      if(expansions.containsKey("Adventures") && costCompare(card, 6, 0, 0)<=0){
+        adventures.tavern(activePlayer, card, c -> c.getName().equals("duplicate"));
+      }
 
       gainCardNoSupply(card, activePlayer, where);
       
@@ -545,7 +597,7 @@ public class Dominion{
     return false;
   }
   //gain cards that aren't in the supply
-  public void gainCardNoSupply(DominionCard card, int activePlayer, String where){
+  void gainCardNoSupply(DominionCard card, int activePlayer, String where){
     DominionPlayer player=players.get(activePlayer); 
 
     //royalseal
@@ -556,20 +608,25 @@ public class Dominion{
     }
 
     //play reactions
-    OptionData o;     
-    ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,card, c -> c.isReaction2);
+    OptionData o;
+    //have to do watchtower and trader seperately because trader shouldnt trigger on silver
+    ArrayList<String> reactions=reactionReveal(player.hand,activePlayer,card,
+            c -> c.getName().equals("watchtower"));
     for(String r : reactions){
-      if(r.equals("watchtower")){
-        String [] options = {"Top Deck","trash"};
-        o=new OptionData(options);
-        o.add(card.getImage(),"image");
-        if(optionPane(activePlayer,o).equals(options[0]))
-          where="topcard";
-        else{
-          trashCard(card, activePlayer);
-          return;
-        }
+      String [] options = {"Top Deck","trash"};
+      o=new OptionData(options);
+      o.add(card.getImage(),"image");
+      if(optionPane(activePlayer,o).equals(options[0]))
+        where="topcard";
+      else {
+        trashCard(card, activePlayer);
+        return;
       }
+    }
+    reactions=reactionReveal(player.hand,activePlayer,card,
+            c -> c.getName().equals("trader") && !card.getName().equals("silver"));
+    for(String r : reactions){
+      //don't call trader on a silver because youll get caught in a loop
       if(r.equals("trader")){
         if(supplyDecks.containsKey(card.getName())){
           supplyDecks.get(card.getName()).put(card);
@@ -584,7 +641,7 @@ public class Dominion{
     //add card on discard pile or (more rarely) top of deck
     if(Alchemy.possessed) Alchemy.possessionCards.add(card);
     else if(where.equals("hand") || card.getName().equals("villa")) player.hand.add(card);
-    else if(where.equals("topcard")) player.deck.put(card);
+    else if(where.equals("topcard") || Adventures.travellingFairSwitch) player.deck.put(card);
     else if(where.equals("discard")) player.disc.put(card);
     else{
       System.out.println("I don't know where to add this card! "+where);
@@ -636,7 +693,7 @@ public class Dominion{
 
   }
   void trashCard(DominionCard card, int ap){
-    if(Alchemy.possessed) players.get(ap).disc.put(card);
+    if(Alchemy.possessed) players.get(Alchemy.possessee).disc.put(card);
     else trash.put(card);
 
     card.onTrash(ap);
@@ -777,6 +834,10 @@ public class Dominion{
       card=it.next();
       if(card.getName().equals("archive") && card.cleanup(activePlayer, players.get(activePlayer))){
         it.remove();
+      }else if(card.getName().equals("champion")){
+        //the champion will never leave the duration
+        players.get(activePlayer).duration.add(card);
+        it.remove();
       }
     }
     players.get(activePlayer).disc.put(durationHolder);
@@ -790,7 +851,20 @@ public class Dominion{
     }
     //peddler
     if(supplyDecks.containsKey("peddler")) displaySupply("peddler");
-    
+
+    //swamphag
+    if(players.get(activePlayer).swampHag){
+      for(SupplyDeck deck : supplyDecks.values()){
+        deck.embargo--;
+      }
+      displaySupplies();
+      players.get(activePlayer).swampHag=false;
+    }
+    //wine merchant
+    if(money>=2 && expansions.containsKey("Adventures"))
+      adventures.tavern(activePlayer, null, c -> c.getName().equals("winemerchant"));
+
+
     if(gameOver) endGame();
     
     //donate
@@ -802,6 +876,12 @@ public class Dominion{
       player.hand.clear();
       player.deck.shuffle();
       Empires.donateSwitch=false;
+    }
+
+    //mission
+    if(Adventures.missionSwitch2){
+      Adventures.missionSwitch2=false;
+      Adventures.missionSwitch1=false;
     }
 
     //check if the player had an outpost on their duration mat, and didn't play an outpost last time
@@ -823,15 +903,19 @@ public class Dominion{
       players.get(activePlayer).disc.put(players.get(activePlayer).hand);
       players.get(activePlayer).hand.clear();
       players.get(activePlayer).drawToHand(3);
-    }else if(Alchemy.possessionSwitch){
+    }else if(Alchemy.possessed) {
+      ((Alchemy) expansions.get("Alchemy")).endPossession();
+      newPlayer = activePlayer;
+    }else if(Adventures.missionSwitch1){
+      Adventures.missionSwitch2=true;
+      players.get(activePlayer).endTurn();
       newPlayer=activePlayer;
-      ((Alchemy)expansions.get("Alchemy")).startPossession(activePlayer);
     }else{
-      if(Alchemy.possessed){
-        ((Alchemy)expansions.get("Alchemy")).endPossession(activePlayer);
-      }
-      players.get(activePlayer).endTurn();       
+      players.get(activePlayer).endTurn();
       newPlayer=(activePlayer+1)%players.size();
+      if(Alchemy.possessionSwitch) {
+        ((Alchemy) expansions.get("Alchemy")).startPossession(activePlayer, newPlayer);
+      }
     }
 
     //baths landmark
@@ -859,15 +943,28 @@ public class Dominion{
     durationHolder=new ArrayList<>(players.get(newPlayer).duration);
     players.get(newPlayer).duration.clear();
 
+    //specific card stuff
     //play horse traders
     if(players.get(newPlayer).horseTraders.size()>0){
       players.get(newPlayer).hand.addAll(players.get(newPlayer).horseTraders);
       players.get(newPlayer).drawToHand(players.get(newPlayer).horseTraders.size());
       displayPlayer(newPlayer);
     }
+    //swamp hag
+    if(players.get(activePlayer).swampHag){
+      for(SupplyDeck deck : supplyDecks.values()){
+        deck.embargo++;
+      }
+      displaySupplies();
+    }
+
     updateSharedFields();
 
-    
+    //play tavern cards
+    if(expansions.containsKey("Adventures"))
+      adventures.tavern(newPlayer, null, c -> Adventures.turnStart.contains(c.getName()) );
+
+    turnPlayer=players.get(newPlayer);
     return newPlayer;
     
   }
@@ -890,8 +987,15 @@ public class Dominion{
     DarkAges.hermitSwitch=true;
     DarkAges.urchinSwitch=false;
 
+    Adventures.treasureHunterCounter=Empires.triumphCounter;
     Empires.triumphCounter=0;
     Empires.conquestCounter=0;
+
+    Adventures.almsSwitch=false;
+    Adventures.borrowSwitch=false;
+    Adventures.saveSwitch=false;
+    Adventures.travellingFairSwitch=false;
+    Adventures.pilgrimageSwitch=false;
 
   }
   @SuppressWarnings("unchecked")
@@ -904,7 +1008,11 @@ public class Dominion{
     Pair<Integer, String> core;
     for(int i=0;i<players.size();i++){
       core=players.get(i).victoryPoints();
-      landmark=empires.landmarkScore(players.get(i).deck, supplyDecks);
+      if(expansions.containsKey("Empires")){
+        landmark=empires.landmarkScore(players.get(i).deck, supplyDecks);
+      }else{
+        landmark=new Pair(0, "");
+      }
       sum=Integer.sum(core.getA(),landmark.getA());
       temp=players.get(i).getName()+": "+sum+" ("+landmark.getB()+core.getB()+")";
       scores.add(sum, temp);
@@ -912,7 +1020,7 @@ public class Dominion{
     scores.sortByValue();
     server.showScores(scores);
 
-    empires.setDefaults();
+    if(expansions.containsKey("Empires")) empires.setDefaults();
 
     //a hacky way to get out of the work loop
     maxSelection=0;
@@ -947,8 +1055,13 @@ public class Dominion{
   }
   //always use this to get the cost of cards
   public int cost2(DominionCard card){
-    if(card.isAction) return Math.max(card.cost-bridgeCounter-Prosperity.quarryCounter,0);
-    else return Math.max(card.cost-bridgeCounter,0);
+    int x=0;
+    String s1=turnPlayer.adventureTokens.getOrDefault("ferry", "x");
+    String s2=cardToSupply(card);
+    if(s1.equals(s2))
+      x=2;
+    if(card.isAction) return Math.max(card.cost-bridgeCounter-Prosperity.quarryCounter-x,0);
+    else return Math.max(card.cost-bridgeCounter-x,0);
   }
   //returns 0 if two cards are equal in cost, -1 if this card is less, 1 if this card is more
   int costCompare(DominionCard card1, DominionCard card2){ return costCompare(card1, cost2(card2), card2.debt, card2.potions); }
@@ -977,30 +1090,27 @@ public class Dominion{
     String [] options;
     OptionData o;
     DominionPlayer player=players.get(activePlayer);
-    String input;
     server.displayComment(activePlayer,"Put the cards back in any order");
     
     while(cards.size()>1){
       options=new String[0];
       o=new OptionData(options);
+      o.add("Put cards back on deck", "text");
       for(DominionCard card : cards){
         o.add(card.getImage(),"imagebutton");
       }
-      input=optionPane(activePlayer,o);
+      String input=optionPane(activePlayer,o);
       DominionCard card;
 //      input=server.getUserInput(activePlayer, null);
-      for(ListIterator<DominionCard> it=cards.listIterator(); it.hasNext(); ){
-        card=it.next();
-        if(input.equals(card.getName())){
-          player.deck.put(card);
-          it.remove();
-          break;
-        }          
-      }
+      player.deck.put(remove(cards, c -> c.getName().equals(input)));
       displayPlayer(activePlayer);
-      
+      System.out.println("------------------");
+      System.out.println(player.deck);
+
     }
     player.deck.put(cards);
+    System.out.println("------------------");
+    System.out.println(player.deck);
     displayPlayer(activePlayer);
     server.displayComment(activePlayer,"");
   }
@@ -1100,6 +1210,32 @@ public class Dominion{
     changePhase(oldPhase);
   }
 
+  void placeToken(int ap, String token, boolean teacher){
+    server.displayComment(ap, "choose a pile to add the "+token+" token to");
+    HashMap<String,String> tokenMap=players.get(ap).adventureTokens;
+    String oldSupply=tokenMap.get(token);
+    boolean hasToken;
+    while(true){
+      hasToken=false;
+      doWork("selectDeck2", 1, 1, ap);
+      //if its the teacher, check that this pile doesn't already have a token on it
+      if(teacher) {
+        for (String s : tokenMap.values()) {
+          if (selectedDeck.equals(s)){
+            hasToken=true;
+            break;
+          }
+        }
+        if(hasToken) continue;
+      }
+      break;
+    }
+    tokenMap.put(token,selectedDeck);
+    displaySupply(selectedDeck);
+    if(oldSupply!=null) displaySupply(oldSupply);
+    server.displayComment(ap, "");
+  }
+
 //  //***PRIVATE VARIABLES***///
   String getPhase(){
     return phase;
@@ -1142,7 +1278,7 @@ public class Dominion{
       else if(s.equals("Buys")) fields.put(s,buys);
       else if(s.equals("Trade Route")) fields.put(s,Prosperity.tradeRouteCards.size());
       else if(s.equals("Potions")) fields.put(s,potions);
-      else if(empires.gathererVals.containsKey(s))
+      else if(expansions.containsKey("Empires") && empires.gathererVals.containsKey(s))
         fields.put(s, empires.gathererVals.get(s));
     }
 
@@ -1299,6 +1435,12 @@ public class Dominion{
         isLandmark=card.isLandmark;
       }
       if(name.equals(Cornucopia.bane)) extra.put("bane", "true");
+      for(int i=0; i<players.size(); i++) {
+        for (Map.Entry<String, String> e : players.get(i).adventureTokens.entrySet()) {
+          if (e.getValue().equals(name) && !e.getValue().equals("ferry"))
+            extra.put(e.getKey()+(i%2+1), "true");
+        }
+      }
       return new Deck.SupplyData(size(), backImage, getCost(), name, isEvent, isLandmark, extra);
     }
     @Override

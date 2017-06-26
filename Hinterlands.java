@@ -624,6 +624,7 @@ public class Hinterlands extends Expansion{
       if(game.selectedCards.size()==0) return;
       game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), 2)<=0);
       game.selectedCards.clear();
+      game.server.displayComment(ap, "");
     }
   }
 }

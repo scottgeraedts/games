@@ -226,8 +226,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subStep(int ap, int atk){
-      game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("reveal",0,1,ap);
+      game.doWork("reveal",0,1,ap, c -> c.getName().equals(bane));
       if(game.selectedCards.size()==0) game.gainCard("curse",ap);
        
     }

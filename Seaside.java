@@ -47,7 +47,8 @@ public class Seaside extends Expansion{
     }
     @Override
     public void duration(int ap){
-      game.playCard(card,ap);
+      game.players.get(ap).hand.add(card);
+      game.displayPlayer(ap);
     }
   }
   public class Lighthouse extends DominionCard{

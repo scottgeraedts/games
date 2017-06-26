@@ -124,25 +124,25 @@ public class DominionServer{
     
   }
   //add a human player with a new input stream
-  public void addHuman(BufferedReader br, PrintWriter pw, String name){
+  private void addHuman(BufferedReader br, PrintWriter pw, String name){
     controllers.put(playerNames.size(),connections.size());
     connections.add( new HumanPlayer(br,pw));
     playerNames.add(name);
   }
   //add a human player in hotest
-  public void addHuman(String name, int display){
+  private void addHuman(String name, int display){
     controllers.put(playerNames.size(), display);
     playerNames.add(name);
   }
   //add a Robot player
-  public void addRobot(){
+  private void addRobot(){
     controllers.put(playerNames.size(),connections.size());
     connections.add(new BasicRobot());
     playerNames.add("Robot");
   }
   
   //pass initial string to all players
-  public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer,
+  void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer,
                          LinkedHashSet<String> o, HashSet<String> o2){
     ArrayList<Integer> isControlled=new ArrayList<>();
     for(int i=0;i<connections.size();i++){
@@ -153,15 +153,15 @@ public class DominionServer{
       isControlled.clear();
     }    
   }
-  public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
+  void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
                     int startingPlayer, LinkedHashSet<String> o, HashSet<String> o2){
     for(int i=0;i<connections.size();i++){
       connections.get(i).reset(supplyData,playerData,startingPlayer,o,o2);
     }
   }
-  public void showScores(PairList<Integer,String> scores){
-    for(Iterator<PlayerInterface> it=connections.iterator(); it.hasNext(); ){
-      it.next().showScores(scores);
+  void showScores(PairList<Integer,String> scores){
+    for (PlayerInterface connection : connections) {
+      connection.showScores(scores);
     }
   }
   public void optionPane(int playerNum, OptionData o){
@@ -172,10 +172,24 @@ public class DominionServer{
     connections.get(controllers.get(playerNum)).displayComment(text);
   }
 
-  public String getUserInput(int i, DominionCard card){
+  String getUserInput(int i, DominionCard card){
     System.out.println("requesting input from player "+i);
     return connections.get(controllers.get(i)).getUserInput(card);
   }
+  //gives control of a player to a different player
+  void changeController(int oldPlayer, int interfaceNum){
+    System.out.println("giving control of "+oldPlayer+" to "+interfaceNum);
+    if(controllers.get(oldPlayer) != interfaceNum) {
+      connections.get(interfaceNum).changeController(oldPlayer, true);
+      connections.get(controllers.get(oldPlayer)).changeController(oldPlayer, false);
+      controllers.put(oldPlayer, interfaceNum);
+    }
+  }
+  //returns the controller of a player
+  int getController(int x){
+    return controllers.get(x);
+  }
+
   public static class HumanPlayer implements PlayerInterface{
     private BufferedReader input;
     private PrintWriter output;
@@ -262,7 +276,10 @@ public class DominionServer{
       }catch(IOException ex){
         return false;
       }
-    }    
+    }
+    public void changeController(int player, boolean control){
+      output.println("changeController%"+player+"%"+control);
+    }
     public void terminate(){
       output.println("Terminate");
     }

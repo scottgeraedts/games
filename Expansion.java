@@ -65,6 +65,7 @@ public abstract class Expansion{
     @Override
     public final void work(int activePlayer){
       subWork(activePlayer);
+      game.selectedCards.clear();
 
       //see if we can trash an urchin
       DominionCard card;
@@ -153,6 +154,11 @@ public abstract class Expansion{
                 }
               }
             }
+          }else if(r.equals("caravanguard")){
+            //put a caravan guard from the hand onto the duration mat
+            victim.duration.add(Dominion.remove(victim.hand, c -> c.getName().equals("caravanguard")));
+            victim.drawToHand(1);
+            game.displayPlayer(i);
           }
         }
         //check for lighthouse
@@ -162,7 +168,7 @@ public abstract class Expansion{
           }
         }
         
-        if(moat){
+        if(moat || game.players.get(i).champions>0){
           oldPlayer=i;
           continue;
         }
@@ -171,9 +177,10 @@ public abstract class Expansion{
         if(comment.length()>0) game.server.displayComment(i,comment);
         subStep(i,activePlayer);
         game.selectedCards.clear();
-        game.server.displayComment(i,"");
+        if(comment.length()>0) game.server.displayComment(i,"");
         oldPlayer=i;
       }
+      game.mask.clear();
       game.changePlayer(oldPlayer,activePlayer);
       game.money=oldmoney;
       game.actions=oldActions;

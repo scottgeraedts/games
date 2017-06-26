@@ -164,6 +164,7 @@ public class Core extends Expansion{
       if(input.equals(options[0])){
         player.disc.put(player.deck.deal(player.deck.size()));
       }
+      game.displayPlayer(activePlayer);
     }    
   }
   private class Chapel extends RegularCard{

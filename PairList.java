@@ -106,9 +106,11 @@ public class PairList<K extends Comparable,V extends Comparable>{
   }  
   @SuppressWarnings("unchecked")
   public static void main(String [] args){
-
-    PairList<String,Integer> x=new PairList<>("3@0!0!0@1!2!3", String.class, Integer.class);
-    System.out.println(x);
+      ArrayList<DominionCard> cards=new ArrayList<>();
+      for(int i=0; i<5; i++) cards.add(new DominionCard("copper"));
+      System.out.println(cards);
+      Dominion.remove(cards, c -> true);
+      System.out.println(cards);
   }
 }  
 

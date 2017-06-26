@@ -227,6 +227,10 @@ public class DominionClient{
   public void unlock(String input){
     board.lock=false;
   }
+  public void changeController(String input){
+    String [] parts=input.split("%");
+    board.changeController(Integer.parseInt(parts[0]), Boolean.parseBoolean(parts[1]));
+  }
   
   ///***THE PESKY READARRAYS***///
   public static ArrayList<DominionPlayer.Data> readArray(String parts, DominionPlayer.Data temp){

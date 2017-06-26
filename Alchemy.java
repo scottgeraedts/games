@@ -8,14 +8,17 @@ public class Alchemy extends Expansion{
   static boolean possessed=false;
   //this stuff stores a players material for when possession happens
   static LinkedList<DominionCard> possessionCards=new LinkedList<>();
+  private static int possessor;
+  static int possessee;
+  private static int possesseeInterface;
 
 
-  static String [] potionCost={"transmute", "vineyard", "apothecary", "scrying pool", "university",
+  static String [] potionCost={"transmute", "vineyard", "apothecary", "scryingpool", "university",
           "alchemist", "familiar", "philosphersstone", "golem", "possession"};
   public Alchemy(Dominion g){
     super(g);
-    String [] t={"transmute", "vineyard", "herbalist","apothecary", "scrying pool", "university",
-            "alchemist", "familiar", "philosophersstone", "golem", "apprentice"};
+    String [] t={"transmute", "vineyard", "herbalist","apothecary", "scryingpool", "university",
+            "alchemist", "familiar", "philosophersstone", "golem", "apprentice", "possession"};
     cards=t;
   }
   class Potion extends DominionCard{
@@ -72,6 +75,7 @@ public class Alchemy extends Expansion{
     //this is just scheme with actions changed to money
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
+      game.server.displayComment(ap, "Choose a treasure to put on top of your deck");
       OptionData o=new OptionData();
       for(DominionCard card : game.matcards){
         if(card.isMoney) o.add(card.getImage(), "imagebutton");
@@ -87,6 +91,7 @@ public class Alchemy extends Expansion{
           break;
         }
       }//loop through cards
+      game.server.displayComment(ap, "");
       return false;
     }
   }
@@ -289,11 +294,20 @@ public class Alchemy extends Expansion{
     }
   }
   //stuff for possession
-  void startPossession(int ap){
-    //some day these will get implemented!
+  void startPossession(int a, int b){
+    possessionSwitch=false;
+    possessed=true;
+    possessor=a;
+    possessee=b;
+    possesseeInterface=game.server.getController(possessee);
+    game.server.changeController(possessee, game.server.getController(possessor));
 
   }
-  void endPossession(int ap){
-
+  void endPossession(){
+    possessed=false;
+    game.server.changeController(possessee, possesseeInterface);
+    game.players.get(possessor).disc.put(possessionCards);
+    possessionCards.clear();
+    game.players.get(possessee).endTurn();
   }
 }

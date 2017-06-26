@@ -51,7 +51,7 @@ class Empires extends Expansion {
     //split piles
     splitPiles.put("encampment", "plunder");
     splitPiles.put("patrician", "emporium");
-    splitPiles.put("setters", "bustlingvillage");
+    splitPiles.put("settlers", "bustlingvillage");
     splitPiles.put("catapult", "rocks");
     splitPiles.put("gladiator", "fortune");
 
@@ -250,7 +250,7 @@ class Empires extends Expansion {
       }
     }
     if(supplies.containsKey("labyrinth")){
-      if(conquestCounter>=2){
+      if(triumphCounter>=2){
         x+=2;
         stepGatherer("Labyrinth", -2);
       }
@@ -522,6 +522,7 @@ class Empires extends Expansion {
       cost=5;
       cards=1;
       actions=3;
+      isAction=true;
     }
     @Override
     public void work(int ap){
@@ -635,12 +636,17 @@ class Empires extends Expansion {
     public void onGain(int ap){
       String oldPhase=game.getPhase();
       game.gainCard("gold", ap, "discard", true);
+      //game.mask.clear();
+      int oldPlayer=ap;
       for(int i=(ap+1)%game.players.size(); i!=ap; i=(i+1)%game.players.size()){
         if(game.players.get(i).hand.size()>=5){
+          game.changePlayer(oldPlayer,i);
           game.doWork("topdeck", 2, 2, i);
         }
         game.selectedCards.clear();
+        oldPlayer=i;
       }//player loop
+      game.changePlayer(oldPlayer, ap);
       game.changePhase(oldPhase);
     }
   }
@@ -773,7 +779,7 @@ class Empires extends Expansion {
       try{
         card1=game.players.get(ap).getCard();
       }catch(OutOfCardsException ex){return; }
-      game.players.get(ap).deck.put(card1);
+      game.players.get(ap).hand.add(card1);
       game.displayPlayer(ap);
       int i=(ap+1)%game.players.size();
       try{
@@ -923,7 +929,14 @@ class Empires extends Expansion {
     @Override
     public void subWork(int ap){
       game.players.get(ap).vicTokens+=1;
-      game.doWork("trash", 1, 3, ap);
+      HashSet<DominionCard> cards=new HashSet<>();
+      game.doWork("trash", 1, 1, ap);
+      for(int i=0; i<2; i++){
+        cards.addAll(game.selectedCards);
+        game.selectedCards.clear();
+        game.doWork("trash", 0, 1, ap, c -> !cards.contains(c));
+        if(game.selectedCards.size()==0) break;
+      }
       gathererVals.put(s, gathererVals.get(s)+1);
     }
     @Override
@@ -949,7 +962,7 @@ class Empires extends Expansion {
     }
   }
   class Archive extends DominionCard{
-    LinkedList<DominionCard> cards;
+    LinkedList<DominionCard> cards=new LinkedList<>();
     public Archive(){
       super("archive");
       cost=5;
@@ -1041,14 +1054,15 @@ class Empires extends Expansion {
       return false;
     }
   }
-  class Crown extends RegularCard{
+  class Crown extends DominionCard{
     public Crown(){
       super("crown");
       cost=5;
       isMoney=true;
+      isAction=true;
     }
     @Override
-    public void subWork(int ap){
+    public void work(int ap){
       game.server.displayComment(ap,"Choose a card to play twice");
       Collection<DominionCard> hand=game.players.get(ap).hand;
 
@@ -1070,10 +1084,9 @@ class Empires extends Expansion {
       if(card.isDuration) isDuration=true;
       card.throneroomed++;
 
-      //game.displayPlayer(activePlayer);
-      //game.matcards.add(card);
       game.cardPlayed(ap);
       game.changePhase(oldPhase);
+      game.server.displayComment(ap, "");
     }
   }
   class Forum extends RegularCard{

@@ -71,6 +71,7 @@ class BasicRobot implements PlayerInterface{
   }
   public void terminate(){
   }
+  public void changeController(int player, boolean control){ }
   public String getUserInput(DominionCard card){
     if(card==null) return defaultResponse();
     
@@ -114,7 +115,8 @@ class BasicRobot implements PlayerInterface{
       for(int i=0;i<hand.size();i++){
         if(mask.size()!=hand.size() || mask.get(i)) return ""+i;
       }
-      return "0";
+      //nothing to discard so try pressing the button
+      return "B"+phase;
     }else{
       //never trash, reveal cards
       return "B"+phase;

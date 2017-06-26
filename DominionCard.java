@@ -13,6 +13,8 @@ public class DominionCard extends Card{
   boolean isKnight=false;
   boolean isCastle=false;
   boolean isGathering=false;
+  boolean isReserve=false;
+  boolean isTraveller=false;
 
   boolean isReaction1=false; //when attack is played
   boolean isReaction2=false; //when ANY card is gained
@@ -36,7 +38,7 @@ public class DominionCard extends Card{
 	
 	//a switch to tell duration cards activate their duration power twice 
 	//or three times if kings courted
-	public int throneroomed=1;
+	int throneroomed=1;
 
   public DominionCard(String newname){
     super(newname);
@@ -183,7 +185,7 @@ public class DominionCard extends Card{
   //it also gets the index of the player so its subclasses can do stuff
   public boolean cleanup(int x, DominionPlayer player){
     lostTrack=false;
-    if(isDuration){
+    if(isDuration) {
       player.duration.add(this);
       return true;
     }else{
@@ -217,6 +219,9 @@ public class DominionCard extends Card{
   String AIResponse(){
     return "default";
   }
+
+  void tavern(int ap, DominionCard card){}
+
   @Override
   public String toString(){
     return isAction+"!"+isMoney+"!"+imagename;
