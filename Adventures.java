@@ -68,7 +68,7 @@ public class Adventures extends Expansion{
     String input=game.optionPane(ap, o);
     if(input.equals(options[0])){
       game.returnToSupply(card, ap);
-      game.gainCardNoSupply(newCard, ap, "discard");
+      game.gainCardNoSupply(newCard, ap, Dominion.GainTo.DISCARD);
       return true;
     }
     return false;
@@ -224,7 +224,7 @@ public class Adventures extends Expansion{
     @Override
     public void subStep(int ap, int atk){
       if(game.players.get(ap).hand.size()>=4)
-        game.doWork("discard", 1, 1, ap);
+        game.doWork(Dominion.Phase.DISCARD, 1, 1, ap);
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
@@ -241,7 +241,7 @@ public class Adventures extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard", 1, 1, ap);
+      game.doWork(Dominion.Phase.DISCARD, 1, 1, ap);
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
@@ -260,12 +260,12 @@ public class Adventures extends Expansion{
 
       //this first part is basically throneroom
       game.server.displayComment(ap, "Choose a card to play twice");
-      game.doWork("select", 0, 1, ap, c -> c.isAction);
+      game.doWork(Dominion.Phase.SELECT, 0, 1, ap, c -> c.isAction);
       if (game.selectedCards.size() == 0) return;
       DominionCard card = game.selectedCards.get(0);
 
       game.selectedCards.clear();
-      game.changePhase("actions");
+      game.changePhase(Dominion.Phase.ACTIONS);
       game.server.displayComment(ap, "");
 
       //this card will never to go the mat
@@ -305,7 +305,7 @@ public class Adventures extends Expansion{
     }
     @Override
     void tavern(int ap, DominionCard incard){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       game.selectedCards.clear();
     }
   }
@@ -326,7 +326,7 @@ public class Adventures extends Expansion{
         game.trashCard(this, ap);
         x=2;
       }else{
-        game.doWork("trash", 1, 1, ap);
+        game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
         if(game.selectedCards.size()>0) x=game.cost2(game.selectedCards.get(0));
       }
       if(x>0) {
@@ -361,12 +361,12 @@ public class Adventures extends Expansion{
       String [] options={"Trash card", "+1 Money", "Gain silver"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.doWork("trash", 1, 1, ap);
+        game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       }else if(input.equals(options[1])){
         game.money++;
         game.updateSharedFields();
       }else{
-        game.gainCard("silver", ap, "discard", true);
+        game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
       }
       game.selectedCards.clear();
     }
@@ -397,7 +397,7 @@ public class Adventures extends Expansion{
     public void subWork(int ap){
       game.players.get(ap).drawToHand(2);
       game.displayPlayer(ap);
-      game.doWork("discard", 2, 2, ap);
+      game.doWork(Dominion.Phase.DISCARD, 2, 2, ap);
       game.selectedCards.clear();
     }
     @Override
@@ -414,7 +414,7 @@ public class Adventures extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("select", 0, 2, ap);
+      game.doWork(Dominion.Phase.SELECT, 0, 2, ap);
       savedCards=game.selectedCards;
     }
     @Override
@@ -451,7 +451,7 @@ public class Adventures extends Expansion{
     }
     @Override
     public void tavern(int ap, DominionCard incard){
-      game.gainCard(incard.getName(), ap, "discard", true);
+      game.gainCard(incard.getName(), ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Magpie extends DominionCard{
@@ -472,6 +472,7 @@ public class Adventures extends Expansion{
         }else{
           player.deck.put(card);
         }
+        game.displayPlayer(ap);
         if(card.isAction || card.isVictory) game.gainCard("magpie", ap);
       }catch (OutOfCardsException ex){
       }
@@ -501,7 +502,7 @@ public class Adventures extends Expansion{
       if(Empires.triumphCounter==0){
         DominionCard card=game.gainNumber(ap, 4);
         for(int i=(ap+1)%game.players.size(); i != ap; i=(i+1)%game.players.size()){
-          game.gainCard(card.getName(), i, "discard", true);
+          game.gainCard(card.getName(), i, Dominion.GainTo.DISCARD, true);
         }
       }
     }
@@ -517,7 +518,7 @@ public class Adventures extends Expansion{
       String [] options={"Put copper on mat", "Take money"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.doWork("select", 1, 1, ap, c -> c.getName().equals("copper"));
+        game.doWork(Dominion.Phase.SELECT, 1, 1, ap, c -> c.getName().equals("copper"));
         if(game.selectedCards.size()>0){
           game.players.get(ap).miser++;
           game.displayPlayer(ap);
@@ -541,7 +542,7 @@ public class Adventures extends Expansion{
     public void onGain(int ap){
       if(!portLock) {
         portLock=true;
-        game.gainCard("port", ap, "discard", true);
+        game.gainCard("port", ap, Dominion.GainTo.DISCARD, true);
         portLock=false;
       }
     }
@@ -573,7 +574,7 @@ public class Adventures extends Expansion{
     }
     @Override
     void tavern(int ap, DominionCard card){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       if(game.selectedCards.size()==0) return;
       game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), 1)<=0);
       game.selectedCards.clear();
@@ -591,13 +592,13 @@ public class Adventures extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard", 0, 100, ap);
+      game.doWork(Dominion.Phase.DISCARD, 0, 100, ap);
       OptionData o=new OptionData();
       o.put("Gain a card costing "+game.selectedCards.size(), "textbutton");
       o.put("Pass", "textbutton");
       String input=game.optionPane(ap, o);
       if(!input.equals("Pass")){
-        game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.size(), 0, 0)==0, "topcard");
+        game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.size(), 0, 0)==0, Dominion.GainTo.TOP_CARD);
       }
     }
   }
@@ -733,7 +734,7 @@ public class Adventures extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("select", 0, 3, ap, c -> c.isMoney);
+      game.doWork(Dominion.Phase.SELECT, 0, 3, ap, c -> c.isMoney);
       for(DominionCard card : game.selectedCards){
         game.playCard(card, ap);
       }
@@ -768,8 +769,8 @@ public class Adventures extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.gainCard("copper", ap, "discard", true);
-      game.gainCard("gold", ap, "discard", true);
+      game.gainCard("copper", ap, Dominion.GainTo.DISCARD, true);
+      game.gainCard("gold", ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Winemerchant extends DominionCard{
@@ -778,6 +779,7 @@ public class Adventures extends Expansion{
       cost=5;
       value=4;
       buys=1;
+      isAction=true;
     }
   }
   class Hireling extends DominionCard {
@@ -862,13 +864,13 @@ public class Adventures extends Expansion{
 
       String input=game.optionPane(ap, new OptionData(options.toArray(new String[options.size()])));
       if(input.equals("Discard 6 cards")){
-        game.doWork("discard", 6, 6, ap);
+        game.doWork(Dominion.Phase.DISCARD, 6, 6, ap);
       }else if(input.equals("Discard Attack")){
-        game.doWork("discard", 1, 1, ap, c -> c.isAttack);
+        game.doWork(Dominion.Phase.DISCARD, 1, 1, ap, c -> c.isAttack);
       }else{
-        game.doWork("discard", 2, 2, ap, c -> c.getName().equals("curse"));
+        game.doWork(Dominion.Phase.DISCARD, 2, 2, ap, c -> c.getName().equals("curse"));
       }
-      game.gainCard("gold", ap, "discard", true);
+      game.gainCard("gold", ap, Dominion.GainTo.DISCARD, true);
       game.selectedCards.clear();
     }
   }
@@ -883,7 +885,7 @@ public class Adventures extends Expansion{
       game.buys++;
       game.updateSharedFields();
       if(!saveSwitch){
-        game.doWork("select", 1, 1, ap);
+        game.doWork(Dominion.Phase.SELECT, 1, 1, ap);
         if(game.selectedCards.size()>0){
           game.players.get(ap).saveCard=game.selectedCards.get(0);
           game.selectedCards.clear();
@@ -1019,7 +1021,7 @@ public class Adventures extends Expansion{
             }
             String input=game.optionPane(ap, o);
             card2=Dominion.remove(cards, c -> c.getName().equals(input));
-            game.gainCard(card2.getName(), ap, "discard", true);
+            game.gainCard(card2.getName(), ap, Dominion.GainTo.DISCARD, true);
           }
         }
         game.players.get(ap).journey=!game.players.get(ap).journey;
@@ -1047,7 +1049,7 @@ public class Adventures extends Expansion{
     @Override
     public void onGain(int ap){
       int x=Collections.frequency(game.matcards, game.cardFactory("silver"));
-      for(int i=0; i<x; i++) game.gainCard("silver", ap, "discard", true);
+      for(int i=0; i<x; i++) game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Seaway extends DominionCard{
@@ -1071,9 +1073,9 @@ public class Adventures extends Expansion{
     }
     @Override
     public void onGain(int ap){
-      game.doWork("trash", 0, 2, ap);
+      game.doWork(Dominion.Phase.TRASH, 0, 2, ap);
       for(int i=0; i<game.selectedCards.size(); i++){
-        game.gainCard("silver", ap, "discard", true);
+        game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
       }
       game.selectedCards.clear();
     }

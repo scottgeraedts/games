@@ -53,7 +53,7 @@ public class Core extends Expansion{
       game.players.get(activePlayer).hand.add(game.players.get(activePlayer).disc.topCard());
       game.displayPlayer(activePlayer);
       game.selectedCards.clear();
-      game.doWork("topdeck",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TOP_DECK,1,1,activePlayer);
       
     }
     
@@ -105,11 +105,10 @@ public class Core extends Expansion{
     public Bureaucrat(){
       super("bureaucrat");
       cost=4;
-      attackPhase="topdeck";
     }
     @Override
     public void subWork(int activePlayer){
-      game.gainCard("silver",activePlayer,"topcard");
+      game.gainCard("silver",activePlayer,Dominion.GainTo.TOP_CARD);
     }
     @Override
     public void subStep(int activePlayer, int attacker){
@@ -125,7 +124,7 @@ public class Core extends Expansion{
       if(count==1){
         player.deck.add(player.hand.remove(game.mask.indexOf(true)));
       }else if(count>1){
-        game.doWork("topdeck",1,1,activePlayer);
+        game.doWork(Dominion.Phase.TOP_DECK,1,1,activePlayer);
       }
     }
     @Override
@@ -143,7 +142,7 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("discard",0,1000,activePlayer);
+      game.doWork(Dominion.Phase.DISCARD,0,1000,activePlayer);
       game.players.get(activePlayer).drawToHand(game.selectedCards.size());
       game.displayPlayer(activePlayer);
     }
@@ -175,7 +174,7 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("trash",0,4,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,0,4,activePlayer);
       game.displayPlayer(activePlayer);
     }
   }
@@ -301,13 +300,12 @@ public class Core extends Expansion{
       super("militia");
       cost=4;
       value=2;
-      attackPhase="discard";
     }
     @Override
     public void subStep(int activePlayer, int attacker){
       game.server.displayComment(activePlayer,"Discard down to three cards");
       int n=game.players.get(activePlayer).hand.size()-3;
-      if(n>=1) game.doWork("discard",n,n,activePlayer);
+      if(n>=1) game.doWork(Dominion.Phase.DISCARD,n,n,activePlayer);
     }
   }
   private class Mine extends RegularCard{
@@ -319,11 +317,11 @@ public class Core extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.mask=makeMask(game.players.get(activePlayer).hand);
-      game.doWork("trash",0,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,0,1,activePlayer);
       if(game.selectedCards.size()<0) return;
       DominionCard card=game.selectedCards.get(0);
 
-      game.gainSpecial(activePlayer, c -> c.isMoney && game.costCompare(c,game.cost2(card)+3, card.debt, card.potions)<=0, "hand");
+      game.gainSpecial(activePlayer, c -> c.isMoney && game.costCompare(c,game.cost2(card)+3, card.debt, card.potions)<=0, Dominion.GainTo.HAND);
     }
     @Override
     public boolean maskCondition(DominionCard card){
@@ -340,7 +338,7 @@ public class Core extends Expansion{
     public void subWork(int activePlayer){
       game.mask=makeMask(game.players.get(activePlayer).hand);
       game.displayPlayer(activePlayer);
-      game.doWork("trash",0,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,0,1,activePlayer);
       if(game.selectedCards.size()>0){
         game.money+=3;
         game.updateSharedFields();
@@ -348,7 +346,7 @@ public class Core extends Expansion{
     }
     @Override
     public boolean maskCondition(DominionCard card){
-      return card.getName()=="copper";
+      return card.getName().equals("copper");
     }
   }
   private class Poacher extends RegularCard{
@@ -362,7 +360,7 @@ public class Core extends Expansion{
     @Override
     public void subWork(int activePlayer){
       if(game.emptyPiles>0){
-        game.doWork("discard",game.emptyPiles,Math.max(1,game.emptyPiles),activePlayer);
+        game.doWork(Dominion.Phase.DISCARD,game.emptyPiles,Math.max(1,game.emptyPiles),activePlayer);
       }
     }
   }
@@ -374,7 +372,7 @@ public class Core extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("trash",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,1,1,activePlayer);
       if(game.selectedCards.size()==0) return;
       game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 2)<=0);
       game.selectedCards.clear();
@@ -521,12 +519,12 @@ public class Core extends Expansion{
       game.mask=makeMask(hand);
       
       if(game.mask.contains(true)){
-        game.doWork("select",1,1,activePlayer);
+        game.doWork(Dominion.Phase.SELECT,1,1,activePlayer);
         game.mask.clear();
         DominionCard card=game.selectedCards.get(0);
 
         game.selectedCards.clear();
-        game.changePhase("actions");
+        game.changePhase(Dominion.Phase.ACTIONS);
         game.server.displayComment(activePlayer,"");
 
         game.playCard(card,activePlayer,false);
@@ -584,7 +582,6 @@ public class Core extends Expansion{
       super("witch");
       cost=5;
       cards=2;
-      attackPhase="actions";
     }
     @Override
     public void subStep(int activePlayer, int attacker){

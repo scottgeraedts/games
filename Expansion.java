@@ -40,8 +40,7 @@ public abstract class Expansion{
     for(String card : supplyCards){
       if(pCards.contains(card)) weight+=0.15;
     }
-    if(ran.nextDouble()<weight) return true;
-    else return false;
+    return ran.nextDouble() < weight;
   }
   static boolean useShelters(ArrayList<String> supplyCards){
     Random ran=new Random();
@@ -51,11 +50,9 @@ public abstract class Expansion{
     for(String card : supplyCards){
       if(pCards.contains(card)) weight+=0.15;
     }
-    if(ran.nextDouble()<weight) return true;
-    else return false;
+    return ran.nextDouble() < weight;
   }
   protected abstract class Attack extends DominionCard{
-    protected String attackPhase="other";
     protected String comment="";
     public Attack(String name){
       super(name);
@@ -84,14 +81,13 @@ public abstract class Expansion{
             if (urchinInput.equals(urchinOptions[0])) {
               it.remove();
               game.trashCard(card, activePlayer);
-              game.gainCardNoSupply(game.cardFactory("mercenary", "DarkAges"), activePlayer, "discard");
+              game.gainCardNoSupply(game.cardFactory("mercenary", "DarkAges"), activePlayer, Dominion.GainTo.DISCARD);
             }
           }
         }
       }else{
         if(isAttack) DarkAges.urchinSwitch=true;
       }
-      game.changePhase(attackPhase);
 
       ArrayList<DominionCard> oldMat=new ArrayList<>(game.matcards);
       int oldPlayer=activePlayer;
@@ -119,18 +115,16 @@ public abstract class Expansion{
           }else if(r.equals("diplomat")){
             victim.drawToHand(2);
             game.displayPlayer(i);
-            game.doWork("discard",3,3,i);
+            game.doWork(Dominion.Phase.DISCARD,3,3,i);
             game.selectedCards.clear();
-            game.changePhase(attackPhase);
             game.displayPlayer(i);
           }else if(r.equals("secretchamber")){
             victim.drawToHand(2);
             game.displayPlayer(i);
             game.server.displayComment(i,"Put 2 cards on top of the deck");
-            game.doWork("topdeck",2,2,i);
+            game.doWork(Dominion.Phase.TOP_DECK,2,2,i);
             game.selectedCards.clear();
-            game.changePhase(attackPhase);
-            game.displayPlayer(i);            
+            game.displayPlayer(i);
           }else if(r.equals("horsetrader")){
             for(ListIterator<DominionCard> it=victim.hand.listIterator(); it.hasNext(); ){
               card2=it.next();
@@ -149,7 +143,7 @@ public abstract class Expansion{
                 if(card2.getName().equals("beggar")){
                   victim.disc.put(card2);
                   it.remove();
-                  game.gainCard("silver", i, "topcard", true);
+                  game.gainCard("silver", i, Dominion.GainTo.TOP_CARD, true);
                   game.gainCard("silver", i);
                 }
               }
@@ -192,7 +186,7 @@ public abstract class Expansion{
 //      game.server.updateSharedFields(game.actions,game.money,game.buys);
       game.cardPlayed(activePlayer);
       game.server.displayComment(activePlayer,"");
-      game.changePhase("actions");
+      game.changePhase(Dominion.Phase.ACTIONS);
       game.selectedCards.clear();
     }
     public void subStep(int x, int y){}
@@ -216,7 +210,7 @@ public abstract class Expansion{
       subWork(activePlayer);
 
       game.mask.clear();
-      if(isAction) game.changePhase("actions");
+      if(isAction) game.changePhase(Dominion.Phase.ACTIONS);
       if(displayedComment) game.server.displayComment(activePlayer,"");
       game.selectedCards.clear();
     }
@@ -233,7 +227,7 @@ public abstract class Expansion{
     public void subWork(int ap) {
       Dominion.SupplyDeck deck;
       while (true) {
-        game.doWork("selectDeck", 1, 1, ap);
+        game.doWork(Dominion.Phase.SELECT_DECK, 1, 1, ap);
         deck = game.supplyDecks.get(game.selectedDeck);
         if (deck.getCost() <= getLimit() && deck.card.isAction && deck.card.debt == 0 && deck.card.potions==0) {
           card = game.cardFactory(deck.card.getName());

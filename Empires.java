@@ -225,12 +225,12 @@ class Empires extends Expansion {
       }
     }
     if(supplies.containsKey("basilica")){
-      if(game.getPhase().equals("buys") && game.money>=2){
+      if(game.getPhase()== Dominion.Phase.BUYS && game.money>=2){
         x+=stepGatherer("Basilica", -2);
       }
     }
     if(supplies.containsKey("colonnade")){
-      if(game.getPhase().equals("buys") && card.isAction && game.matcards.contains(card)){
+      if(game.getPhase()== Dominion.Phase.BUYS && card.isAction && game.matcards.contains(card)){
         x+=stepGatherer("Colonnade", -2);
       }
     }
@@ -290,7 +290,7 @@ class Empires extends Expansion {
 
     game.server.displayComment(ap,
             "Discard an Action to take from the Arena");
-    game.doWork("discard", 0, 1, ap, c -> c.isAction);
+    game.doWork(Dominion.Phase.DISCARD, 0, 1, ap, c -> c.isAction);
     if(game.selectedCards.size()>0){
       game.players.get(ap).vicTokens+=stepGatherer("Arena", -2);
       game.displayPlayer(ap);
@@ -414,7 +414,7 @@ class Empires extends Expansion {
     @Override
     public void subWork(int ap) {
       boolean putBack=true;
-      game.doWork("reveal", 0, 1, ap,c -> c.getName().equals("gold") || c.getName().equals("plunder"));
+      game.doWork(Dominion.Phase.REVEAL, 0, 1, ap,c -> c.getName().equals("gold") || c.getName().equals("plunder"));
       if (game.selectedCards.size() > 0) putBack=false;
       if(putBack){
         game.returnToSupply(this, ap);
@@ -590,7 +590,7 @@ class Empires extends Expansion {
     }
     public void stuff(int ap){
       game.players.get(ap).vicTokens++;
-      game.gainCard("silver", ap, "discard", true);
+      game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Smallcastle extends DominionCard{
@@ -618,7 +618,7 @@ class Empires extends Expansion {
         game.trashCard(this, ap);
         game.gainCard("castle", ap);
       }else{
-        game.doWork("trash", 1, 1, ap, c -> c.isCastle);
+        game.doWork(Dominion.Phase.TRASH, 1, 1, ap, c -> c.isCastle);
         if(game.selectedCards.size()>0) game.gainCard("castle", ap);
       }
       game.selectedCards.clear();
@@ -634,14 +634,14 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      String oldPhase=game.getPhase();
-      game.gainCard("gold", ap, "discard", true);
+      Dominion.Phase oldPhase=game.getPhase();
+      game.gainCard("gold", ap, Dominion.GainTo.DISCARD, true);
       //game.mask.clear();
       int oldPlayer=ap;
       for(int i=(ap+1)%game.players.size(); i!=ap; i=(i+1)%game.players.size()){
         if(game.players.get(i).hand.size()>=5){
           game.changePlayer(oldPlayer,i);
-          game.doWork("topdeck", 2, 2, i);
+          game.doWork(Dominion.Phase.TOP_DECK, 2, 2, i);
         }
         game.selectedCards.clear();
         oldPlayer=i;
@@ -660,7 +660,7 @@ class Empires extends Expansion {
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard", 0, 100, ap, c -> c.isVictory);
+      game.doWork(Dominion.Phase.DISCARD, 0, 100, ap, c -> c.isVictory);
       game.money+=2*game.selectedCards.size();
       game.updateSharedFields();
     }
@@ -678,10 +678,10 @@ class Empires extends Expansion {
       String [] options={"Gain a Duchy", "Gain 3 estates"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.gainCard("duchy", ap,  "discard", true);
+        game.gainCard("duchy", ap,  Dominion.GainTo.DISCARD, true);
       }else{
         for(int i=0; i<3; i++){
-          game.gainCard("estate", ap, "discard", true);
+          game.gainCard("estate", ap, Dominion.GainTo.DISCARD, true);
         }
       }
     }
@@ -734,7 +734,7 @@ class Empires extends Expansion {
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       if(game.selectedCards.size()>0) card=game.selectedCards.get(0);
       else card=null;
       game.selectedCards.clear();
@@ -745,7 +745,7 @@ class Empires extends Expansion {
       if(game.cost2(card)>=3) game.gainCard("curse", ap);
       if(card.isMoney){
         int x=game.players.get(ap).hand.size()-3;
-        if(x>0) game.doWork("discard", x, x, ap);
+        if(x>0) game.doWork(Dominion.Phase.DISCARD, x, x, ap);
       }
     }
   }
@@ -757,8 +757,8 @@ class Empires extends Expansion {
       isMoney=true;
     }
     private void stuff(int ap){
-      if(game.getPhase().equals("buys")) game.gainCard("silver", ap, "deck", true);
-      else game.gainCard("silver", ap, "hand", true);
+      if(game.getPhase()== Dominion.Phase.BUYS) game.gainCard("silver", ap, Dominion.GainTo.TOP_CARD, true);
+      else game.gainCard("silver", ap, Dominion.GainTo.HAND, true);
     }
     @Override
     public void onGain(int ap){ stuff(ap); }
@@ -850,12 +850,12 @@ class Empires extends Expansion {
     }
     @Override
     public void subWork(int ap){
-      game.doWork("reveal", 1, 1, ap);
+      game.doWork(Dominion.Phase.REVEAL, 1, 1, ap);
       if(game.selectedCards.size()==0) return;
       DominionCard card1=game.selectedCards.get(0);
       game.selectedCards.clear();
 
-      game.doWork("reveal", 1, 1, (ap+1)%game.players.size(), c -> c.equals(card1));
+      game.doWork(Dominion.Phase.REVEAL, 1, 1, (ap+1)%game.players.size(), c -> c.equals(card1));
       if(game.selectedCards.size()==0 || game.cost2(card1)>game.cost2(game.selectedCards.get(0))) {
         if(game.supplyDecks.get("gladiator").size()>5) game.trashCard(game.supplyDecks.get("gladiator").topCard(), ap);
         game.money++;
@@ -883,7 +883,7 @@ class Empires extends Expansion {
     @Override
     public void onGain(int ap){
       for(int i=0; i<Collections.frequency(game.matcards, game.cardFactory("gladiator")); i++){
-        game.gainCard("gold", ap, "discard", true);
+        game.gainCard("gold", ap, Dominion.GainTo.DISCARD, true);
       }
     }
     @Override
@@ -899,7 +899,7 @@ class Empires extends Expansion {
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       if(game.selectedCards.size()==0) return;
 
       DominionCard card=game.selectedCards.get(0);
@@ -930,11 +930,11 @@ class Empires extends Expansion {
     public void subWork(int ap){
       game.players.get(ap).vicTokens+=1;
       HashSet<DominionCard> cards=new HashSet<>();
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       for(int i=0; i<2; i++){
         cards.addAll(game.selectedCards);
         game.selectedCards.clear();
-        game.doWork("trash", 0, 1, ap, c -> !cards.contains(c));
+        game.doWork(Dominion.Phase.TRASH, 0, 1, ap, c -> !cards.contains(c));
         if(game.selectedCards.size()==0) break;
       }
       gathererVals.put(s, gathererVals.get(s)+1);
@@ -958,7 +958,7 @@ class Empires extends Expansion {
     public void onGain(int ap){
       game.actions++;
       game.updateSharedFields();
-      game.changePhase("actions");
+      game.changePhase(Dominion.Phase.ACTIONS);
     }
   }
   class Archive extends DominionCard{
@@ -1066,9 +1066,9 @@ class Empires extends Expansion {
       game.server.displayComment(ap,"Choose a card to play twice");
       Collection<DominionCard> hand=game.players.get(ap).hand;
 
-      String oldPhase=game.getPhase();
-      game.doWork("select",1,1,ap,
-              c -> c.isMoney && oldPhase.equals("buys") || c.isAction && oldPhase.equals("actions"));
+      Dominion.Phase oldPhase=game.getPhase();
+      game.doWork(Dominion.Phase.SELECT,1,1,ap,
+              c -> c.isMoney && oldPhase== Dominion.Phase.BUYS || c.isAction && oldPhase == Dominion.Phase.ACTIONS);
       if(game.selectedCards.size()==0) return;
       game.mask.clear();
       DominionCard card=game.selectedCards.get(0);
@@ -1098,7 +1098,7 @@ class Empires extends Expansion {
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard", 2, 2, ap);
+      game.doWork(Dominion.Phase.DISCARD, 2, 2, ap);
     }
     @Override
     public void onGain(int ap){
@@ -1139,7 +1139,7 @@ class Empires extends Expansion {
     @Override
     public void subWork(int ap){
       active=false;
-      game.doWork("reveal", 0, 1, ap, c -> c.getName().equals("gold"));
+      game.doWork(Dominion.Phase.REVEAL, 0, 1, ap, c -> c.getName().equals("gold"));
       if(game.selectedCards.size()>0){
         active=true;
       }
@@ -1149,7 +1149,7 @@ class Empires extends Expansion {
     public void subStep(int ap, int atk){
       if(active) {
         int x = game.players.get(ap).hand.size() - 2;
-        game.doWork("discard", x, x, ap);
+        game.doWork(Dominion.Phase.DISCARD, x, x, ap);
         game.players.get(ap).drawToHand(1);
         game.displayPlayer(ap);
       }
@@ -1187,14 +1187,10 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      String oldPhase=game.getPhase();
-      //change the phase so the estate doesn't trigger hovel
-      game.changePhase("gain");
-      if(game.gainCard("estate", ap, "discard", true)){
+      if(game.gainCard("estate", ap, Dominion.GainTo.DISCARD, true)){
         game.players.get(ap).vicTokens+=triumphCounter;
         game.displayPlayer(ap);
       }
-      game.changePhase(oldPhase);
     }
   }
   class Annex extends DominionCard{
@@ -1245,7 +1241,7 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      game.doWork("trash", 0, 1, ap, c -> c.isAction);
+      game.doWork(Dominion.Phase.TRASH, 0, 1, ap, c -> c.isAction);
       game.selectedCards.clear();
       game.gainSpecial(ap, c -> c.isAction && game.costCompare(c,6,0,0)<=0);
     }
@@ -1258,7 +1254,7 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      game.gainCard("silver", ap, "discard", true);
+      game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
       game.buys++;
       game.updateSharedFields();
     }
@@ -1272,10 +1268,10 @@ class Empires extends Expansion {
     @Override
     public void onGain(int ap){
       game.server.displayComment(ap, "Choose a pile to tax");
-      game.doWork("selectDeck", 1, 1, ap);
+      game.doWork(Dominion.Phase.SELECT_DECK, 1, 1, ap);
       game.supplyDecks.get(game.selectedDeck).tax+=2;
       game.displaySupply(game.selectedDeck);
-      game.changePhase("buys");
+      game.changePhase(Dominion.Phase.BUYS);
       game.server.displayComment(ap, "");
     }
   }
@@ -1287,7 +1283,7 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      for(int i=0; i<2; i++) game.gainCard("copper", ap, "discard", true);
+      for(int i=0; i<2; i++) game.gainCard("copper", ap, Dominion.GainTo.DISCARD, true);
       game.gainSpecial(ap, c -> !c.isVictory && game.costCompare(c,5,0,0)<=0);
     }
   }
@@ -1299,12 +1295,12 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      if(game.gainCard("curse", ap, "discard", true)){
-        game.doWork("trash", 1, 1, ap);
+      if(game.gainCard("curse", ap, Dominion.GainTo.DISCARD, true)){
+        game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
         if(game.selectedCards.size()==0) return;
         game.players.get(ap).vicTokens=game.cost2(game.selectedCards.get(0));
         game.displayPlayer(ap);
-        game.changePhase("buys");
+        game.changePhase(Dominion.Phase.BUYS);
         game.selectedCards.clear();
       }
     }
@@ -1319,7 +1315,7 @@ class Empires extends Expansion {
     public void onGain(int ap){
       game.players.get(ap).vicTokens++;
       game.displayPlayer(ap);
-      game.changePhase("selectDeck");
+      game.changePhase(Dominion.Phase.SELECT_DECK);
       Dominion.SupplyDeck deck;
       while(true){
         game.work(ap);
@@ -1332,7 +1328,7 @@ class Empires extends Expansion {
         }
       }
       game.displaySupply(deck.makeData());
-      game.changePhase("buys");
+      game.changePhase(Dominion.Phase.BUYS);
     }
   }
   class Wedding extends DominionCard{
@@ -1345,7 +1341,7 @@ class Empires extends Expansion {
     @Override
     public void onGain(int ap){
       game.players.get(ap).vicTokens+=1;
-      game.gainCard("gold", ap, "discard", true);
+      game.gainCard("gold", ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Windfall extends DominionCard{
@@ -1357,7 +1353,7 @@ class Empires extends Expansion {
     @Override
     public void onGain(int ap){
       if(game.players.get(ap).deck.size()==0 && game.players.get(ap).disc.size()==0){
-        for(int i=0; i<3; i++) game.gainCard("gold", ap, "discard", true);
+        for(int i=0; i<3; i++) game.gainCard("gold", ap, Dominion.GainTo.DISCARD, true);
       }
     }
   }
@@ -1369,7 +1365,7 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      for(int i=0; i<2; i++) game.gainCard("silver", ap, "discard", true);
+      for(int i=0; i<2; i++) game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
       game.players.get(ap).vicTokens+=conquestCounter;
       game.displayPlayer(ap);
     }
@@ -1382,7 +1378,7 @@ class Empires extends Expansion {
     }
     @Override
     public void onGain(int ap){
-      if(game.gainCard("province", ap, "discard", true)){
+      if(game.gainCard("province", ap, Dominion.GainTo.DISCARD, true)){
         game.players.get(ap).vicTokens+=9;
         game.displayPlayer(ap);
       }

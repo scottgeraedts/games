@@ -22,7 +22,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("topdeck",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TOP_DECK,1,1,activePlayer);
       game.displayPlayer(activePlayer);
     }
   }
@@ -49,7 +49,7 @@ public class Intrigue extends Expansion{
 
       //if they are selecting a supply to game.trash from
       if(input.equals(options[0]) ){
-        game.changePhase("selectDeck");
+        game.changePhase(Dominion.Phase.SELECT_DECK);
         Dominion.SupplyDeck deck;
         while(true){
           game.work(activePlayer);
@@ -65,7 +65,7 @@ public class Intrigue extends Expansion{
         game.displaySupply(deck.makeData());
       //if they are gaining an action from supply  
       }else{
-        game.gainFromTrash(activePlayer, "discard", c -> c.isAction);
+        game.gainFromTrash(activePlayer, Dominion.GainTo.DISCARD, c -> c.isAction);
       }
     }
   }
@@ -120,7 +120,7 @@ public class Intrigue extends Expansion{
         }
       }
 
-      game.doWork("trash",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,1,1,activePlayer);
     }
     @Override
     public void subWork(int activePlayer){
@@ -134,7 +134,7 @@ public class Intrigue extends Expansion{
     }
     //passes a cardfrom player i to player i+1
     public void passCard(int fromPlayer, int toPlayer){
-      game.doWork("select",1,1,fromPlayer);
+      game.doWork(Dominion.Phase.SELECT,1,1,fromPlayer);
       passedCards.put(toPlayer,game.selectedCards.get(0));
       game.selectedCards.clear();
     }
@@ -173,8 +173,8 @@ public class Intrigue extends Expansion{
       String input=game.optionPane(activePlayer,new OptionData(options));
       
       if(input.equals(options[0])){
-        game.doWork("trash",2,2,activePlayer);
-        game.changePhase("actions");
+        game.doWork(Dominion.Phase.TRASH,2,2,activePlayer);
+        game.changePhase(Dominion.Phase.ACTIONS);
         game.selectedCards.clear();
       }else if(input.equals(options[1])){
         game.players.get(activePlayer).drawToHand(2);
@@ -190,17 +190,31 @@ public class Intrigue extends Expansion{
       super("swindler");
       cost=3;
       value=2;
-      attackPhase="selectDeck";
     }
     @Override
     public void subStep(int victim, int attacker){
       try{
+        //this code is basically game.gainSpecial but the attacker chooses the card to gain
         DominionCard card=game.players.get(victim).getCard();
         System.out.println("swindler trashed "+card.getName());
         int value=game.cost2(card);
         game.trashCard(card, victim);
         game.server.displayComment(attacker,"Trashed a "+card.getName()+", choose a card costing "+value);
-        game.gainSpecial(victim, c -> game.costCompare(c, card)==0);
+
+        if(!game.isValidSupply(c -> game.costCompare(c, card)==0)) return;
+        Dominion.Phase oldPhase=game.getPhase();
+        while (true) {
+          game.doWork(Dominion.Phase.SELECT_DECK, 1, 1, attacker);
+          Dominion.SupplyDeck deck = game.supplyDecks.get(game.selectedDeck);
+          if (game.costCompare(deck.card, card)==0 && deck.size() > 0){
+            game.gainCard(game.selectedDeck, victim, Dominion.GainTo.DISCARD, true);
+            Empires.triumphCounter++;
+            if(deck.getName().equals("silver")) Empires.conquestCounter++;
+            break;
+          }
+//      selectedCards.clear();
+        }
+        game.changePhase(oldPhase);
       }catch(OutOfCardsException e){
       }
     }
@@ -215,7 +229,7 @@ public class Intrigue extends Expansion{
     @Override
     public void subWork(int activePlayer){
       try{
-        game.changePhase("selectDeck2");
+        game.changePhase(Dominion.Phase.SELECT_DECK2);
         game.work(activePlayer);
         String card1=game.supplyDecks.get(game.selectedDeck).card.getName();
         DominionCard card2=game.players.get(activePlayer).getCard();
@@ -246,12 +260,12 @@ public class Intrigue extends Expansion{
     public void subWork(int activePlayer){
       DominionPlayer player=game.players.get(activePlayer);
       game.mask=makeMask(player.hand);
-      game.doWork("discard",0,1,activePlayer);
+      game.doWork(Dominion.Phase.DISCARD,0,1,activePlayer);
       
       if(game.selectedCards.size()>0){
         game.money+=4;
       }else{
-        game.changePhase("actions");
+        game.changePhase(Dominion.Phase.ACTIONS);
         game.gainCard("estate",activePlayer);
       }
       game.updateSharedFields();
@@ -347,7 +361,7 @@ public class Intrigue extends Expansion{
       String [] options={"Discard 2 cards", "Done"};
       String input=game.optionPane(activePlayer,new OptionData(options));
       if(input.equals(options[0])){
-        game.doWork("discard",2,2,activePlayer);
+        game.doWork(Dominion.Phase.DISCARD,2,2,activePlayer);
         game.money+=2;
         game.updateSharedFields();
       }
@@ -382,7 +396,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("select",1,1,activePlayer);
+      game.doWork(Dominion.Phase.SELECT,1,1,activePlayer);
       game.putAnywhere(activePlayer,game.selectedCards.get(0));
     }
   }
@@ -393,7 +407,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("select",1,1,activePlayer);
+      game.doWork(Dominion.Phase.SELECT,1,1,activePlayer);
       DominionCard card=game.selectedCards.get(0);
       game.players.get(activePlayer).hand.add(card);
       game.displayPlayer(activePlayer);
@@ -517,11 +531,10 @@ public class Intrigue extends Expansion{
       super("replace");
       cost=5;
       comment="trash a card, gain a card costing up to 2 more than it";
-      attackPhase="actions";
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("trash",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,1,1,activePlayer);
 
       if(game.selectedCards.size()==0) return;
 
@@ -548,15 +561,14 @@ public class Intrigue extends Expansion{
       super("torturer");
       cost=5;
       cards=3;
-      attackPhase="discard";
       o=new OptionData(options);
     }
     @Override
     public void subStep(int victim, int attacker){
       if(game.optionPane(victim,o).equals(options[0])){
-        game.doWork("discard",2,2,victim);
+        game.doWork(Dominion.Phase.DISCARD,2,2,victim);
       }else{
-        game.gainCard("curse",victim,"hand");
+        game.gainCard("curse",victim,Dominion.GainTo.HAND);
       }
     }
   }
@@ -571,8 +583,8 @@ public class Intrigue extends Expansion{
     @Override
     public void subWork(int activePlayer){
       if(game.optionPane(activePlayer,o).equals(options[0])){
-        game.doWork("trash",2,2,activePlayer);
-        game.gainCard("silver",activePlayer,"hand");
+        game.doWork(Dominion.Phase.TRASH,2,2,activePlayer);
+        game.gainCard("silver",activePlayer,Dominion.GainTo.HAND);
       }
     }
   }
@@ -585,7 +597,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("trash",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,1,1,activePlayer);
       game.displayPlayer(activePlayer);
       game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 1)==0);
       game.selectedCards.clear();
@@ -622,7 +634,7 @@ public class Intrigue extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("discard",0,100,activePlayer);
+      game.doWork(Dominion.Phase.DISCARD,0,100,activePlayer);
       game.money+=game.selectedCards.size();
       game.updateSharedFields();
       game.displayPlayer(activePlayer);

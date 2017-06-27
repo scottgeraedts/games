@@ -6,7 +6,7 @@ class BasicRobot implements PlayerInterface{
   protected int buys;
   protected int numPlayer;
   protected int activePlayer;
-  protected String phase;
+  protected Dominion.Phase phase;
   protected ArrayList<Boolean> mask;
   protected boolean optionPane=false;
   protected ArrayList<DominionCard> hand;
@@ -14,7 +14,7 @@ class BasicRobot implements PlayerInterface{
   protected String comment;
   protected int debt;
   
-  public BasicRobot(){
+  BasicRobot(){
   
   }
   public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
@@ -26,13 +26,13 @@ class BasicRobot implements PlayerInterface{
     }
     numPlayer=num.get(0);
     activePlayer=startingPlayer;
-    phase="actions";
+    phase= Dominion.Phase.ACTIONS;
     hand=playerData.get(numPlayer).hand;
   }
   public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData, int startingPlayer,
     LinkedHashSet<String> gameOptions, HashSet<String> playerOptions){
     activePlayer=startingPlayer;
-    phase="actions";
+    phase= Dominion.Phase.ACTIONS;
     hand=playerData.get(numPlayer).hand;
   }
   public void displayMatCards(ArrayList<DominionCard> matcards){
@@ -40,7 +40,7 @@ class BasicRobot implements PlayerInterface{
   public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer, ArrayList<Boolean> mask){
     activePlayer=newPlayerNum;
   }
-  public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask){
+  public void changePhase(Dominion.Phase oldPhase, Dominion.Phase newPhase, ArrayList<Boolean> mask){
     phase=newPhase;
     this.mask=mask;
   }
@@ -93,10 +93,10 @@ class BasicRobot implements PlayerInterface{
         }
         return "";
       }
-    }else if(phase.equals("actions")){
+    }else if(phase==Dominion.Phase.ACTIONS){
       //never play actions
       return "Btreasures";
-    }else if(phase.equals("buys")){
+    }else if(phase== Dominion.Phase.BUYS){
       if(debt>0){
         if(money>0) return "Bdebt";
         else return "Bbuys";
@@ -106,7 +106,7 @@ class BasicRobot implements PlayerInterface{
       else if(money>=6) return "Ggold";
       else if(money>=3) return "Gsilver";
       else return "Gcopper";
-    }else if(phase.equals("discard") || phase.equals("topdeck") || phase.equals("select") || phase.equals("reveal")){
+    }else if(phase== Dominion.Phase.DISCARD || phase == Dominion.Phase.TOP_DECK || phase == Dominion.Phase.SELECT || phase == Dominion.Phase.REVEAL){
       //always discard or topdeck victories if possible
       for(int i=0;i<hand.size();i++){     
         if(hand.get(i).isVictory && (mask.size()!=hand.size() || mask.get(i))) return ""+i;

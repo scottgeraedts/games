@@ -144,7 +144,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void work(int ap){
-      for(int i=0; i<3; i++) game.gainCard("copper", ap, "hand", true);
+      for(int i=0; i<3; i++) game.gainCard("copper", ap, Dominion.GainTo.HAND, true);
     }
   }
   class Squire extends DominionCard {
@@ -206,7 +206,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       HashSet<DominionCard> cards=new HashSet<>();
       for(DominionCard card : game.trash){
         if(card.isMoney) cards.add(card);
@@ -243,7 +243,7 @@ public class DarkAges extends Expansion{
           }
         }
       }else if(input.equals(options[1])){
-        game.doWork("trash",0,1,ap, c -> !c.isMoney);
+        game.doWork(Dominion.Phase.TRASH,0,1,ap, c -> !c.isMoney);
         game.selectedCards.clear();
       }
 
@@ -254,7 +254,7 @@ public class DarkAges extends Expansion{
     public boolean cleanup(int ap, DominionPlayer player){
       if(hermitSwitch) {
         game.trashCard(this, ap);
-        game.gainCardNoSupply(game.cardFactory("madman", "DarkAges"), ap, "discard");
+        game.gainCardNoSupply(game.cardFactory("madman", "DarkAges"), ap, Dominion.GainTo.DISCARD);
         return true;
       }
       else return false;
@@ -325,12 +325,12 @@ public class DarkAges extends Expansion{
     @Override
     public void subWork(int ap){
       game.server.displayComment(ap, "Discard cards to draw cards");
-      game.doWork("discard",0,100, ap);
+      game.doWork(Dominion.Phase.DISCARD,0,100, ap);
       game.players.get(ap).drawToHand(game.selectedCards.size());
       game.displayPlayer(ap);
       game.selectedCards.clear();
       game.server.displayComment(ap, "Discard cards for money");
-      game.doWork("discard", 0, 100, ap);
+      game.doWork(Dominion.Phase.DISCARD, 0, 100, ap);
       game.money+=game.selectedCards.size();
       game.updateSharedFields();
     }
@@ -345,7 +345,7 @@ public class DarkAges extends Expansion{
     @Override
     public void subStep(int ap, int atk){
       int x=game.players.get(ap).hand.size()-4;
-      if(x>0) game.doWork("discard", x, x, ap);
+      if(x>0) game.doWork(Dominion.Phase.DISCARD, x, x, ap);
     }
   }
   class Mercenary extends Attack {
@@ -361,7 +361,7 @@ public class DarkAges extends Expansion{
       String[] options = {"Trash 2 Cards", "Done"};
       String input = game.optionPane(ap, new OptionData(options));
       if (input.equals(options[0])) {
-        game.doWork("trash", 2, 2, ap);
+        game.doWork(Dominion.Phase.TRASH, 2, 2, ap);
         game.players.get(ap).drawToHand(2);
         game.displayPlayer(ap);
         game.money += 2;
@@ -376,7 +376,7 @@ public class DarkAges extends Expansion{
       if (trashed) {
         int x = game.players.get(ap).hand.size() - 3;
         System.out.println("mercenary: "+x);
-        if (x > 0) game.doWork("discard", x, x, ap);
+        if (x > 0) game.doWork(Dominion.Phase.DISCARD, x, x, ap);
       }
     }
   }
@@ -390,10 +390,10 @@ public class DarkAges extends Expansion{
       Dominion.SupplyDeck deck;
       game.server.displayComment(ap, "gain a card costing up to 4");
       while(true) {
-        game.doWork("selectDeck", 1, 1, ap);
+        game.doWork(Dominion.Phase.SELECT_DECK, 1, 1, ap);
         deck=game.supplyDecks.get(game.selectedDeck);
         if(deck.getCost()<=4 && deck.size()>0){
-          game.gainCard(game.selectedDeck, ap, "topcard", true);
+          game.gainCard(game.selectedDeck, ap, Dominion.GainTo.TOP_CARD, true);
           break;
         }
       }
@@ -409,7 +409,7 @@ public class DarkAges extends Expansion{
     @Override
     public void subWork(int ap){
       lostTrack=true;
-      game.doWork("trash", 0, 1, ap,  c -> c.isAction);
+      game.doWork(Dominion.Phase.TRASH, 0, 1, ap,  c -> c.isAction);
       if(game.selectedCards.size()==0){
         game.matcards.remove(this);
         game.trashCard(this, ap);
@@ -417,7 +417,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void onGain(int ap){
-      for(int i=0; i<2; i++) game.gainCard("ruins", ap, "discard", true);
+      for(int i=0; i<2; i++) game.gainCard("ruins", ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Feodum extends DominionCard{
@@ -432,7 +432,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void onTrash(int ap){
-      for(int i=0;i<3; i++) game.gainCard("silver", ap, "discard", true);
+      for(int i=0;i<3; i++) game.gainCard("silver", ap, Dominion.GainTo.DISCARD, true);
     }
   }
   class Fortress extends DominionCard{
@@ -491,7 +491,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.gainCardNoSupply(game.cardFactory("spoils", "DarkAges"), ap, "discard");
+      game.gainCardNoSupply(game.cardFactory("spoils", "DarkAges"), ap, Dominion.GainTo.DISCARD);
     }
     @Override
     public void subStep(int ap, int atk){
@@ -508,13 +508,13 @@ public class DarkAges extends Expansion{
 
       //this first part is basically throneroom
       game.server.displayComment(ap,"Choose a card to play twice");
-      game.doWork("select",1,1,ap, c -> c.isAction);
+      game.doWork(Dominion.Phase.SELECT,1,1,ap, c -> c.isAction);
       game.mask.clear();
       if(game.selectedCards.size()==0) return;
       DominionCard card=game.selectedCards.get(0);
 
       game.selectedCards.clear();
-      game.changePhase("actions");
+      game.changePhase(Dominion.Phase.ACTIONS);
       game.server.displayComment(ap,"");
 
       //this card will never to go the mat
@@ -541,7 +541,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap, c -> !c.getName().equals("rats"));
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap, c -> !c.getName().equals("rats"));
     }
     @Override
     public void onTrash(int ap){
@@ -631,7 +631,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.gainCardNoSupply(game.cardFactory("spoils", "DarkAges"), ap, "discard");
+      game.gainCardNoSupply(game.cardFactory("spoils", "DarkAges"), ap, Dominion.GainTo.DISCARD);
     }
   }
   class Catacombs extends DominionCard{
@@ -675,9 +675,9 @@ public class DarkAges extends Expansion{
 
       String input=game.optionPane(ap, new OptionData(options1));
       if(input.equals(options1[0])){
-        game.doWork("discard", 2, 2, ap);
+        game.doWork(Dominion.Phase.DISCARD, 2, 2, ap);
       }else if(input.equals(options1[1])){
-        game.doWork("topdeck", 1, 1, ap);
+        game.doWork(Dominion.Phase.TOP_DECK, 1, 1, ap);
       }else{
         game.gainCard("copper", ap);
       }
@@ -695,7 +695,7 @@ public class DarkAges extends Expansion{
       }else{
         game.gainCard("duchy", ap);
       }
-      game.changePhase("actions");
+      game.changePhase(Dominion.Phase.ACTIONS);
     }
   }
   class Counterfeit extends DominionCard{
@@ -708,9 +708,9 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.doWork("select", 0, 1, ap, c -> c.isMoney);
+      game.doWork(Dominion.Phase.SELECT, 0, 1, ap, c -> c.isMoney);
       game.mask.clear();
-      game.changePhase("buys");
+      game.changePhase(Dominion.Phase.BUYS);
       DominionCard card=game.selectedCards.get(0);
       game.selectedCards.clear();
 
@@ -729,7 +729,7 @@ public class DarkAges extends Expansion{
     @Override
     public void subWork(int ap){
 
-      game.doWork("select", 0, 1, ap, c -> c.equals(this));
+      game.doWork(Dominion.Phase.SELECT, 0, 1, ap, c -> c.equals(this));
       if(game.selectedCards.size()==0) return;
       DominionCard card=game.selectedCards.get(0);
       game.selectedCards.clear();
@@ -756,9 +756,9 @@ public class DarkAges extends Expansion{
       String [] options={"Gain from trash", "Trash and Gain"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.gainFromTrash(ap, "topcard", c -> game.costCompare(c, 6, 0,0) <=0 && game.cost2(c)>=3 );
+        game.gainFromTrash(ap, Dominion.GainTo.TOP_CARD, c -> game.costCompare(c, 6, 0,0) <=0 && game.cost2(c)>=3 );
       }else{
-        game.doWork("trash", 1, 1, ap, c -> c.isAction);
+        game.doWork(Dominion.Phase.TRASH, 1, 1, ap, c -> c.isAction);
         if(game.selectedCards.size()>0){
           game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), 3)<=0);
         }
@@ -777,7 +777,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
     }
   }
   //*****KNIGHTS***///
@@ -835,7 +835,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 0, 2, ap);
+      game.doWork(Dominion.Phase.TRASH, 0, 2, ap);
     }
   }
   class Damejosephine extends Knight{
@@ -893,7 +893,7 @@ public class DarkAges extends Expansion{
     @Override
     public void extra(int ap){
       int x=game.players.get(ap).hand.size()-3;
-      game.doWork("discard", x, x, ap);
+      game.doWork(Dominion.Phase.DISCARD, x, x, ap);
     }
   }
   class Sirvander extends Knight{
@@ -915,7 +915,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("selectDeck2", 1, 1, ap);
+      game.doWork(Dominion.Phase.SELECT_DECK2, 1, 1, ap);
       DominionPlayer player=game.players.get(ap);
       try {
         DominionCard card = player.getCard();
@@ -938,7 +938,7 @@ public class DarkAges extends Expansion{
       game.trashCard(this, ap);
       game.matcards.remove(this);
       for(int i=0; i<2; i++){
-        game.gainCardNoSupply(game.cardFactory("spoils", "DarkAges"), ap, "discard");
+        game.gainCardNoSupply(game.cardFactory("spoils", "DarkAges"), ap, Dominion.GainTo.DISCARD);
       }
     }
     @Override
@@ -970,7 +970,7 @@ public class DarkAges extends Expansion{
     @Override
     public void subWork(int ap){
       game.server.displayComment(ap, "choose a card to not trash");
-      game.doWork("selectDeck2", 1, 1, ap);
+      game.doWork(Dominion.Phase.SELECT_DECK2, 1, 1, ap);
       LinkedList<DominionCard> cards=new LinkedList<>();
       DominionCard card=null;
       DominionPlayer player=game.players.get(ap);
@@ -1005,7 +1005,7 @@ public class DarkAges extends Expansion{
     public void subWork(int ap){
       attack=!game.cardInTrash( c -> game.cost2(c)>=3 && game.costCompare(c, 6, 0, 0)<=0);
       if(!attack)
-        game.gainFromTrash(ap, "discard", c -> game.cost2(c)>=3 && game.costCompare(c, 6, 0, 0)<=0);
+        game.gainFromTrash(ap, Dominion.GainTo.DISCARD, c -> game.cost2(c)>=3 && game.costCompare(c, 6, 0, 0)<=0);
     }
     @Override
     public void subStep(int ap, int atk){
@@ -1050,7 +1050,7 @@ public class DarkAges extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       if(game.selectedCards.size()>0){
         game.gainNumber(ap, 5);
       }

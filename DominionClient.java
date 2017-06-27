@@ -125,7 +125,7 @@ public class DominionClient{
     
     System.out.println("Terminated by server");
   }
-  public void initialize(String input){
+  private void initialize(String input){
 //    String inputLine=input.readLine();
     //turn inputline into useful thing
     String [] parts=input.split("%");
@@ -199,7 +199,7 @@ public class DominionClient{
   }
   public void changePhase(String input){
     String [] parts=input.split("%");
-    board.changePhase(parts[0],parts[1],readArray(parts[2],new Boolean(true)));
+    board.changePhase(Dominion.Phase.valueOf(parts[0]), Dominion.Phase.valueOf(parts[1]),readArray(parts[2],new Boolean(true)));
   }
   public void showScores(String input){
     board.showScores(new OptionData(input));

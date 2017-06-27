@@ -22,14 +22,14 @@ public class Cornucopia extends Expansion{
     @Override
     public void subWork(int ap){
       game.server.displayComment(ap,"Discard a Card for +1 Action");
-      game.doWork("discard",0,1,ap);
+      game.doWork(Dominion.Phase.DISCARD,0,1,ap);
       if(game.selectedCards.size()>0){
         game.actions++;
         game.updateSharedFields();
       }
       game.selectedCards.clear();
       game.server.displayComment(ap,"Discard a Card for +1 Buy");
-      game.doWork("discard",0,1,ap);
+      game.doWork(Dominion.Phase.DISCARD,0,1,ap);
       if(game.selectedCards.size()>0){
         game.buys++;
         game.updateSharedFields();
@@ -132,7 +132,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",2,2,ap);
+      game.doWork(Dominion.Phase.DISCARD,2,2,ap);
     }
     @Override
     public boolean cleanup(int ap, DominionPlayer player){
@@ -148,7 +148,7 @@ public class Cornucopia extends Expansion{
     @Override
     public void subWork(int ap){
       for(int i=0;i<2;i++){
-        game.doWork("trash",1,1,ap);
+        game.doWork(Dominion.Phase.TRASH,1,1,ap);
         if(game.selectedCards.size()==0) break;
         game.controlledGain(ap, game.cost2(game.selectedCards.get(0))+1);
         game.selectedCards.clear();
@@ -165,7 +165,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",0,1,ap,c -> c.getName().equals("province"));
+      game.doWork(Dominion.Phase.DISCARD,0,1,ap,c -> c.getName().equals("province"));
       if(game.selectedCards.size()==0) return;
 
       //if the prize list hasn't been made, make it
@@ -191,7 +191,7 @@ public class Cornucopia extends Expansion{
         for(ListIterator<DominionCard> it=prizes.listIterator(); it.hasNext(); ){
           card2=it.next();
           if(card2.getImage().equals(input)){
-            game.gainCardNoSupply(card2,ap,"discard");
+            game.gainCardNoSupply(card2,ap,Dominion.GainTo.DISCARD);
             it.remove();
             break;
           }
@@ -200,7 +200,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subStep(int ap, int atk){
-      game.doWork("reveal",0,1,ap, c -> c.getName().equals("province"));
+      game.doWork(Dominion.Phase.REVEAL,0,1,ap, c -> c.getName().equals("province"));
       if(game.selectedCards.size()>0) winning=false;
     }
     @Override
@@ -222,11 +222,11 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",2,2,ap);
+      game.doWork(Dominion.Phase.DISCARD,2,2,ap);
     }
     @Override
     public void subStep(int ap, int atk){
-      game.doWork("reveal",0,1,ap, c -> c.getName().equals(bane));
+      game.doWork(Dominion.Phase.REVEAL,0,1,ap, c -> c.getName().equals(bane));
       if(game.selectedCards.size()==0) game.gainCard("curse",ap);
        
     }
@@ -268,7 +268,7 @@ public class Cornucopia extends Expansion{
     public void work(int ap){
       HashSet<DominionCard> cardSet=new HashSet<>(game.matcards);
       game.gainNumber(ap, cardSet.size());
-      game.changePhase("buys");
+      game.changePhase(Dominion.Phase.BUYS);
     }
   }
   public class Huntingparty extends DominionCard{
@@ -351,7 +351,7 @@ public class Cornucopia extends Expansion{
     }
     @Override
     public void work(int ap){
-      game.gainCard("gold",ap,"topcard",true);
+      game.gainCard("gold",ap,Dominion.GainTo.TOP_CARD,true);
     }
   }
   public class Diadem extends DominionCard{
@@ -379,7 +379,7 @@ public class Cornucopia extends Expansion{
     public void subStep(int ap, int atk){
       game.gainCard("curse",ap);
       int temp=game.players.get(ap).hand.size()-3;
-      if(temp>0) game.doWork("discard",temp,temp,ap);
+      if(temp>0) game.doWork(Dominion.Phase.DISCARD,temp,temp,ap);
     } 
   }
   public class Princess extends DominionCard{

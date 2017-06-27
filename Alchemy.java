@@ -40,7 +40,7 @@ public class Alchemy extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       if(game.selectedCards.size()>0){
         DominionCard card=game.selectedCards.get(0);
         if(card.isAction) game.gainCard("duchy", ap);
@@ -274,7 +274,7 @@ public class Alchemy extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash", 1, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 1, 1, ap);
       if(game.selectedCards.size()>0){
         game.players.get(ap).drawToHand(game.cost2(game.selectedCards.get(0))+4*game.selectedCards.get(0).potions);
         game.displayPlayer(ap);

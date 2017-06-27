@@ -55,7 +55,7 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       game.money+=tradeRouteCards.size();
       game.updateSharedFields();
     }
@@ -84,13 +84,13 @@ public class Prosperity extends Expansion{
     @Override
     public void subWork(int ap){
       game.players.get(ap).vicTokens++;
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       game.players.get(ap).vicTokens+=game.selectedCards.get(0).cost/2;
       game.updateSharedFields();
     }
     @Override
     public void subStep(int ap, int attacker){
-      game.doWork("trash",0,1,ap);
+      game.doWork(Dominion.Phase.TRASH,0,1,ap);
     }
   }
   public class Monument extends DominionCard{
@@ -170,8 +170,8 @@ public class Prosperity extends Expansion{
     @Override
     public void subWork(int ap){
       game.server.displayComment((ap+1)%game.players.size(),"choose a deck that the player can't gain from");
-      game.doWork("selectDeck",1,1,(ap+1)%game.players.size());
-      game.changePhase("buys");
+      game.doWork(Dominion.Phase.SELECT_DECK,1,1,(ap+1)%game.players.size());
+      game.changePhase(Dominion.Phase.BUYS);
       deck=game.selectedDeck;
       System.out.println("selected "+deck+" for contraband");
       game.supplyDecks.get(deck).contraband=true;
@@ -233,7 +233,7 @@ public class Prosperity extends Expansion{
     @Override
     public void subWork(int ap){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("reveal",1,1,ap);
+      game.doWork(Dominion.Phase.REVEAL,1,1,ap);
       if(game.selectedCards.size()>0){
         game.gainCard(game.selectedCards.get(0).getName(),ap);
       }
@@ -263,7 +263,7 @@ public class Prosperity extends Expansion{
     @Override
     public void subStep(int vic, int ap){
       game.server.displayComment(ap,"you may discard a curse to block the attack, or press 'Done Discarding' ");
-      game.doWork("discard",0,1,vic, c -> c.getName().equals("curse"));
+      game.doWork(Dominion.Phase.DISCARD,0,1,vic, c -> c.getName().equals("curse"));
       if(game.selectedCards.size()==0){
         game.gainCard("curse",vic);
         game.gainCard("copper",vic);
@@ -321,7 +321,7 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",0,100,ap);
+      game.doWork(Dominion.Phase.DISCARD,0,100,ap);
       game.money+=game.selectedCards.size();
       game.updateSharedFields();
     }
@@ -333,7 +333,7 @@ public class Prosperity extends Expansion{
       o.add(this.getImage(), "image");
       String input=game.optionPane(ap,o);
       if(input.equals(options[0])){
-        game.doWork("discard",2,2,ap);
+        game.doWork(Dominion.Phase.DISCARD,2,2,ap);
         game.players.get(ap).drawToHand(1);
         game.displayPlayer(ap);
       }
@@ -376,7 +376,7 @@ public class Prosperity extends Expansion{
     public void subStep(int activePlayer, int attacker){
       game.server.displayComment(activePlayer,"Discard down to three cards");
       int n=game.players.get(activePlayer).hand.size()-3;
-      if(n>=1) game.doWork("discard",n,n,activePlayer);
+      if(n>=1) game.doWork(Dominion.Phase.DISCARD,n,n,activePlayer);
     }
     @Override
     public void subWork(int ap){
@@ -434,7 +434,7 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void subWork(int activePlayer){
-      game.doWork("trash",1,1,activePlayer);
+      game.doWork(Dominion.Phase.TRASH,1,1,activePlayer);
 
       game.gainSpecial(activePlayer, c -> game.costCompare(c, game.selectedCards.get(0), 3)<=0);
     }
@@ -446,7 +446,7 @@ public class Prosperity extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",0,100,ap);
+      game.doWork(Dominion.Phase.TRASH,0,100,ap);
       int temp=0;
       for(DominionCard card : game.selectedCards){
         temp+=game.cost2(card);
@@ -471,12 +471,12 @@ public class Prosperity extends Expansion{
       game.mask=makeMask(hand);
       
       if(game.mask.contains(true)){
-        game.doWork("select",1,1,activePlayer);
+        game.doWork(Dominion.Phase.SELECT,1,1,activePlayer);
         game.mask.clear();
         DominionCard card=game.selectedCards.get(0);
 
         game.selectedCards.clear();
-        game.changePhase("actions");
+        game.changePhase(Dominion.Phase.ACTIONS);
         game.server.displayComment(activePlayer,"");
 
         game.playCard(card,activePlayer,false);

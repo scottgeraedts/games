@@ -102,7 +102,7 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       if(game.selectedCards.size()>0){
         int cost=game.cost2(game.selectedCards.get(0));
         game.selectedCards.clear();
@@ -123,7 +123,7 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",1,1,ap);
+      game.doWork(Dominion.Phase.DISCARD,1,1,ap);
     }
   }
   public class Oracle extends Attack{
@@ -224,7 +224,7 @@ public class Hinterlands extends Expansion{
       
       //trash
       game.mask=makeMask(player.hand);
-      game.doWork("trash",0,1,ap);
+      game.doWork(Dominion.Phase.TRASH,0,1,ap);
     }
     @Override 
     public boolean maskCondition(DominionCard card){
@@ -239,8 +239,8 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void onGain(int ap){
-      String oldPhase=game.getPhase();
-      if(oldPhase.equals("buys")){
+      Dominion.Phase oldPhase=game.getPhase();
+      if(oldPhase == Dominion.Phase.BUYS){
         work(ap);
         game.changePhase(oldPhase);      
       }
@@ -279,7 +279,7 @@ public class Hinterlands extends Expansion{
         game.players.get(victim).disc.put(cards);
       }
       if(!moneyFound){
-         game.gainCard("copper", victim, "discard", true);
+         game.gainCard("copper", victim, Dominion.GainTo.DISCARD, true);
       }
     }
   }
@@ -322,7 +322,7 @@ public class Hinterlands extends Expansion{
     @Override
     public void subWork(int ap){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("trash",0,1,ap);
+      game.doWork(Dominion.Phase.TRASH,0,1,ap);
       if(game.selectedCards.size()==0) return;
       
       String [] options={"+2 Cards, +1 Action", "+2 Money, +1 Buy"};
@@ -350,7 +350,7 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       if(game.selectedCards.size()>0){
         for(int i=0;i<game.cost2(game.selectedCards.get(0));i++) game.gainCard("silver",ap);
       }
@@ -365,7 +365,7 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void onGain(int ap){
-      for(int i=0;i<2;i++) game.gainCard("copper",ap,"discard",true);
+      for(int i=0;i<2;i++) game.gainCard("copper",ap,Dominion.GainTo.DISCARD,true);
     }
   }
   public class Cartographer extends DominionCard{
@@ -418,12 +418,12 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",3,3,ap);
+      game.doWork(Dominion.Phase.DISCARD,3,3,ap);
     }
     @Override
     public void onGain(int ap){
       for(int i=(ap+1)%game.players.size(); i!=ap; i=(i+1)%game.players.size()){
-        game.gainCard("silver",i,"discard",true);
+        game.gainCard("silver",i,Dominion.GainTo.DISCARD,true);
       }
     }
   }  
@@ -484,13 +484,13 @@ public class Hinterlands extends Expansion{
       String [] options={"Gain Copper","Pass"};
       String input=game.optionPane(ap, new OptionData(options));
       if(input.equals(options[0])){
-        game.gainCard("copper", ap, "hand", true);
+        game.gainCard("copper", ap, Dominion.GainTo.HAND, true);
       }
     }
     @Override
     public void onGain(int ap){
       for(int i=(ap+1)%game.players.size(); i!=ap; i=(i+1)%game.players.size()){
-        game.gainCard("curse",i,"discard",true);
+        game.gainCard("curse",i,Dominion.GainTo.DISCARD,true);
       }
     }
   }
@@ -503,7 +503,7 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",2,2,ap);
+      game.doWork(Dominion.Phase.DISCARD,2,2,ap);
     }
     @Override
     public void onGain(int ap){
@@ -544,7 +544,7 @@ public class Hinterlands extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("topdeck",1,1,ap);
+      game.doWork(Dominion.Phase.TOP_DECK,1,1,ap);
     }
     @Override
     public void onGain(int ap){
@@ -572,7 +572,7 @@ public class Hinterlands extends Expansion{
       game.displayPlayer(ap);
       int temp=game.players.get(ap).hand.size()-3;
       if(temp>0)
-        game.doWork("discard",temp,temp,ap);
+        game.doWork(Dominion.Phase.DISCARD,temp,temp,ap);
     }
   } 
   public class Stables extends RegularCard{
@@ -583,7 +583,7 @@ public class Hinterlands extends Expansion{
     @Override
     public void subWork(int ap){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("discard",0,1,ap);
+      game.doWork(Dominion.Phase.DISCARD,0,1,ap);
       if(game.selectedCards.size()>0){
         game.players.get(ap).drawToHand(3);
         game.displayPlayer(ap);
@@ -607,7 +607,7 @@ public class Hinterlands extends Expansion{
     @Override
     public void onGain(int ap){
       game.gainNumber(ap, game.cost2(this)-1);
-      game.changePhase("buys");
+      game.changePhase(Dominion.Phase.BUYS);
     }
   }
   public class Farmland extends DominionCard{
@@ -620,7 +620,7 @@ public class Hinterlands extends Expansion{
     @Override
     public void onGain(int ap){
       game.server.displayComment(ap, "Remodel a card");
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       if(game.selectedCards.size()==0) return;
       game.gainSpecial(ap, c -> game.costCompare(c, game.selectedCards.get(0), 2)<=0);
       game.selectedCards.clear();

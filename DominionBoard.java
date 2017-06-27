@@ -3,9 +3,6 @@ import java.awt.event.*; // Using AWT event classes and listener interfaces
 import javax.swing.*;    // Using Swing components and containers
 import java.util.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import javax.imageio.ImageIO;
-import java.io.IOException;
 
 public class DominionBoard extends JFrame{
 
@@ -24,7 +21,7 @@ public class DominionBoard extends JFrame{
   private JPanel supplyPanel;
   private JPanel fieldsPanel; //global so it can be reset
   private JPanel buttonPanel;
-  private HashMap<String,JButton> doneButtons=new HashMap<>();
+  private HashMap<Dominion.Phase,JButton> doneButtons=new HashMap<>();
   private JButton coinTokenButton=new JButton("Play Coin Token");
   private JButton debtButton=new JButton("Pay Off Debt");
   private HashMap<String, JTextField> specialFields;
@@ -32,7 +29,7 @@ public class DominionBoard extends JFrame{
   private JTextField helpField;
   private DeckDisplay trash;
   
-  private String phase="actions";
+  private Dominion.Phase phase= Dominion.Phase.ACTIONS;
   private int money, buys;
   private ArrayList<String> playedDuration=new ArrayList<>();
   private int activePlayer=0;
@@ -46,14 +43,13 @@ public class DominionBoard extends JFrame{
 
 		setTitle("Dominion");
 
-    doneButtons.put("buys",new JButton("Done Buying"));
-    doneButtons.put("actions",new JButton("Done Actions"));
-    doneButtons.put("topdeck",new JButton("Done Topdecking"));
-    doneButtons.put("discard",new JButton("Done Discarding"));
-    doneButtons.put("trash",new JButton("Done Trashing"));
-    //doneButtons.put("gain",new JButton("Done Gaining"));
-    doneButtons.put("select",new JButton("Done Selecting"));
-    doneButtons.put("reveal",new JButton("Done Revealing"));
+    doneButtons.put(Dominion.Phase.BUYS,new JButton("Done Buying"));
+    doneButtons.put(Dominion.Phase.ACTIONS,new JButton("Done Actions"));
+    doneButtons.put(Dominion.Phase.TOP_DECK,new JButton("Done Topdecking"));
+    doneButtons.put(Dominion.Phase.DISCARD,new JButton("Done Discarding"));
+    doneButtons.put(Dominion.Phase.TRASH,new JButton("Done Trashing"));
+    doneButtons.put(Dominion.Phase.SELECT,new JButton("Done Selecting"));
+    doneButtons.put(Dominion.Phase.REVEAL,new JButton("Done Revealing"));
     
     trash=new DeckDisplay(new Deck.Data(0,Deck.blankBack));
 
@@ -100,11 +96,11 @@ public class DominionBoard extends JFrame{
     //reset players
     for(int i=0;i<playersData.size();i++){
       players.get(i).setupOptional(playerOptions);
-      displayPlayer(i,playersData.get(i),new ArrayList<Boolean>());
+      displayPlayer(i,playersData.get(i),new ArrayList<>());
     }
-    changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer),new ArrayList<Boolean>());
+    changePlayer(activePlayer,playersData.get(activePlayer),startingPlayer,playersData.get(startingPlayer),new ArrayList<>());
     activePlayer=startingPlayer;
-    changePhase(phase,"actions",new ArrayList<Boolean>());
+    changePhase(phase, Dominion.Phase.ACTIONS,new ArrayList<>());
     displayTrash(new Deck.Data(0,Deck.blankBack));
     resetSharedPanel(gameOptions);
     repaint();
@@ -134,7 +130,7 @@ public class DominionBoard extends JFrame{
 
     activePlayer=startingPlayer;
     players.get(startingPlayer).active=true;
-    players.get(startingPlayer).display(playersData.get(startingPlayer),new ArrayList<Boolean>());
+    players.get(startingPlayer).display(playersData.get(startingPlayer),new ArrayList<>());
     return panel;
   }  
   
@@ -197,10 +193,12 @@ public class DominionBoard extends JFrame{
 
     //action listener for the done buttons
     EndSelection listener=new EndSelection();
-    String [] phases={"actions","buys","topdeck","discard","trash","select","reveal"};
-    for (String phase1 : phases) {
+    Dominion.Phase[] phases=
+            {Dominion.Phase.ACTIONS, Dominion.Phase.BUYS, Dominion.Phase.TOP_DECK,
+                    Dominion.Phase.DISCARD, Dominion.Phase.TRASH, Dominion.Phase.SELECT, Dominion.Phase.REVEAL};
+    for (Dominion.Phase phase1 : phases) {
       doneButtons.get(phase1).addActionListener(listener);
-      doneButtons.get(phase1).setActionCommand("B" + phase1);
+      doneButtons.get(phase1).setActionCommand("B" + phase1.name());
     }
     coinTokenButton.addActionListener(listener);
     coinTokenButton.setActionCommand("Bcoin");
@@ -208,7 +206,7 @@ public class DominionBoard extends JFrame{
     debtButton.addActionListener(listener);
     debtButton.setActionCommand("Bdebt");
 
-    buttonPanel.add(doneButtons.get("actions"));
+    buttonPanel.add(doneButtons.get(Dominion.Phase.ACTIONS));
 
     leftPanel.add(buttonPanel);
 
@@ -288,7 +286,7 @@ public class DominionBoard extends JFrame{
     repaint();
     revalidate();
   }
-  public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask){
+  public void changePhase(Dominion.Phase oldPhase, Dominion.Phase newPhase, ArrayList<Boolean> mask){
 
     phase=newPhase;
     try{
@@ -301,7 +299,7 @@ public class DominionBoard extends JFrame{
    
     try{
       buttonPanel.add(doneButtons.get(newPhase));
-      if(newPhase.equals("buys") && players.get(activePlayer).coinTokens>0) buttonPanel.add(coinTokenButton);
+      if(newPhase==Dominion.Phase.BUYS && players.get(activePlayer).coinTokens>0) buttonPanel.add(coinTokenButton);
     }catch(NullPointerException e){
     }
  
@@ -392,7 +390,7 @@ public class DominionBoard extends JFrame{
     players.get(i).display(data,mask);
     //do we need to add in a debt button
     buttonPanel.remove(debtButton);
-    if(phase.equals("buys") && players.get(activePlayer).debt>0){
+    if(phase== Dominion.Phase.BUYS && players.get(activePlayer).debt>0){
       buttonPanel.add(debtButton);
       repaint();
       revalidate();
@@ -466,7 +464,7 @@ public class DominionBoard extends JFrame{
       treasuresButton.addActionListener(new ActionListener() {
          @Override
          public void actionPerformed(ActionEvent evt) {
-          if(active && (phase.equals("actions") || phase.equals("buys"))){
+          if(active && (phase== Dominion.Phase.ACTIONS || phase== Dominion.Phase.BUYS)){
             if(!lock) output="Btreasures";
           }
          }
@@ -562,10 +560,10 @@ public class DominionBoard extends JFrame{
       }
     }
     void display(){
-      display(player, new ArrayList<Boolean>());
+      display(player, new ArrayList<>());
     }
     //use last times data to display
-    public void display(DominionPlayer.Data tplayer, ArrayList<Boolean> mask){
+    void display(DominionPlayer.Data tplayer, ArrayList<Boolean> mask){
       player=tplayer;
       handPanel.removeAll();
       coinTokens=player.coinTokens;
@@ -579,19 +577,30 @@ public class DominionBoard extends JFrame{
         //if its your turn and its your player you can see the cards and click on some of them
         if(active && controlled){
           button.setIcon(getImage(card.getImage()));      
-          if((phase.equals("actions") && (card.isMoney || card.isAction)) || (phase.equals("buys") && card.isMoney) ){
+          if((phase== Dominion.Phase.ACTIONS && (card.isMoney || card.isAction)) || (phase== Dominion.Phase.BUYS && card.isMoney) ){
             button.setEnabled(true);
           }else if ((mask.size()!=player.hand.size() || mask.get(i)) && 
-              (phase.equals("trash") || phase.equals("discard") || phase.equals("topdeck") 
-              || phase.equals("select") || phase.equals("reveal"))){
+              (phase.fromHand())){
 
             button.setEnabled(true); 
-            button.setOpaque(true);  
-            if(phase.equals("trash")) button.setBackground(Color.RED);
-            else if(phase.equals("discard")) button.setBackground(Color.YELLOW);
-            else if(phase.equals("topdeck")) button.setBackground(Color.GREEN);
-            else if(phase.equals("select") || phase.equals("reveal")) button.setBackground(Color.ORANGE);           
-                  
+            button.setOpaque(true);
+            switch(phase){
+              case TRASH:
+                button.setBackground(Color.RED);
+                break;
+
+              case DISCARD:
+                button.setBackground(Color.YELLOW);
+                break;
+
+              case TOP_DECK:
+                button.setBackground(Color.GREEN);
+                break;
+
+              default:
+                button.setBackground(Color.ORANGE);
+            }
+
           }else button.setEnabled(false);
           
         //if its not your player you cant see anything
@@ -642,13 +651,13 @@ public class DominionBoard extends JFrame{
       repaint();
       revalidate();
     }
-    public JPanel getPanel(){
+    JPanel getPanel(){
       return panel;
     }
     public void actionPerformed(ActionEvent e){
       int cardnum=Integer.parseInt(e.getActionCommand());
-      if(phase.equals("actions") && player.hand.get(cardnum).isMoney){
-        pressButton(doneButtons.get("actions"));
+      if(phase== Dominion.Phase.ACTIONS && player.hand.get(cardnum).isMoney){
+        pressButton(doneButtons.get(Dominion.Phase.ACTIONS));
       }
       if(!lock) output=Integer.toString(cardnum);
       
@@ -916,14 +925,14 @@ public class DominionBoard extends JFrame{
     public void mousePressed(MouseEvent e){
 
       //if we can buy the card
-      boolean buysCheck=phase.equals("buys") && money>=supply.data.cost && buys>0;
+      boolean buysCheck= phase== Dominion.Phase.BUYS && money>=supply.data.cost && buys>0;
       //can only gain events in the event phase, can never gain landmarks
-      boolean eventCheck=(phase.equals("buys") || !supply.data.event) && !supply.data.landmark;
+      boolean eventCheck=(phase== Dominion.Phase.BUYS || !supply.data.event) && !supply.data.landmark;
       if(SwingUtilities.isRightMouseButton(e) || e.isControlDown()){
         popup.setVisible(true);
       }else{
-        if( (phase.equals("selectDeck2") ||
-                (phase.equals("selectDeck") || buysCheck
+        if( (phase== Dominion.Phase.SELECT_DECK2 ||
+                (phase== Dominion.Phase.SELECT_DECK || buysCheck
                         && supply.data.size>0 && !supply.data.icons.containsKey("contraband"))) && eventCheck){
           if(!lock) output="G"+supply.name;
         }

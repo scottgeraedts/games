@@ -23,7 +23,7 @@ public class Seaside extends Expansion{
     @Override
     public void subWork(int activePlayer){
       game.server.displayComment(activePlayer,"Choose a pile for the embargo token");
-      game.doWork("selectDeck",0,1,activePlayer);
+      game.doWork(Dominion.Phase.SELECT_DECK,0,1,activePlayer);
       game.supplyDecks.get(game.selectedDeck).embargo++;
       game.matcards.remove(this);
       game.trashCard(this, activePlayer);
@@ -42,7 +42,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("select",0,1,ap);
+      game.doWork(Dominion.Phase.SELECT,0,1,ap);
       card=game.selectedCards.get(0);
     }
     @Override
@@ -124,13 +124,13 @@ public class Seaside extends Expansion{
     public void subWork(int ap){
       game.server.displayComment(ap,"choose the type of card");
 
-      game.doWork("reveal",1,1,ap);
+      game.doWork(Dominion.Phase.REVEAL,1,1,ap);
       card=game.selectedCards.get(0);
       game.server.displayComment(ap,"Return up to two of those cards");
       game.displayPlayer(ap);
       game.selectedCards.clear();
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("select",0,2,ap);
+      game.doWork(Dominion.Phase.SELECT,0,2,ap);
       for(DominionCard card : game.selectedCards){
         game.returnToSupply(card, ap);
       }
@@ -239,7 +239,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("discard",3,3,ap);
+      game.doWork(Dominion.Phase.DISCARD,3,3,ap);
     }
   }
   public class Caravan extends DominionCard{
@@ -272,7 +272,7 @@ public class Seaside extends Expansion{
         player.disc.add(player.hand.remove(game.mask.indexOf(true)));
       }else if(count>1){
         game.server.displayComment(ap, "discard a copper");
-        game.doWork("discard",1,1,vic);
+        game.doWork(Dominion.Phase.DISCARD,1,1,vic);
       }
     }
     @Override
@@ -291,7 +291,7 @@ public class Seaside extends Expansion{
     public void subWork(int ap){
       lostTrack=true;
       DominionPlayer player=game.players.get(ap);
-      game.doWork("select",1,1,ap);
+      game.doWork(Dominion.Phase.SELECT,1,1,ap);
       player.island.add(game.selectedCards.get(0));
       player.island.add(this);
       game.matcards.remove(this);
@@ -378,7 +378,7 @@ public class Seaside extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       game.money+=game.cost2(game.selectedCards.get(0));
       game.updateSharedFields();
     }
@@ -394,7 +394,7 @@ public class Seaside extends Expansion{
         game.players.get(vic).disc.put(game.players.get(vic).getCard());
       }catch(OutOfCardsException ex){}
       
-      game.gainCard("curse",vic,"topcard");
+      game.gainCard("curse",vic,Dominion.GainTo.TOP_CARD);
     }
   }
   public class Treasuremap extends RegularCard{
@@ -405,9 +405,9 @@ public class Seaside extends Expansion{
     @Override
     public void subWork(int ap){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("trash",0,1,ap);
+      game.doWork(Dominion.Phase.TRASH,0,1,ap);
       if(game.selectedCards.size()>0){
-        for(int i=0;i<4;i++) game.gainCard("gold",ap,"topcard");
+        for(int i=0;i<4;i++) game.gainCard("gold",ap,Dominion.GainTo.TOP_CARD);
       }
       game.trashCard(this, ap);
       game.matcards.remove(this);
@@ -421,9 +421,9 @@ public class Seaside extends Expansion{
     @Override
     public void subWork(int ap){
       game.mask=makeMask(game.players.get(ap).hand);
-      game.doWork("reveal",0,1,ap);
-      if(game.selectedCards.size()>0) game.gainCard("gold",ap,"hand");
-      else game.gainCard("silver",ap,"hand");
+      game.doWork(Dominion.Phase.REVEAL,0,1,ap);
+      if(game.selectedCards.size()>0) game.gainCard("gold",ap,Dominion.GainTo.HAND);
+      else game.gainCard("silver",ap,Dominion.GainTo.HAND);
     }
     @Override
     public boolean maskCondition(DominionCard card){
@@ -441,7 +441,7 @@ public class Seaside extends Expansion{
       game.server.displayComment(vic,"Put cards on your deck until you only have three");
       int diff=game.players.get(vic).hand.size()-3;
       if(diff>=2)
-        game.doWork("topdeck",diff,diff,vic);
+        game.doWork(Dominion.Phase.TOP_DECK,diff,diff,vic);
     }
   }
   public class Merchantship extends DominionCard{

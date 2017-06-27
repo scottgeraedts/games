@@ -51,7 +51,7 @@ public class Guilds extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("trash",1,1,ap);
+      game.doWork(Dominion.Phase.TRASH,1,1,ap);
       if(game.selectedCards.size()==0) return;
       int gainLimit=game.cost2(game.selectedCards.get(0))-1;
       game.server.displayComment(ap, "gain 2 cards costing up to "+gainLimit);
@@ -76,7 +76,7 @@ public class Guilds extends Expansion{
     @Override
     public void subWork(int ap){
       game.server.displayComment(ap, "click on a supply pile to trash matches");
-      game.doWork("selectDeck2",1,1,ap);
+      game.doWork(Dominion.Phase.SELECT_DECK2,1,1,ap);
       String name=game.supplyDecks.get(game.selectedDeck).card.getName();
       DominionPlayer player=game.players.get(ap);
       LinkedList<DominionCard> cards=player.draw(3);
@@ -173,7 +173,7 @@ public class Guilds extends Expansion{
     public void subWork(int ap){
       DominionPlayer player=game.players.get(ap);
       game.mask=makeMask(player.hand);
-      game.doWork("discard",0,1,ap);
+      game.doWork(Dominion.Phase.DISCARD,0,1,ap);
       if(game.selectedCards.size()>0) player.coinTokens++;
       game.displayPlayer(ap);
     }
@@ -191,7 +191,7 @@ public class Guilds extends Expansion{
     @Override
     public void subWork(int ap){
       DominionPlayer player=game.players.get(ap);
-      game.doWork("trash", 0, 1, ap, c -> c.isMoney);
+      game.doWork(Dominion.Phase.TRASH, 0, 1, ap, c -> c.isMoney);
       if(game.selectedCards.size()==0) return;
       cardName=game.selectedCards.get(0).getName();
       int gainLimit=game.cost2(game.selectedCards.get(0))+3;
@@ -202,7 +202,7 @@ public class Guilds extends Expansion{
     @Override
     public void subStep(int ap, int atk){
       DominionPlayer player=game.players.get(ap);
-      game.doWork("discard",1,1,ap, c -> c.getName().equals(cardName));
+      game.doWork(Dominion.Phase.DISCARD,1,1,ap, c -> c.getName().equals(cardName));
     }
   }
   class Herald extends DominionCard{
@@ -276,7 +276,7 @@ public class Guilds extends Expansion{
     public void subWork(int ap){
       DominionPlayer player=game.players.get(ap);
       player.coinTokens+=2;
-      game.doWork("trash", 0, 1, ap);
+      game.doWork(Dominion.Phase.TRASH, 0, 1, ap);
       String [] options={"Play Coin Token", "Done"};
       String input;
       OptionData o=new OptionData(options);
@@ -307,7 +307,7 @@ public class Guilds extends Expansion{
     }
     @Override
     public void subWork(int ap){
-      game.doWork("selectDeck2", 1, 1, ap);
+      game.doWork(Dominion.Phase.SELECT_DECK2, 1, 1, ap);
       int counter=0;
       DominionPlayer player=game.players.get(ap);
       DominionCard card;

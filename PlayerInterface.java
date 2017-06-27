@@ -10,7 +10,7 @@ public interface PlayerInterface{
                     LinkedHashSet<String> o, HashSet<String> o2);
   public void displayMatCards(ArrayList<DominionCard> matcards);
   public void changePlayer(int oldPlayerNum, DominionPlayer.Data oldPlayer, int newPlayerNum, DominionPlayer.Data newPlayer, ArrayList<Boolean> mask);
-  public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask);
+  public void changePhase(Dominion.Phase oldPhase, Dominion.Phase newPhase, ArrayList<Boolean> mask);
   public void showScores(PairList<?,?> scores);
   public void displayPlayer(int playerNum, DominionPlayer.Data player, Collection<Boolean> mask);
   public void optionPane(OptionData o);

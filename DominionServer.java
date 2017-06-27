@@ -220,9 +220,9 @@ public class DominionServer{
      String out="reset%";
      out+=toArray(playerData);
      out+="%"+supplyData.size();
-     for(int i=0;i<supplyData.size();i++){
-      out+="#"+supplyData.get(i).toString();
-     }
+      for (Deck.SupplyData aSupplyData : supplyData) {
+        out += "#" + aSupplyData.toString();
+      }
      out+="%"+startingPlayer;
      out+="%"+toArray(gameOptions);
      out+="%"+toArray(playerOptions);
@@ -230,9 +230,10 @@ public class DominionServer{
       output.flush();
     }
     public void displayMatCards(ArrayList<DominionCard> matcards){
-      String out="displayMatCards%"+matcards.size();
-      for(int i=0; i<matcards.size(); i++){
-        out+="#"+matcards.get(i).toString();
+      StringBuilder out=new StringBuilder();
+      out.append("displayMatCards%").append(matcards.size());
+      for (DominionCard matcard : matcards) {
+        out.append( "#").append(matcard.toString());
       }
       output.println(out);
     }
@@ -241,8 +242,8 @@ public class DominionServer{
       out+="%"+newPlayerNum+"%"+newPlayer.toString()+"%"+toArray(mask);
       output.println(out);
     }
-    public void changePhase(String oldPhase, String newPhase, ArrayList<Boolean> mask){
-      output.println("changePhase%"+oldPhase+"%"+newPhase+"%"+toArray(mask));
+    public void changePhase(Dominion.Phase oldPhase, Dominion.Phase newPhase, ArrayList<Boolean> mask){
+      output.println("changePhase%"+oldPhase.name()+"%"+newPhase.name()+"%"+toArray(mask));
     }
     public void showScores(PairList<?,?> scores){
       output.println("showScores%"+scores.toString());
