@@ -155,8 +155,8 @@ public class DominionServer{
   }
   void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
                     int startingPlayer, LinkedHashSet<String> o, HashSet<String> o2){
-    for(int i=0;i<connections.size();i++){
-      connections.get(i).reset(supplyData,playerData,startingPlayer,o,o2);
+    for (PlayerInterface connection : connections) {
+      connection.reset(supplyData, playerData, startingPlayer, o, o2);
     }
   }
   void showScores(PairList<Integer,String> scores){
@@ -193,7 +193,7 @@ public class DominionServer{
   public static class HumanPlayer implements PlayerInterface{
     private BufferedReader input;
     private PrintWriter output;
-    public HumanPlayer(BufferedReader br,PrintWriter pw){
+    HumanPlayer(BufferedReader br,PrintWriter pw){
       input=br;
       output=pw;
     }
@@ -202,30 +202,31 @@ public class DominionServer{
     public void initialize(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
                            int startingPlayer, ArrayList<Integer> controlled,
                            LinkedHashSet<String> gameOptions, HashSet<String> playerOptions){
-     String out="initialize%";
-     out+=toArray(playerData);
-     out+="%"+supplyData.size();
-     for(int i=0;i<supplyData.size();i++){
-      out+="#"+supplyData.get(i).toString();
-     }
-     out+="%"+startingPlayer+"%"+toArray(controlled);
-     out+="%"+toArray(gameOptions);
-     out+="%"+toArray(playerOptions);
+     StringBuilder out= new StringBuilder("initialize%");
+     out.append(toArray(playerData));
+     out.append("%").append(supplyData.size());
+      for (Deck.SupplyData aSupplyData : supplyData) {
+        out.append("#").append(aSupplyData.toString());
+      }
+     out.append("%").append(startingPlayer).append("%").append(toArray(controlled));
+     out.append("%").append(toArray(gameOptions));
+     out.append("%").append(toArray(playerOptions));
      output.println(out);
      output.flush();
    }
     //reset for a new game
     public void reset(ArrayList<Deck.SupplyData> supplyData, ArrayList<DominionPlayer.Data> playerData,
                       int startingPlayer, LinkedHashSet<String> gameOptions, HashSet<String> playerOptions){
-     String out="reset%";
-     out+=toArray(playerData);
-     out+="%"+supplyData.size();
+      StringBuilder out=new StringBuilder();
+      out.append("reset%");
+      out.append(toArray(playerData));
+      out.append("%").append(supplyData.size());
       for (Deck.SupplyData aSupplyData : supplyData) {
-        out += "#" + aSupplyData.toString();
+        out.append("#").append(aSupplyData.toString());
       }
-     out+="%"+startingPlayer;
-     out+="%"+toArray(gameOptions);
-     out+="%"+toArray(playerOptions);
+      out.append("%").append(startingPlayer);
+      out.append("%").append(toArray(gameOptions));
+      out.append("%").append(toArray(playerOptions));
       output.println(out);
       output.flush();
     }
@@ -295,10 +296,10 @@ public class DominionServer{
       }
     }
   }
-  public static <T extends Object> String toArray(Collection<T> x){
-    String out="";
-    out+=x.size();
-    for(T y : x) out+="#"+y.toString();
-    return out;
+  static <T> String toArray(Collection<T> x){
+    StringBuilder out=new StringBuilder();
+    out.append(x.size());
+    for(T y : x) out.append("#").append(y.toString());
+    return out.toString();
   }
 }

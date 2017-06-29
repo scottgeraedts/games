@@ -189,27 +189,28 @@ public class DominionPlayer{
       tavern=DominionClient.readArray(parts[handSize+15], "");
     }
     public String toString(){
-      String out=""+hand.size();
+      StringBuilder out=new StringBuilder();
+      out.append(hand.size());
       for (DominionCard aHand : hand) {
-        out += "@" + aHand.toString();
+        out.append("@").append(aHand.toString());
       }
-      out+="@"+deck.toString()+"@"+disc.toString()+"@"+name;
-      out+="@"+DominionServer.toArray(durationCards);
-      out+="@"+DominionServer.toArray(islandCards);
-      out+="@"+DominionServer.toArray(nativeVillage);
-      out+="@"+pirateship;
-      out+="@"+vicTokens;
-      out+="@"+coinTokens;
-      out+="@"+debt;
-      out+="@"+miser;
-      out+="@"+journey;
-      out+="@"+minusMoneyToken;
-      out+="@"+minusCardToken;
-      out+="@"+DominionServer.toArray(tavern);
-      return out;
+      out.append("@").append(deck.toString()).append("@").append(disc.toString()).append("@").append(name);
+      out.append("@").append(DominionServer.toArray(durationCards));
+      out.append("@").append(DominionServer.toArray(islandCards));
+      out.append("@").append(DominionServer.toArray(nativeVillage));
+      out.append("@").append(pirateship);
+      out.append("@").append(vicTokens);
+      out.append("@").append(coinTokens);
+      out.append("@").append(debt);
+      out.append("@").append(miser);
+      out.append("@").append(journey);
+      out.append("@").append(minusMoneyToken);
+      out.append("@").append(minusCardToken);
+      out.append("@").append(DominionServer.toArray(tavern));
+      return out.toString();
     }
   }
-  public Data makeData(){
+  Data makeData(){
     Data out=new Data();
     out.deck=deck.makeData();
     out.disc=disc.makeData();

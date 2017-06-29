@@ -373,6 +373,8 @@ public class Dominion{
     if(!throneRoom && !card.isReserve){
       matcards.add(card);
     }
+    //put card on tavern mat if its a reserve
+    if (card.isReserve) players.get(activePlayer).tavern.add(card);
 
 
     cardPlayed(activePlayer);
@@ -382,8 +384,6 @@ public class Dominion{
       card.work(activePlayer);
     }
 
-    //put card on tavern mat
-    if (card.isReserve) players.get(activePlayer).tavern.add(card);
     //some tavern cards are played after an action
     if(expansions.containsKey("Adventures") && card.isAction) {
       adventures.tavern(activePlayer, card, c -> c.getName().equals("coinoftherealm"));
@@ -957,7 +957,7 @@ public class Dominion{
       displayPlayer(newPlayer);
     }
     //swamp hag
-    if(players.get(activePlayer).swampHag){
+    if(players.get(newPlayer).swampHag){
       for(SupplyDeck deck : supplyDecks.values()){
         deck.embargo++;
       }
@@ -1307,12 +1307,12 @@ public class Dominion{
       connection.displaySupply(supplyDecks.get(name).makeData());
     }
   }
-  public void displaySupplies(){
+  void displaySupplies(){
     for(Map.Entry<String,SupplyDeck> entry : supplyDecks.entrySet()){
       displaySupply(entry.getValue().makeData());
     }
   }
-  public void cardPlayed(int activePlayer){
+  void cardPlayed(int activePlayer){
     displayPlayer(activePlayer);
     for( PlayerInterface connection : server.connections){
       connection.displayMatCards(matcards);      
@@ -1335,7 +1335,7 @@ public class Dominion{
     private boolean varied;
     int tax=0;
 
-    public SupplyDeck(String name){
+    SupplyDeck(String name){
       this.name=name;
 
       varied = name.equals("ruins") || name.equals("knight") || name.equals("castle")

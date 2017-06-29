@@ -233,7 +233,7 @@ public class DominionClient{
   }
   
   ///***THE PESKY READARRAYS***///
-  public static ArrayList<DominionPlayer.Data> readArray(String parts, DominionPlayer.Data temp){
+  static ArrayList<DominionPlayer.Data> readArray(String parts, DominionPlayer.Data temp){
     //initialize player
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
@@ -243,7 +243,7 @@ public class DominionClient{
     } 
     return x; 
   }
-  public static ArrayList<Deck.SupplyData> readArray(String parts, Deck.SupplyData temp){
+  static ArrayList<Deck.SupplyData> readArray(String parts, Deck.SupplyData temp){
     //initialize player
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
@@ -253,7 +253,7 @@ public class DominionClient{
     }  
     return x;
   }
-  public static ArrayList<DominionCard> readArray(String parts, DominionCard temp){
+  static ArrayList<DominionCard> readArray(String parts, DominionCard temp){
     //initialize player
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
@@ -263,7 +263,7 @@ public class DominionClient{
     }
     return x;  
   }
-  public static ArrayList<String> readArray(String parts, String temp){
+  static ArrayList<String> readArray(String parts, String temp){
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
     ArrayList<String> x=new ArrayList<String>(size);
@@ -272,7 +272,7 @@ public class DominionClient{
     }
     return x;  
   }
-  public static ArrayList<Boolean> readArray(String parts, Boolean temp){
+  static ArrayList<Boolean> readArray(String parts, Boolean temp){
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
     ArrayList<Boolean> x=new ArrayList<Boolean>(size);
@@ -281,7 +281,7 @@ public class DominionClient{
     }
     return x;  
   }
-  public static ArrayList<Integer> readArray(String parts, Integer temp){
+  static ArrayList<Integer> readArray(String parts, Integer temp){
     String [] playerParts=parts.split("#");
     int size=Integer.parseInt(playerParts[0]);
     ArrayList<Integer> x=new ArrayList<>(size);
@@ -298,7 +298,7 @@ public class DominionClient{
 
     BufferedReader input;
     
-    public ServerWatcher(BufferedReader br){
+    ServerWatcher(BufferedReader br){
       input=br;
     }
     public void run(){

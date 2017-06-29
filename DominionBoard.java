@@ -80,7 +80,7 @@ public class DominionBoard extends JFrame{
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  // Exit program if close-window button clicked      
     setVisible(true);
   }
-  public void reset(ArrayList<DominionPlayer.Data> playersData, 
+  void reset(ArrayList<DominionPlayer.Data> playersData,
       ArrayList<Deck.SupplyData> supplyData, int startingPlayer, ArrayList<String> gameOptions,
                     ArrayList<String> playerOptions){
 
@@ -442,7 +442,7 @@ public class DominionBoard extends JFrame{
     ArrayList<String> tavern=new ArrayList<>();
 
 
-  public PlayerDisplay(DominionPlayer.Data tplayer, ArrayList<String> playerOptions){
+  PlayerDisplay(DominionPlayer.Data tplayer, ArrayList<String> playerOptions){
 
       player=tplayer;
       
@@ -484,7 +484,7 @@ public class DominionBoard extends JFrame{
       
       display(player,new ArrayList<Boolean>());
     }
-    public void setupOptional(ArrayList<String> playerOptions){
+    void setupOptional(ArrayList<String> playerOptions){
 
       //stuff that isn't always displayed
       islandCards=player.islandCards;
@@ -632,6 +632,8 @@ public class DominionBoard extends JFrame{
       coinfield.setText(player.coinTokens+"");
       debtfield.setText(player.debt+"");
       miser.setText(player.miser+"");
+      tavern.clear();
+      tavern.addAll(player.tavern);
       if(player.journey){
         optionPanel.add(journeyToken);
       }else{
@@ -774,7 +776,7 @@ public class DominionBoard extends JFrame{
       //need to add 4 total piles for this to look right, so count how many panels you've added
       //and add empty panels if necessary
       int addedPanels=2;
-      if(supplies.contains("embargo")){
+      if(supplies.contains("embargo") || supplies.contains("swamphag")){
         addPanel("embargo");
         addedPanels++;
       }
@@ -885,7 +887,6 @@ public class DominionBoard extends JFrame{
           iconPanels.get("tax").add(taxField);
         }else{
           String s=data.icons.getKey(i);
-          System.out.println(s);
           iconPanels.get(s).add(new JLabel(tokens.get(s)));
         }
         iconPanels.get(data.icons.getKey(i)).setOpaque(true);
